@@ -47,6 +47,16 @@
           Crear cuenta
         </h1>
 
+        <!-- Error -->
+        <div v-if="errorMsg" class="w-full mb-2 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
+          {{ errorMsg }}
+        </div>
+
+        <!-- Éxito (confirmación de email) -->
+        <div v-if="successMsg" class="w-full mb-2 px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-sm">
+          {{ successMsg }}
+        </div>
+
         <!-- Campos -->
         <div class="w-full flex flex-col gap-4">
           <!-- Nombre -->
@@ -98,6 +108,19 @@
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue dark:text-white dark:bg-background-dark/50 focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 dark:border-gray-600 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-4 text-base font-normal leading-normal"
               placeholder="Ej: 8091234567"
               type="tel"
+            />
+          </label>
+
+          <!-- Fecha de nacimiento -->
+          <label class="flex flex-col w-full">
+            <p class="text-brand-dark-blue dark:text-gray-300 text-sm font-medium pb-2">
+              Fecha de nacimiento
+            </p>
+            <input
+              v-model="birthDate"
+              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue dark:text-white dark:bg-background-dark/50 focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 dark:border-gray-600 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-4 text-base font-normal leading-normal"
+              type="date"
+              :max="maxBirthDate"
             />
           </label>
 
@@ -181,63 +204,82 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/useAuthStore.js'
 
-const router = useRouter();
+const router = useRouter()
+const auth   = useAuthStore()
 
-const nombre = ref("");
-const apellido = ref("");
-const email = ref("");
-const telefono = ref("");
-const password = ref("");
-const confirmPassword = ref("");
-const showPassword = ref(false);
+const nombre          = ref('')
+const apellido        = ref('')
+const email           = ref('')
+const telefono        = ref('')
+const birthDate       = ref('')
+const password        = ref('')
+const confirmPassword = ref('')
+const showPassword    = ref(false)
+const errorMsg        = ref('')
+const successMsg      = ref('')
+const loading         = ref(false)
 
-const go = (path) => router.push(path);
+const maxBirthDate = computed(() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 13)
+  return d.toISOString().split('T')[0]
+})
 
-const registrar = () => {
-  if (
-    !nombre.value.trim() ||
-    !apellido.value.trim() ||
-    !email.value.trim() ||
-    !telefono.value.trim() ||
-    !password.value ||
-    !confirmPassword.value
-  ) {
-    alert("Por favor, completa todos los campos.");
-    return;
+const go = (path) => router.push(path)
+
+async function registrar() {
+  errorMsg.value  = ''
+  successMsg.value = ''
+
+  if (!nombre.value.trim() || !apellido.value.trim() || !email.value.trim() ||
+      !telefono.value.trim() || !birthDate.value || !password.value || !confirmPassword.value) {
+    errorMsg.value = 'Por favor, completa todos los campos.'
+    return
   }
-
+  if (password.value.length < 6) {
+    errorMsg.value = 'La contraseña debe tener al menos 6 caracteres.'
+    return
+  }
   if (password.value !== confirmPassword.value) {
-    alert("Las contraseñas no coinciden.");
-    return;
+    errorMsg.value = 'Las contraseñas no coinciden.'
+    return
   }
 
-  const user = {
-  name: `${nombre.value} ${apellido.value}`.trim(),
-  firstName: nombre.value.trim(),
-  lastName: apellido.value.trim(),
-  email: email.value.trim(),
-  phone: telefono.value.trim(),
-  password: password.value,
-  age: "",
-  address: "",
-  avatar: "",
-  createdAt: new Date().toISOString(),
-};
+  loading.value = true
+  try {
+    const result = await auth.register({
+      firstName: nombre.value.trim(),
+      lastName:  apellido.value.trim(),
+      email:     email.value.trim(),
+      phone:     telefono.value.trim(),
+      birthDate: birthDate.value || null,
+      password:  password.value,
+    })
 
-localStorage.setItem("pharmaderm_user", JSON.stringify(user));
-localStorage.setItem(
-  "pharmaderm_session",
-  JSON.stringify({
-    isLoggedIn: true,
-    email: user.email,
-    loginAt: new Date().toISOString(),
-  })
-);
-
-alert("Cuenta creada correctamente.");
-go("/inicio");
-};
+    if (result.needsEmailConfirmation) {
+      successMsg.value = 'Cuenta creada. Revisa tu correo y confirma tu cuenta antes de iniciar sesión.'
+    } else {
+      router.push('/inicio')
+    }
+  } catch (err) {
+    const msg = err?.message || ''
+    if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('User already registered')) {
+      errorMsg.value = 'Ya existe una cuenta con ese correo electrónico. Inicia sesión.'
+    } else if (msg.includes('weak') || msg.includes('password')) {
+      errorMsg.value = 'La contraseña es muy débil. Usa al menos 6 caracteres.'
+    } else if (msg.includes('valid email') || msg.includes('invalid email')) {
+      errorMsg.value = 'El correo electrónico no es válido.'
+    } else if (msg.includes('network') || msg.includes('fetch')) {
+      errorMsg.value = 'Error de conexión. Verifica tu internet e intenta de nuevo.'
+    } else {
+      errorMsg.value = msg || 'Error al crear la cuenta. Intenta de nuevo.'
+    }
+  } finally {
+    loading.value = false
+  }
+}
 </script>

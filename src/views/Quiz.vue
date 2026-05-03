@@ -1,40 +1,19 @@
 <template>
   <div class="min-h-screen bg-[#F7F7F4] text-slate-900">
-    <header class="sticky top-0 z-40 border-b border-slate-200 bg-[#F7F7F4]">
-      <div class="max-w-[980px] mx-auto px-4 py-3 flex items-center justify-between">
-        <button
-          class="w-10 h-10 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-200/60"
-          type="button"
-          aria-label="Back"
-          @click="handleBack"
-        >
-          <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-
-        <img :src="logoSrc" class="h-10 object-contain" alt="My Routine AI" />
-
-        <button
-          class="w-10 h-10 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-200/60"
-          type="button"
-          aria-label="Close"
-          @click="closeQuiz"
-        >
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-
-      <div v-if="showProgress" class="max-w-[980px] mx-auto px-4 pb-3">
-        <div class="flex items-center gap-2">
-          <div class="progress-node" :class="{ active: progressStep >= 1 }">1</div>
-          <div class="flex-1 h-[2px] rounded-full bg-sky-100 overflow-hidden">
-            <div class="h-full bg-[#16A6E2] transition-all duration-300" :style="{ width: progressBarWidth + '%' }"></div>
-          </div>
-          <div class="progress-node" :class="{ active: progressStep >= 2 }">2</div>
+    <!-- Progress bar (no header needed since AppNavbar is global) -->
+    <div v-if="showProgress" class="sticky top-0 z-30 bg-[#F7F7F4] border-b border-slate-200 px-4 py-3">
+      <div class="max-w-[980px] mx-auto flex items-center gap-2">
+        <div class="progress-node" :class="{ active: progressStep >= 1 }">1</div>
+        <div class="flex-1 h-[2px] rounded-full bg-sky-100 overflow-hidden">
+          <div class="h-full bg-[#16A6E2] transition-all duration-300" :style="{ width: progressBarWidth + '%' }"></div>
         </div>
+        <div class="progress-node" :class="{ active: progressStep >= 2 }">2</div>
       </div>
-    </header>
+    </div>
 
-    <main class="max-w-[980px] mx-auto px-4 pb-28">
+    <main class="max-w-[980px] mx-auto px-4 pb-28 relative overflow-x-hidden">
+      <Transition name="step-fade" mode="out-in">
+      <div :key="step">
       <section v-if="step === 'selfie_instructions'">
         <div class="relative overflow-hidden bg-white">
           <div class="relative h-[300px] sm:h-[360px]">
@@ -59,7 +38,6 @@
 
             <button class="mt-10 w-full h-[58px] bg-[#16A6E2] text-white text-[15px] sm:text-[18px] tracking-wide" type="button" @click="openCamera">TOMAR UN SELFIE</button>
             <button class="mt-5 w-full h-[58px] text-slate-900 text-[15px] sm:text-[18px] tracking-wide" type="button" @click="triggerUpload">CARGAR UNA FOTOGRAFÍA</button>
-            <button class="mt-2 w-full h-[50px] text-slate-500 text-[14px] sm:text-[16px] tracking-wide underline underline-offset-4" type="button" @click="continueWithoutSelfie">CONTINUAR SIN SELFIE</button>
           </div>
         </div>
       </section>
@@ -93,7 +71,6 @@
             <div class="bg-white/80 backdrop-blur-md rounded-[26px] p-5">
               <button class="w-full h-[56px] bg-[#16A6E2] text-white text-[16px] tracking-wide disabled:opacity-50 disabled:cursor-not-allowed" type="button" :disabled="!cameraReady || detectorLoading" @click="captureWithValidation">{{ detectorLoading ? 'CARGANDO DETECTOR...' : 'TOMAR SELFIE' }}</button>
               <button class="mt-4 w-full h-[56px] border border-slate-400 text-slate-800 text-[16px]" type="button" @click="triggerUpload">CARGAR UNA FOTOGRAFÍA</button>
-              <button class="mt-3 w-full h-[48px] text-slate-600 text-[14px] sm:text-[16px] underline underline-offset-4" type="button" @click="continueWithoutSelfie">CONTINUAR SIN SELFIE</button>
             </div>
           </div>
 
@@ -117,7 +94,6 @@
               </div>
               <button class="mt-5 w-full h-[56px] bg-[#16A6E2] text-white text-[16px] tracking-wide" type="button" @click="retakeSelfie">RETOME EL SELFIE</button>
               <button class="mt-2 w-full h-[56px] border border-slate-400 text-slate-800 text-[16px]" type="button" @click="triggerUpload">CARGAR UNA FOTOGRAFÍA</button>
-              <button class="mt-3 w-full h-[48px] text-slate-600 text-[14px] sm:text-[16px] underline underline-offset-4" type="button" @click="continueWithoutSelfie">CONTINUAR SIN SELFIE</button>
             </div>
           </div>
         </div>
@@ -167,27 +143,23 @@
           <div class="chat-bubble">Puede confirmar o seleccionar otro tipo de piel.</div>
         </div>
 
-        <div class="mt-8 overflow-hidden">
-          <div class="flex gap-6 overflow-x-auto no-scrollbar px-1 pb-3 snap-x snap-mandatory">
+        <div class="mt-8">
+          <div class="grid grid-cols-2 gap-5">
             <button
               v-for="item in skinTypes"
               :key="item.key"
               type="button"
-              class="snap-center shrink-0 w-[310px] sm:w-[420px] rounded-[22px] overflow-hidden bg-white shadow-[0_2px_12px_rgba(0,0,0,.06)] border transition text-left"
+              class="rounded-[22px] overflow-hidden bg-white shadow-[0_2px_12px_rgba(0,0,0,.06)] border transition text-left"
               :class="answers.skinType === item.key ? 'border-[#16A6E2] ring-2 ring-[#16A6E2]/20' : 'border-slate-200'"
               @click="selectSkinType(item.key)"
             >
-              <img :src="item.image" :alt="item.title" class="w-full h-[170px] object-cover" @error="$event.target.src='https://placehold.co/600x400/e5e7eb/475569?text=TIPO+DE+PIEL'" />
-              <div class="px-6 py-5">
-                <p class="text-[#16A6E2] text-[22px] sm:text-[30px] font-light tracking-wide">{{ item.title }}</p>
-                <p class="mt-4 text-[#42BEEA] text-[16px] sm:text-[22px] leading-relaxed min-h-[160px]">{{ item.description }}</p>
-                <div class="mt-6 w-full h-[54px] rounded-[16px] text-[18px] sm:text-[24px] flex items-center justify-center" :class="answers.skinType === item.key ? 'bg-[#16A6E2] text-white' : 'border border-[#16A6E2] text-[#16A6E2]'">{{ item.actionLabel }}</div>
+              <img :src="item.image" :alt="item.title" class="w-full h-[150px] object-cover" @error="$event.target.src='https://placehold.co/600x400/e5e7eb/475569?text=TIPO+DE+PIEL'" />
+              <div class="px-5 py-4">
+                <p class="text-[#16A6E2] text-[20px] font-light tracking-wide">{{ item.title }}</p>
+                <p class="mt-3 text-[#42BEEA] text-[14px] leading-relaxed">{{ item.description }}</p>
+                <div class="mt-4 w-full h-[46px] rounded-[14px] text-[16px] flex items-center justify-center" :class="answers.skinType === item.key ? 'bg-[#16A6E2] text-white' : 'border border-[#16A6E2] text-[#16A6E2]'">{{ item.actionLabel }}</div>
               </div>
             </button>
-          </div>
-
-          <div class="mt-3 flex justify-center gap-2">
-            <span v-for="item in skinTypes" :key="item.key + '-dot'" class="carousel-dot" :class="{ active: answers.skinType === item.key }"></span>
           </div>
         </div>
 
@@ -422,6 +394,8 @@
           </div>
         </div>
       </section>
+      </div>
+      </Transition>
     </main>
 
     <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFilePicked" />
@@ -446,10 +420,20 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useCartStore } from '../stores/useCartStore';
+import { useHistoryStore } from '../stores/useHistoryStore';
+import { useAuthStore } from '../stores/useAuthStore';
+import { getProductsByQuizResult } from '../data/productCatalog';
+import { convertPrice } from '../utils/currency';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
+import { sendRoutineByEmail as emailRoutine, emailServiceConfigured } from '../services/emailService.js';
 
 const router = useRouter();
+const cart = useCartStore();
+const history = useHistoryStore();
+const auth = useAuthStore();
 
 const logoSrc = 'https://placehold.co/300x80/ffffff/111827?text=My+Routine+AI';
 const logoSrcWhite = 'https://placehold.co/300x80/0f172a/ffffff?text=My+Routine+AI';
@@ -516,22 +500,7 @@ const skinTypes = [
   { key: 'grasa', title: 'PIEL GRASA', description: 'Seleccione este tipo de piel si percibe brillo, poros notorios o tendencia a exceso de sebo con frecuencia.', image: 'https://placehold.co/600x400/d9eaf7/2563eb?text=PIEL+GRASA', actionLabel: 'Seleccionar' },
 ];
 
-const catalog = [
-  { slug: 'lrp-toleriane-purifying-foaming-cleanser', brand: 'La Roche-Posay', name: 'Limpiador facial Toleriane purificador en espuma', size: '400ML', category: 'LIMPIEZA', concernTags: ['grasa', 'mixta', 'sensibilidad', 'poros'], image: 'https://placehold.co/300x400/dbeafe/1d4ed8?text=LIMPIADOR', rating: 4.0, reviews: 3141, longDescription: 'Limpiador facial en espuma formulado para limpiar sin resecar excesivamente la piel.' },
-  { slug: 'lrp-toleriane-dermo-cleanser', brand: 'La Roche-Posay', name: 'Toleriane Dermo-Cleanser', size: '200ML', category: 'LIMPIEZA', concernTags: ['seca', 'sensibilidad', 'barrera'], image: 'https://placehold.co/300x400/f3f4f6/475569?text=DERMO+CLEANSER', rating: 4.4, reviews: 1854, longDescription: 'Limpiador de textura suave pensado para piel sensible o seca.' },
-  { slug: 'cerave-hydrating-cleanser', brand: 'CeraVe', name: 'Hydrating Facial Cleanser', size: '236ML', category: 'LIMPIEZA', concernTags: ['seca', 'normal', 'barrera', 'sensibilidad'], image: 'https://placehold.co/300x400/e0f2fe/0369a1?text=HYDRATING+CLEANSER', rating: 4.5, reviews: 4201, longDescription: 'Limpiador hidratante con ceramidas y ácido hialurónico.' },
-  { slug: 'cerave-foaming-facial-cleanser', brand: 'CeraVe', name: 'Foaming Facial Cleanser', size: '236ML', category: 'LIMPIEZA', concernTags: ['grasa', 'mixta', 'poros'], image: 'https://placehold.co/300x400/dbeafe/1e40af?text=FOAMING+CLEANSER', rating: 4.6, reviews: 5182, longDescription: 'Limpiador en espuma orientado a piel normal a grasa con exceso de brillo.' },
-  { slug: 'lrp-pure-vitamin-c10-serum', brand: 'La Roche-Posay', name: 'Pure Vitamin C10 Serum', size: '30ML', category: 'TRATAMIENTO', concernTags: ['luminosidad', 'manchas', 'tono'], image: 'https://placehold.co/300x400/fef3c7/92400e?text=VITAMIN+C10', rating: 4.0, reviews: 1872, longDescription: 'Suero enfocado en apoyar la luminosidad y apariencia del tono de la piel.' },
-  { slug: 'lrp-hyalu-b5-serum', brand: 'La Roche-Posay', name: 'Hyalu B5 Serum', size: '30ML', category: 'TRATAMIENTO', concernTags: ['deshidratacion', 'barrera', 'arrugas', 'seca'], image: 'https://placehold.co/300x400/e0f2fe/075985?text=HYALU+B5', rating: 4.4, reviews: 2211, longDescription: 'Suero conocido por enfocarse en hidratación y apoyo a la piel.' },
-  { slug: 'cerave-skin-renewing-retinol-serum', brand: 'CeraVe', name: 'Skin Renewing Retinol Serum', size: '30ML', category: 'TRATAMIENTO', concernTags: ['arrugas', 'textura', 'manchas'], image: 'https://placehold.co/300x400/fce7f3/9d174d?text=RETINOL+SERUM', rating: 4.3, reviews: 1980, longDescription: 'Tratamiento con retinol pensado para mejorar textura y líneas finas.' },
-  { slug: 'cerave-hydrating-hyaluronic-acid-serum', brand: 'CeraVe', name: 'Hydrating Hyaluronic Acid Serum', size: '30ML', category: 'TRATAMIENTO', concernTags: ['deshidratacion', 'barrera', 'seca', 'sensibilidad'], image: 'https://placehold.co/300x400/dbeafe/1e3a8a?text=HA+SERUM', rating: 4.5, reviews: 1740, longDescription: 'Suero orientado a la hidratación y apoyo de la barrera cutánea.' },
-  { slug: 'lrp-toleriane-double-repair-moisturizer', brand: 'La Roche-Posay', name: 'Hidratante facial Toleriane Double Repair', size: '100ML', category: 'HUMECTAR', concernTags: ['barrera', 'sensibilidad', 'mixta', 'normal'], image: 'https://placehold.co/300x400/e5e7eb/334155?text=DOUBLE+REPAIR', rating: 4.4, reviews: 2491, longDescription: 'Hidratante facial enfocada en ayudar a restaurar la barrera.' },
-  { slug: 'lrp-toleriane-sensitive-fluide', brand: 'La Roche-Posay', name: 'Toleriane Sensitive Fluide', size: '40ML', category: 'HUMECTAR', concernTags: ['sensibilidad', 'ligero', 'mixta'], image: 'https://placehold.co/300x400/f1f5f9/0f172a?text=SENSITIVE+FLUIDE', rating: 4.2, reviews: 991, longDescription: 'Hidratante ligera orientada a piel sensible.' },
-  { slug: 'cerave-moisturizing-cream', brand: 'CeraVe', name: 'Moisturizing Cream', size: '340G', category: 'HUMECTAR', concernTags: ['seca', 'barrera', 'deshidratacion'], image: 'https://placehold.co/300x400/e0f2fe/0f766e?text=MOISTURIZING+CREAM', rating: 4.8, reviews: 6321, longDescription: 'Crema hidratante clásica con ceramidas.' },
-  { slug: 'cerave-pm-facial-moisturizing-lotion', brand: 'CeraVe', name: 'PM Facial Moisturizing Lotion', size: '89ML', category: 'HUMECTAR', concernTags: ['night', 'mixta', 'normal', 'sensibilidad'], image: 'https://placehold.co/300x400/ede9fe/5b21b6?text=PM+LOTION', rating: 4.6, reviews: 4108, longDescription: 'Loción nocturna ligera con niacinamida, ceramidas y ácido hialurónico.' },
-  { slug: 'lrp-anthelios-uvmune-fluid-spf50', brand: 'La Roche-Posay', name: 'Anthelios UVMune 400 Invisible Fluid SPF 50+', size: '50ML', category: 'PROTEGER', concernTags: ['proteccion', 'sensibilidad', 'manchas', 'luminosidad'], image: 'https://placehold.co/300x400/fef9c3/a16207?text=SPF+50', rating: 4.5, reviews: 554, longDescription: 'Protector solar fluido de alta protección para uso diario.' },
-  { slug: 'cerave-hydrating-mineral-sunscreen-spf50', brand: 'CeraVe', name: 'Hydrating Mineral Sunscreen SPF 50', size: '75ML', category: 'PROTEGER', concernTags: ['proteccion', 'seca', 'sensibilidad'], image: 'https://placehold.co/300x400/fef3c7/b45309?text=MINERAL+SPF', rating: 4.1, reviews: 1304, longDescription: 'Protector solar mineral con enfoque hidratante.' },
-];
+// El catálogo ya no se define aquí — se usa getProductsByQuizResult del catálogo unificado
 
 const analysis = ref({
   primaryConcern: 'luminosidad',
@@ -782,53 +751,130 @@ function generateAnalysis() {
   };
 }
 
-function generateAnalysisAndGoResults() { analysis.value = generateAnalysis(); step.value = 'results_summary'; }
-
-function pickProduct(categories, tags) {
-  const candidates = catalog.filter(item => categories.includes(item.category));
-  let best = null, bestScore = -1;
-  for (const item of candidates) {
-    let score = 0;
-    for (const tag of tags) if (item.concernTags.includes(tag)) score += 2;
-    score += (item.rating || 0) / 2;
-    if (score > bestScore) { best = item; bestScore = score; }
+async function saveQuizToSupabase(quizData) {
+  // FASE 10 — save quiz session to Supabase (best-effort)
+  if (!isSupabaseConfigured) return
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('quiz_sessions').insert({
+      user_id: user.id,
+      skin_type: quizData.skinType || null,
+      sensitivity: quizData.sensitivity || null,
+      primary_concern: quizData.primaryConcern || null,
+      concerns: quizData.concerns || [],
+      profile_title: quizData.profileTitle || null,
+      routine_focus: quizData.routineFocus || null,
+      full_metrics: quizData.fullMetrics || [],
+      answers: quizData.answers || {},
+      completed_at: new Date().toISOString(),
+    })
+  } catch (e) {
+    console.warn('[Quiz] Supabase save failed (non-critical):', e?.message)
   }
-  return best || candidates[0] || null;
 }
-function withStep(product, step) { return product ? { ...product, step } : null; }
+
+async function generateAnalysisAndGoResults() {
+  if (!capturedDataUrl.value) {
+    showToast('Por favor toma o carga una foto antes de continuar.');
+    step.value = 'selfie_instructions';
+    return;
+  }
+  const result = generateAnalysis();
+  analysis.value = result;
+  const builtRoutine = buildRoutine();
+  const sensitivityMap = { resilient: 'Ninguna sensibilidad', mild: 'Baja sensibilidad', reactive: 'Sensibilidad media', very_reactive: 'Sensibilidad alta' }
+  const quizData = {
+    completed: true,
+    skinType: answers.skinType || suggestedSkinType.value,
+    sensitivity: sensitivityMap[answers.barrierReactivity] || 'Baja sensibilidad',
+    concerns: result.primaryConcern ? [result.primaryConcern] : [],
+    profileTitle: result.profileTitle,
+    profileSummary: result.profileSummary,
+    primaryConcern: result.primaryConcern,
+    routineFocus: result.routineFocus,
+    summaryMetrics: result.summaryMetrics,
+    fullMetrics: result.fullMetrics,
+    answers: { ...answers },
+    selfie: capturedDataUrl.value || '',
+    morningRoutine: builtRoutine.morning.map(p => p.name),
+    nightRoutine: builtRoutine.night.map(p => p.name),
+    morningSteps: builtRoutine.morning,
+    nightSteps: builtRoutine.night,
+    routineSteps: builtRoutine.morning,
+  }
+  history.saveQuizResult(quizData)
+  // FASE 10 — save to Supabase (non-blocking, best-effort)
+  saveQuizToSupabase(quizData)
+  step.value = 'results_summary';
+}
+
 function buildRoutine() {
-  const reactive = ['reactive', 'very_reactive'].includes(answers.barrierReactivity);
-  const dehydrated = ['slightly_tight', 'very_tight', 'tight_but_oily'].includes(answers.postCleanseFeel);
-  const oily = ['tzone', 'all_over', 'localized_with_pores'].includes(answers.shinePattern);
-  const skinType = answers.skinType || suggestedSkinType.value;
-  const concern = analysis.value.primaryConcern || 'luminosidad';
-  const morning = [], night = [];
-  const cleanser = reactive || skinType === 'seca' ? pickProduct(['LIMPIEZA'], ['seca', 'sensibilidad', 'barrera']) : oily || skinType === 'grasa' ? pickProduct(['LIMPIEZA'], ['grasa', 'poros']) : skinType === 'mixta' ? pickProduct(['LIMPIEZA'], ['mixta', 'poros']) : pickProduct(['LIMPIEZA'], ['normal', 'barrera']);
-  if (cleanser) { morning.push(withStep(cleanser, 1)); night.push(withStep(cleanser, 1)); }
-  let treatmentMorning = null, treatmentNight = null;
-  if (concern === 'luminosidad' || concern === 'manchas') treatmentMorning = pickProduct(['TRATAMIENTO'], ['luminosidad', 'manchas', 'tono']);
-  else if (concern === 'arrugas') treatmentNight = pickProduct(['TRATAMIENTO'], ['arrugas', 'textura']);
-  else if (['deshidratacion', 'sensibilidad', 'barrera'].includes(concern)) { treatmentMorning = pickProduct(['TRATAMIENTO'], ['deshidratacion', 'barrera']); treatmentNight = pickProduct(['TRATAMIENTO'], ['deshidratacion', 'barrera']); }
-  else if (concern === 'poros') treatmentNight = pickProduct(['TRATAMIENTO'], ['luminosidad', 'tono']) || pickProduct(['TRATAMIENTO'], ['deshidratacion']);
-  if (treatmentMorning) morning.push(withStep(treatmentMorning, 2));
-  if (treatmentNight) night.push(withStep(treatmentNight, 2));
-  const moisturizer = reactive || dehydrated || skinType === 'seca' ? pickProduct(['HUMECTAR'], ['seca', 'deshidratacion', 'barrera']) : oily || skinType === 'grasa' ? pickProduct(['HUMECTAR'], ['ligero', 'mixta', 'sensibilidad']) || pickProduct(['HUMECTAR'], ['mixta']) : skinType === 'mixta' ? pickProduct(['HUMECTAR'], ['mixta', 'normal']) : pickProduct(['HUMECTAR'], ['normal', 'barrera']);
-  if (moisturizer) { morning.push(withStep(moisturizer, 3)); night.push(withStep(pickProduct(['HUMECTAR'], ['night', 'mixta', 'normal']) || moisturizer, 3)); }
-  const sunscreen = reactive || skinType === 'seca' ? pickProduct(['PROTEGER'], ['seca', 'sensibilidad']) : pickProduct(['PROTEGER'], ['proteccion', 'manchas', 'luminosidad']);
-  if (sunscreen) morning.push(withStep(sunscreen, 4));
-  return { morning: morning.filter(Boolean), night: night.filter(Boolean) };
+  const quizResult = {
+    skinType: answers.skinType || suggestedSkinType.value,
+    concerns: analysis.value.primaryConcern ? [analysis.value.primaryConcern] : [],
+    sensitivity: answers.barrierReactivity || 'mild',
+  };
+  const toStep = (p, i) => ({
+    ...p,
+    step: i + 1,
+    longDescription: p.description || p.longDescription || '',
+    size: p.sizes?.[0]?.label || p.size || '',
+    category: p.category || p.type || 'Cuidado',
+  });
+  return {
+    morning: getProductsByQuizResult(quizResult, 'morning').map(toStep),
+    night:   getProductsByQuizResult(quizResult, 'night').map(toStep),
+  };
 }
 
 function addProductAndGo(product) {
   if (!product) return;
-  const cart = JSON.parse(localStorage.getItem('pharmaderm_cart') || '[]');
-  const existing = cart.find(item => item.slug === product.slug);
-  if (existing) existing.qty += 1;
-  else cart.push({ slug: product.slug, name: product.name, brand: product.brand, image: product.image, qty: 1, size: product.size });
-  localStorage.setItem('pharmaderm_cart', JSON.stringify(cart));
+  const usdPrice = product.sizes?.[0]?.priceUSD ?? product.priceFrom ?? product.priceUSD ?? 0;
+  const priceRD = Math.round(convertPrice(usdPrice, 'USD', 'DOP'));
+  const size = product.sizes?.[0]?.label || product.size || 'Default';
+  cart.addItem(product, { size, qty: 1, priceRD });
   router.push('/carrito');
 }
-function sendRoutineByEmail() { showToast('Conecta tu endpoint de correo para habilitar este envío.'); }
+async function sendRoutineByEmail() {
+  // FASE 10 — send routine via EmailJS (static import)
+  if (!emailServiceConfigured) {
+    showToast('El servicio de correo no está configurado aún.')
+    return
+  }
+  try {
+    let email = null
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      email = user?.email
+    } catch { /* ignore */ }
+    if (!email) email = auth.user?.value?.email || null
+    if (!email) { showToast('Inicia sesión para recibir tu rutina por correo.'); return }
+    const r = routine.value
+    const result = await emailRoutine({
+      skinType: answers.skinType || suggestedSkinType.value,
+      primaryConcern: analysis.value.primaryConcern,
+      morning: r.morning,
+      night: r.night,
+    }, email, 'es')
+    showToast(result.ok ? 'Rutina enviada a tu correo.' : (result.simulated ? 'Correo no configurado aún.' : 'No se pudo enviar el correo.'))
+  } catch {
+    showToast('No se pudo enviar el correo.')
+  }
+}
+
+onMounted(() => {
+  // FASE 10 — pre-populate age from user profile if available
+  const profileUser = auth.user?.value || auth.user
+  if (profileUser?.birth_date) {
+    const birthYear = new Date(profileUser.birth_date).getFullYear()
+    const age = new Date().getFullYear() - birthYear
+    if (age >= 10 && age <= 99) answers.age = age
+  } else if (profileUser?.age) {
+    const age = Number(profileUser.age)
+    if (age >= 10 && age <= 99) answers.age = age
+  }
+});
 
 onBeforeUnmount(() => { stopCamera(); clearInterval(countdownTimer); clearTimeout(toastTimer); });
 </script>

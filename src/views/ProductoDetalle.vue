@@ -1,17 +1,5 @@
 <template>
   <div v-if="product" class="pdp-page">
-    <header class="pdp-header container">
-      <div class="crumbs">
-        <span @click="$router.push('/inicio')">Home</span>
-        <span>›</span>
-        <span @click="$router.push('/tienda')">Our Products</span>
-        <span>›</span>
-        <span>{{ product.category }}</span>
-        <span>›</span>
-        <strong>{{ product.name }}</strong>
-      </div>
-    </header>
-
     <main class="container">
       <section class="pdp-main">
         <div class="gallery">
@@ -43,7 +31,7 @@
           <p class="subtitle">{{ product.subtitle }}</p>
 
           <div class="selected-price">
-            <strong>${{ money(selectedSizeObj.priceUSD || product.priceUSD) }}</strong>
+            <strong>{{ fmtPrice(selectedSizeObj.priceUSD || product.priceUSD) }}</strong>
             <span v-if="selectedSizeObj.pricePer">{{ selectedSizeObj.pricePer }}</span>
           </div>
 
@@ -59,7 +47,7 @@
                 @click="size = s.label"
               >
                 <div>{{ s.label }}</div>
-                <small>${{ money(s.priceUSD) }}</small>
+                <small>{{ fmtPrice(s.priceUSD) }}</small>
               </button>
             </div>
           </div>
@@ -84,7 +72,7 @@
             </div>
 
             <button class="add-bag" @click="addToCart(product)">
-              ${{ money(selectedSizeObj.priceUSD || product.priceUSD) }} — ADD TO BAG
+              {{ fmtPrice((selectedSizeObj.priceUSD || product.priceUSD) * qty) }} — ADD TO BAG
             </button>
           </div>
 
@@ -251,13 +239,21 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  getProductBySlug,
-  getProductById,
-  relatedProductsFor,
-  money,
-} from "../data/lrpCatalog";
-import { addItemToCart } from "../utils/cart";
+import { money } from "../data/lrpCatalog";
+import { getProductBySlug, getProductById, relatedProductsFor } from "../data/productCatalog";
+import { useCartStore } from "../stores/useCartStore";
+import { useSettingsStore } from "../stores/useSettingsStore";
+import { priceIn, convertPrice } from "../utils/currency";
+
+const cart = useCartStore();
+const settings = useSettingsStore();
+const userCurrency = settings.currency;
+
+// lrpCatalog prices are in USD; convert to user's currency for display
+function fmtPrice(usdAmount) {
+  const dop = convertPrice(Number(usdAmount) || 0, 'USD', 'DOP');
+  return priceIn(dop, 'DOP', userCurrency.value);
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -300,15 +296,15 @@ const addToCart = (item) => {
       ? size.value
       : item.defaultSize || item.sizes?.[0]?.label || "Default";
 
-  const activePrice =
+  const usd =
     item.id === product.value?.id
       ? selectedSizeObj.value.priceUSD || item.priceUSD
       : item.priceFrom || item.priceUSD;
 
-  addItemToCart(item, {
+  cart.addItem(item, {
     size: activeSize,
     qty: item.id === product.value?.id ? qty.value : 1,
-    priceUSD: activePrice,
+    priceRD: Math.round(convertPrice(usd, 'USD', 'DOP')),
     mode: item.id === product.value?.id ? purchaseMode.value : "one-time",
   });
 
@@ -316,7 +312,15 @@ const addToCart = (item) => {
 };
 
 const buyNow = (item) => {
-  addToCart(item);
+  const activeSize = size.value || item.defaultSize || item.sizes?.[0]?.label || "Default";
+  const usd = selectedSizeObj.value.priceUSD || item.priceUSD;
+  cart.addItem(item, {
+    size: activeSize,
+    qty: qty.value,
+    priceRD: Math.round(convertPrice(usd, 'USD', 'DOP')),
+    mode: purchaseMode.value,
+  });
+  router.push("/checkout");
 };
 
 const goTo = (slug) => {
@@ -336,22 +340,6 @@ const goTo = (slug) => {
   max-width: 1440px;
   margin: 0 auto;
   padding: 0 24px;
-}
-
-.pdp-header {
-  padding: 20px 24px 8px;
-}
-
-.crumbs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.crumbs span {
-  cursor: pointer;
 }
 
 .pdp-main {

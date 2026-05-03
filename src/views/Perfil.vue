@@ -1,66 +1,8 @@
 <template>
   <div
-    class="min-h-screen pb-[120px]"
+    class="min-h-screen"
     :class="[{ 'pd-dark': isDark }, 'pd-root']"
   >
-    <!-- HEADER -->
-    <header class="sticky top-0 z-50 pd-surface pd-border-b">
-      <div class="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="p-2 rounded-full pd-hover"
-            aria-label="Volver"
-            @click="goBack"
-          >
-            <span class="material-symbols-outlined pd-icon">arrow_back</span>
-          </button>
-
-          <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwGk1ZsXrDiVM1y4eYkFkLAVJyj3SEQtwpa9gS41xgybM4JsMSUQU1bAYKb4aviIWmG2GtMVM1nQrg4rTEm3bi80sHtcf-M6xSUCR2ua9YOhGfPNVmoJhBG1zcuzQq8mODOnwTQihKFT5tQ_dy8FM8IC-Z12rIEybnyvjZd3JctWEFO86kmHZonJMxnQG6HrfgLFeTwIK6wsY-4PKy7LSaqAD3iJEqDxf2JVzH6t5Aj5cneE7Af9KkyxdLRTwpToy3oqVFRaMPLFs"
-            class="h-9 w-9 rounded-lg shadow-sm object-cover"
-            alt="PharmaDerm Logo"
-          />
-
-          <div>
-            <h1 class="text-lg font-bold tracking-tight pd-brand">
-              PharmaDerm<span class="pd-accent">RD</span>
-            </h1>
-            <p class="text-xs pd-muted -mt-0.5">Mi perfil</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="p-2 rounded-full pd-hover"
-            aria-label="Modo nocturno"
-            @click="toggleDark"
-          >
-            <span class="material-symbols-outlined pd-icon">
-              {{ isDark ? "light_mode" : "dark_mode" }}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            class="p-2 rounded-full pd-hover relative"
-            aria-label="Carrito"
-            @click="router.push('/carrito')"
-          >
-            <span class="material-symbols-outlined pd-icon">shopping_bag</span>
-            <span v-if="cartCount > 0" class="pd-badge">{{ cartCount }}</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="pd-banner">
-        <p class="text-center text-white text-[11px] font-semibold uppercase tracking-widest py-2">
-          Account Center • PharmaDerm RD
-        </p>
-      </div>
-    </header>
-
     <!-- MAIN -->
     <main class="max-w-[1200px] mx-auto px-6 py-8">
       <!-- HERO PERFIL -->
@@ -72,7 +14,7 @@
             </span>
 
             <h2 class="text-3xl sm:text-4xl font-extrabold mt-3 leading-tight">
-              Hola, {{ displayName }}
+              Hola, {{ auth.displayName.value }}
             </h2>
 
             <p class="mt-4 text-white/90 text-sm sm:text-base max-w-2xl">
@@ -103,7 +45,7 @@
             <div class="flex items-start gap-4">
               <div class="pd-profile-avatar-wrap">
                 <img
-                  v-if="currentUser.avatar"
+                  v-if="currentUser?.avatar"
                   :src="currentUser.avatar"
                   alt="Avatar"
                   class="pd-profile-avatar"
@@ -118,10 +60,10 @@
                   Cuenta principal
                 </p>
                 <h3 class="text-xl font-extrabold mt-1 text-slate-900">
-                  {{ displayName }}
+                  {{ auth.displayName.value }}
                 </h3>
                 <p class="text-sm text-slate-500 break-all mt-1">
-                  {{ currentUser.email || "Sin correo registrado" }}
+                  {{ currentUser?.email || "Sin correo registrado" }}
                 </p>
 
                 <div class="mt-4 flex flex-wrap gap-2">
@@ -163,7 +105,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Pedidos</p>
-                <h3 class="text-2xl font-extrabold mt-2">{{ summary.orders }}</h3>
+                <h3 class="text-2xl font-extrabold mt-2">{{ history.orders.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
                 <span class="material-symbols-outlined">package_2</span>
@@ -175,7 +117,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Citas</p>
-                <h3 class="text-2xl font-extrabold mt-2">{{ summary.appointments }}</h3>
+                <h3 class="text-2xl font-extrabold mt-2">{{ history.appointments.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
                 <span class="material-symbols-outlined">calendar_month</span>
@@ -186,11 +128,11 @@
           <article class="pd-card pd-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Favoritos</p>
-                <h3 class="text-2xl font-extrabold mt-2">{{ summary.favorites }}</h3>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Rutinas</p>
+                <h3 class="text-2xl font-extrabold mt-2">{{ history.quizHistory.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
-                <span class="material-symbols-outlined">favorite</span>
+                <span class="material-symbols-outlined">spa</span>
               </div>
             </div>
           </article>
@@ -198,19 +140,31 @@
           <article class="pd-card pd-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Rutina</p>
-                <h3 class="text-2xl font-extrabold mt-2">{{ summary.routines }}</h3>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Diagnósticos</p>
+                <h3 class="text-2xl font-extrabold mt-2">{{ history.diagnostics.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
-                <span class="material-symbols-outlined">spa</span>
+                <span class="material-symbols-outlined">clinical_notes</span>
               </div>
             </div>
           </article>
         </div>
       </section>
 
-      <!-- CONTENIDO -->
-      <section class="mt-10 grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
+      <!-- TABS -->
+      <div class="mt-8 flex gap-2 flex-wrap">
+        <button
+          v-for="tab in [{key:'cuenta', label:'Mi cuenta'}, {key:'historial', label:'Historial'}, {key:'settings', label:'Configuración'}]"
+          :key="tab.key"
+          type="button"
+          class="pd-tab-btn"
+          :class="{ 'pd-tab-btn--active': activeTab === tab.key }"
+          @click="goTab(tab.key)"
+        >{{ tab.label }}</button>
+      </div>
+
+      <!-- CONTENIDO: Mi cuenta -->
+      <section v-if="activeTab === 'cuenta'" class="mt-6 grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
         <!-- COLUMNA IZQUIERDA -->
         <div class="space-y-6">
           <!-- DATOS PERSONALES -->
@@ -262,12 +216,12 @@
               </label>
 
               <label class="pd-field">
-                <span>Edad</span>
+                <span>Fecha de nacimiento</span>
                 <input
-                  v-model="editableUser.age"
-                  type="text"
+                  v-model="editableUser.birth_date"
+                  type="date"
                   :disabled="!editMode"
-                  placeholder="18"
+                  :max="maxBirthDate"
                 />
               </label>
             </div>
@@ -315,23 +269,23 @@
 
             <div class="space-y-3">
               <div
-                v-for="order in recentOrders"
+                v-for="order in history.orders.value.slice(0, 5)"
                 :key="order.id"
                 class="pd-list-row"
               >
                 <div>
-                  <h4 class="font-semibold">{{ order.title }}</h4>
-                  <p class="text-sm pd-muted">{{ order.date }}</p>
+                  <h4 class="font-semibold">Pedido {{ order.code || `#${order.id}` }}</h4>
+                  <p class="text-sm pd-muted">{{ fmtDate(order.date) }}</p>
                 </div>
 
                 <div class="text-right">
-                  <p class="font-bold pd-price">RD${{ formatPrice(order.total) }}</p>
-                  <p class="text-sm" :class="order.statusClass">{{ order.status }}</p>
+                  <p class="font-bold pd-price">{{ formatPrice(order.total) }}</p>
+                  <p class="text-sm text-emerald-600 font-semibold">Confirmado</p>
                 </div>
               </div>
 
-              <div v-if="recentOrders.length === 0" class="pd-empty-box">
-                Aún no tienes pedidos ni productos en el carrito.
+              <div v-if="history.orders.value.length === 0" class="pd-empty-box">
+                Aún no tienes pedidos. <button class="pd-link underline ml-1" @click="router.push('/tienda')">Ir a tienda</button>
               </div>
             </div>
           </article>
@@ -341,7 +295,7 @@
             <div class="flex items-center justify-between gap-4 mb-5">
               <div>
                 <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Dermatología</p>
-                <h3 class="font-bold text-xl mt-1">Próximas citas</h3>
+                <h3 class="font-bold text-xl mt-1">Mis citas</h3>
               </div>
 
               <button type="button" class="pd-outline-btn" @click="router.push('/diagnostics')">
@@ -351,22 +305,22 @@
 
             <div class="space-y-3">
               <div
-                v-for="appointment in appointments"
-                :key="appointment.id"
+                v-for="apt in history.appointments.value.slice(0, 5)"
+                :key="apt.id"
                 class="pd-list-row"
               >
                 <div>
-                  <h4 class="font-semibold">{{ appointment.title }}</h4>
-                  <p class="text-sm pd-muted">{{ appointment.date }}</p>
+                  <h4 class="font-semibold">{{ apt.service || "Consulta dermatológica" }}</h4>
+                  <p class="text-sm pd-muted">{{ apt.dateTime || fmtDate(apt.date) }}</p>
                 </div>
 
                 <div class="text-right">
-                  <p class="font-semibold">{{ appointment.mode }}</p>
-                  <p class="text-sm pd-link font-semibold">{{ appointment.doctor }}</p>
+                  <p class="font-semibold">{{ apt.mode || "Presencial" }}</p>
+                  <p class="text-sm pd-link font-semibold">{{ apt.doctor || "Especialista" }}</p>
                 </div>
               </div>
 
-              <div v-if="appointments.length === 0" class="pd-empty-box">
+              <div v-if="history.appointments.value.length === 0" class="pd-empty-box">
                 No hay citas programadas por ahora.
               </div>
             </div>
@@ -380,10 +334,10 @@
             <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Skin profile</p>
             <h3 class="font-bold text-xl mt-1">Mi rutina</h3>
 
-            <div v-if="quizResult && routineSteps.length" class="mt-5 space-y-3">
+            <div v-if="latestQuiz && latestRoutineSteps.length" class="mt-5 space-y-3">
               <div
-                v-for="step in routineSteps"
-                :key="step.id"
+                v-for="step in latestRoutineSteps"
+                :key="step.id || step.title"
                 class="pd-routine-item"
               >
                 <div class="pd-routine-icon">
@@ -406,7 +360,7 @@
               class="mt-5 w-full py-3 rounded-xl pd-primary text-white font-bold shadow-lg"
               @click="router.push('/quiz')"
             >
-              {{ quizResult ? "Ver o actualizar rutina" : "Hacer rutina" }}
+              {{ latestQuiz ? "Ver o actualizar rutina" : "Hacer rutina" }}
             </button>
           </article>
 
@@ -415,13 +369,13 @@
             <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Diagnostics</p>
             <h3 class="font-bold text-xl mt-1">Mi diagnóstico</h3>
 
-            <div v-if="diagnosticResult" class="mt-5 pd-list-row">
+            <div v-if="latestDiagnostic" class="mt-5 pd-list-row">
               <div>
                 <h4 class="font-semibold">
-                  {{ diagnosticResult.title || "Diagnóstico realizado" }}
+                  {{ latestDiagnostic.title || "Diagnóstico realizado" }}
                 </h4>
                 <p class="text-sm pd-muted">
-                  {{ diagnosticResult.summary || "Resultado disponible en tu perfil." }}
+                  {{ latestDiagnostic.summary || fmtDate(latestDiagnostic.date) }}
                 </p>
               </div>
             </div>
@@ -435,9 +389,11 @@
               class="mt-5 w-full py-3 rounded-xl pd-primary text-white font-bold shadow-lg"
               @click="router.push('/diagnostics')"
             >
-              {{ diagnosticResult ? "Ver o actualizar diagnóstico" : "Hacer diagnóstico" }}
+              {{ latestDiagnostic ? "Ver o actualizar diagnóstico" : "Hacer diagnóstico" }}
             </button>
           </article>
+
+          
 
           <!-- ATAJOS -->
           <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
@@ -445,11 +401,6 @@
             <h3 class="font-bold text-xl mt-1">Tu panel</h3>
 
             <div class="grid grid-cols-1 gap-3 mt-5">
-              <button type="button" class="pd-shortcut" @click="router.push('/tienda')">
-                <span class="material-symbols-outlined">favorite</span>
-                <span>Ver favoritos</span>
-              </button>
-
               <button type="button" class="pd-shortcut" @click="router.push('/carrito')">
                 <span class="material-symbols-outlined">shopping_cart</span>
                 <span>Ir al carrito</span>
@@ -460,7 +411,7 @@
                 <span>Consultar especialista</span>
               </button>
 
-              <button type="button" class="pd-shortcut" @click="logout">
+              <button type="button" class="pd-shortcut" @click="doLogout">
                 <span class="material-symbols-outlined">logout</span>
                 <span>Cerrar sesión</span>
               </button>
@@ -468,264 +419,254 @@
           </article>
         </div>
       </section>
+
+      <!-- CONTENIDO: Historial -->
+      <section v-if="activeTab === 'historial'" class="mt-6 space-y-6">
+        <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
+          <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Análisis de piel</p>
+          <h3 class="font-bold text-xl mt-1">Historial de quizzes</h3>
+          <div class="mt-4 space-y-3">
+            <div v-for="q in history.quizHistory.value" :key="q.id" class="pd-list-row">
+              <div>
+                <h4 class="font-semibold">Análisis de piel</h4>
+                <p class="text-sm pd-muted">{{ fmtDate(q.date) }} · {{ q.skinType || 'Tipo desconocido' }}</p>
+              </div>
+              <button class="pd-outline-btn text-sm" @click="router.push('/routine')">Ver rutina</button>
+            </div>
+            <div v-if="!history.quizHistory.value.length" class="pd-empty-box">
+              No has realizado ningún análisis aún. <button class="pd-link underline ml-1" @click="router.push('/quiz')">Empezar quiz</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
+          <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Diagnósticos</p>
+          <h3 class="font-bold text-xl mt-1">Historial de diagnósticos</h3>
+          <div class="mt-4 space-y-3">
+            <div v-for="d in history.diagnostics.value" :key="d.id" class="pd-list-row">
+              <div>
+                <h4 class="font-semibold">{{ d.title || 'Diagnóstico' }}</h4>
+                <p class="text-sm pd-muted">{{ fmtDate(d.date) }}</p>
+              </div>
+              <span class="text-sm pd-muted capitalize">{{ d.status || 'guardado' }}</span>
+            </div>
+            <div v-if="!history.diagnostics.value.length" class="pd-empty-box">
+              No hay diagnósticos guardados.
+            </div>
+          </div>
+        </article>
+
+        <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
+          <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Citas</p>
+          <h3 class="font-bold text-xl mt-1">Historial de citas</h3>
+          <div class="mt-4 space-y-3">
+            <div v-for="apt in history.appointments.value" :key="apt.id" class="pd-list-row">
+              <div>
+                <h4 class="font-semibold">{{ apt.service || 'Consulta dermatológica' }}</h4>
+                <p class="text-sm pd-muted">{{ apt.dateTime || fmtDate(apt.date) }}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-semibold">{{ apt.mode || 'Presencial' }}</p>
+                <p class="text-sm pd-link">{{ apt.doctor || 'Especialista' }}</p>
+              </div>
+            </div>
+            <div v-if="!history.appointments.value.length" class="pd-empty-box">
+              No hay citas en el historial.
+            </div>
+          </div>
+        </article>
+
+        <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
+          <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Compras</p>
+          <h3 class="font-bold text-xl mt-1">Historial de pedidos</h3>
+          <div class="mt-4 space-y-3">
+            <div v-for="order in history.orders.value" :key="order.id" class="pd-list-row">
+              <div>
+                <h4 class="font-semibold">Pedido {{ order.code || `#${order.id}` }}</h4>
+                <p class="text-sm pd-muted">{{ fmtDate(order.date) }}</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold pd-price">{{ formatPrice(order.total) }}</p>
+                <p class="text-sm text-emerald-600 font-semibold capitalize">{{ order.status || 'confirmado' }}</p>
+              </div>
+            </div>
+            <div v-if="!history.orders.value.length" class="pd-empty-box">
+              No hay pedidos aún. <button class="pd-link underline ml-1" @click="router.push('/tienda')">Ir a tienda</button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- CONTENIDO: Configuración -->
+      <section v-if="activeTab === 'settings'" class="mt-6 max-w-lg">
+        <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
+          <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Preferencias</p>
+          <h3 class="font-bold text-xl mt-1 mb-6">Configuración</h3>
+
+          <div class="space-y-5">
+            <!-- Dark mode -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined pd-icon">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
+                <div>
+                  <p class="font-semibold">Modo oscuro</p>
+                  <p class="text-sm pd-muted">Cambia la apariencia de la app</p>
+                </div>
+              </div>
+              <button type="button" class="pd-toggle" :class="{ 'pd-toggle--on': isDark }" @click="settings.toggleDark()">
+                <span class="pd-toggle-thumb"></span>
+              </button>
+            </div>
+
+            <hr class="border-[var(--border)]" />
+
+            <!-- Idioma -->
+            <div class="pd-field">
+              <span>Idioma de la aplicación</span>
+              <select :value="language" @change="settings.setLanguage($event.target.value)">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+
+            <!-- País -->
+            <div class="pd-field">
+              <span>País</span>
+              <select :value="country" @change="settings.setCountry($event.target.value)">
+                <option v-for="c in settings.countryList" :key="c.code" :value="c.code">{{ c.name }}</option>
+              </select>
+            </div>
+
+            <!-- Moneda -->
+            <div class="pd-field">
+              <span>Moneda preferida</span>
+              <select :value="currency" @change="settings.setCurrency($event.target.value)">
+                <option v-for="m in settings.currencyList" :key="m.code" :value="m.code">{{ m.symbol }} — {{ m.name }}</option>
+              </select>
+            </div>
+
+            <hr class="border-[var(--border)]" />
+
+            <!-- Cerrar sesión -->
+            <button type="button" class="w-full py-3 rounded-xl border border-red-200 text-red-600 font-bold hover:bg-red-50 transition" @click="doLogout">
+              Cerrar sesión
+            </button>
+          </div>
+        </article>
+      </section>
     </main>
-
-    <!-- BOTTOM NAV -->
-    <nav class="fixed bottom-0 left-0 right-0 pd-surface pd-border-t px-6 py-3 flex justify-between items-center z-50">
-      <RouterLink to="/inicio" class="pd-navitem" :class="{ active: isActive('/inicio') }" aria-label="Home">
-        <span class="material-symbols-outlined">home</span>
-        <p>Home</p>
-      </RouterLink>
-
-      <RouterLink to="/tienda" class="pd-navitem" :class="{ active: isActive('/tienda') }" aria-label="Shop">
-        <span class="material-symbols-outlined">grid_view</span>
-        <p>Shop</p>
-      </RouterLink>
-
-      <RouterLink to="/diagnostics" class="pd-navcenter" :class="{ active: isActive('/diagnostics') }" aria-label="Diagnostics">
-        <div class="pd-fab">
-          <span class="material-symbols-outlined">stethoscope</span>
-        </div>
-        <p>Diagnostics</p>
-      </RouterLink>
-
-      <button
-        type="button"
-        class="pd-navitem pd-nav-button"
-        :class="{ active: isActive('/quiz') || isActive('/diagnostics') }"
-        aria-label="Routine"
-        @click="router.push('/quiz')"
-      >
-        <span class="material-symbols-outlined">local_hospital</span>
-        <p>Routine</p>
-      </button>
-
-      <RouterLink to="/perfil" class="pd-navitem" :class="{ active: isActive('/perfil') }" aria-label="Profile">
-        <span class="material-symbols-outlined">person</span>
-        <p>Profile</p>
-      </RouterLink>
-    </nav>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { useRoute, useRouter, RouterLink } from "vue-router";
+import { ref, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useAuthStore } from "../stores/useAuthStore";
+import { useSettingsStore } from "../stores/useSettingsStore";
+import { useHistoryStore } from "../stores/useHistoryStore";
+import { priceIn } from "../utils/currency";
 
-const route = useRoute();
 const router = useRouter();
+const route  = useRoute();
+const auth = useAuthStore();
+const settings = useSettingsStore();
+const history = useHistoryStore();
 
-const isDark = ref(false);
+const { isDark, language, country, currency } = settings;
+
+// Tab activo: 'cuenta' | 'settings' | 'historial'
+const activeTab = computed(() => route.query.tab || 'cuenta');
+function goTab(tab) { router.replace({ query: { tab } }); }
+
+const currentUser = auth.user;
 const editMode = ref(false);
 
-const defaultUser = {
-  name: "",
-  email: "",
-  avatar: "",
-  phone: "",
-  age: "",
-  address: "",
-};
+const maxBirthDate = computed(() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 13)
+  return d.toISOString().split('T')[0]
+})
 
-const currentUser = ref({ ...defaultUser });
-const editableUser = ref({ ...defaultUser });
+function _buildEditable(u) {
+  const src = u || {}
+  return {
+    name: `${src.first_name || ''} ${src.last_name || ''}`.trim() || src.name || '',
+    email: src.email || '',
+    phone: src.phone || '',
+    birth_date: src.birth_date || '',
+    address: src.address || '',
+    avatar: src.avatar || '',
+  }
+}
 
-const recentOrders = ref([]);
-const appointments = ref([]);
-const routineSteps = ref([]);
-const quizResult = ref(null);
-const diagnosticResult = ref(null);
-
-const displayName = computed(() => {
-  return currentUser.value.name?.trim() || "Usuario";
-});
+const editableUser = ref(_buildEditable(currentUser.value));
 
 const currentInitial = computed(() => {
-  return (displayName.value || "U").charAt(0).toUpperCase();
+  return (auth.displayName.value || "U").charAt(0).toUpperCase();
 });
 
-const cartCount = computed(() => {
-  try {
-    const cart = JSON.parse(localStorage.getItem("pharmaderm_cart") || "[]");
-    return cart.reduce((acc, item) => acc + (item.quantity || 1), 0);
-  } catch {
-    return 0;
+const latestQuiz = computed(() => history.quizHistory.value[0] || null);
+const latestDiagnostic = computed(() => history.diagnostics.value[0] || null);
+const latestRoutineSteps = computed(() => {
+  const q = latestQuiz.value;
+  if (!q) return [];
+  const steps = q.morningSteps || q.routineSteps || [];
+  if (steps.length) {
+    return steps.slice(0, 4).map((p, i) => ({
+      id: i,
+      title: p.name || p.title || `Paso ${i + 1}`,
+      desc: p.category || p.type || p.desc || '',
+      icon: 'spa',
+    }));
   }
+  return (q.morningRoutine || []).map((s, i) => ({ id: i, title: s, icon: 'wb_sunny' }));
 });
 
-const summary = computed(() => ({
-  orders: recentOrders.value.length,
-  appointments: appointments.value.length,
-  favorites: getFavoritesCount(),
-  routines: quizResult.value ? 1 : 0,
-}));
-
-onMounted(() => {
-  const saved = localStorage.getItem("pharmaderm_dark");
-  isDark.value = saved === "1";
-
-  loadUserSession();
-  loadOrdersFromCart();
-  loadAppointments();
-  loadQuizResult();
-  loadDiagnosticResult();
-});
-
-const isActive = (path) => route.path === path;
-
-const toggleDark = () => {
-  isDark.value = !isDark.value;
-  localStorage.setItem("pharmaderm_dark", isDark.value ? "1" : "0");
-};
-
-const goBack = () => {
-  router.push("/inicio");
-};
-
-const formatPrice = (n) => {
-  return Number(n || 0).toLocaleString("en-US");
-};
-
-const loadUserSession = () => {
-  try {
-    const savedUser = JSON.parse(localStorage.getItem("pharmaderm_user") || "null");
-
-    if (savedUser) {
-      currentUser.value = {
-        name: savedUser.name || "",
-        email: savedUser.email || "",
-        avatar: savedUser.avatar || "",
-        phone: savedUser.phone || "",
-        age: savedUser.age || "",
-        address: savedUser.address || "",
-      };
-    } else {
-      currentUser.value = { ...defaultUser };
-    }
-
-    editableUser.value = { ...currentUser.value };
-  } catch {
-    currentUser.value = { ...defaultUser };
-    editableUser.value = { ...defaultUser };
-  }
-};
-
-const loadOrdersFromCart = () => {
-  try {
-    const cart = JSON.parse(localStorage.getItem("pharmaderm_cart") || "[]");
-
-    if (Array.isArray(cart) && cart.length > 0) {
-      recentOrders.value = cart.map((item, index) => ({
-        id: `cart-${index}`,
-        title: item.name || "Producto",
-        date: "En carrito",
-        total: (item.priceRD || 0) * (item.quantity || 1),
-        status: "Pendiente",
-        statusClass: "text-amber-600 font-semibold",
-      }));
-    } else {
-      recentOrders.value = [];
-    }
-  } catch {
-    recentOrders.value = [];
-  }
-};
-
-const loadAppointments = () => {
-  try {
-    const savedAppointment = JSON.parse(
-      localStorage.getItem("pharmaderm_appointment") || "null"
-    );
-
-    if (savedAppointment) {
-      appointments.value = [
-        {
-          id: "saved-appointment",
-          title: savedAppointment.service || "Consulta dermatológica",
-          date: savedAppointment.dateTime || "Fecha pendiente",
-          mode: savedAppointment.mode || "Presencial",
-          doctor: savedAppointment.doctor || "Especialista PharmaDerm",
-        },
-      ];
-    } else {
-      appointments.value = [];
-    }
-  } catch {
-    appointments.value = [];
-  }
-};
-
-const loadQuizResult = () => {
-  try {
-    const savedQuiz = JSON.parse(localStorage.getItem("pharmaderm_quiz_result") || "null");
-    quizResult.value = savedQuiz;
-
-    if (savedQuiz?.routineSteps && Array.isArray(savedQuiz.routineSteps)) {
-      routineSteps.value = savedQuiz.routineSteps;
-    } else {
-      routineSteps.value = [];
-    }
-  } catch {
-    quizResult.value = null;
-    routineSteps.value = [];
-  }
-};
-
-const loadDiagnosticResult = () => {
-  try {
-    diagnosticResult.value = JSON.parse(
-      localStorage.getItem("pharmaderm_diagnostic_result") || "null"
-    );
-  } catch {
-    diagnosticResult.value = null;
-  }
-};
-
-const getFavoritesCount = () => {
-  try {
-    const favs = JSON.parse(localStorage.getItem("pharmaderm_favorites") || "[]");
-    return Array.isArray(favs) ? favs.length : 0;
-  } catch {
-    return 0;
-  }
-};
-
-const toggleEditMode = () => {
-  if (editMode.value) {
-    editableUser.value = { ...currentUser.value };
-  }
+function toggleEditMode() {
+  editableUser.value = _buildEditable(currentUser.value)
   editMode.value = !editMode.value;
-};
+}
 
-const resetEditableUser = () => {
-  editableUser.value = { ...currentUser.value };
-};
+function resetEditableUser() {
+  editableUser.value = _buildEditable(currentUser.value)
+}
 
-const handleAvatarUpload = (event) => {
+function handleAvatarUpload(event) {
   const file = event.target.files?.[0];
   if (!file) return;
-
   const reader = new FileReader();
-  reader.onload = () => {
-    editableUser.value.avatar = reader.result;
-  };
+  reader.onload = () => { editableUser.value.avatar = reader.result; };
   reader.readAsDataURL(file);
-};
+}
 
-const saveProfile = () => {
-  currentUser.value = {
-    ...currentUser.value,
-    ...editableUser.value,
-  };
-
-  localStorage.setItem("pharmaderm_user", JSON.stringify(currentUser.value));
+async function saveProfile() {
+  const nameParts = (editableUser.value.name || '').trim().split(/\s+/)
+  const firstName = nameParts[0] || ''
+  const lastName  = nameParts.slice(1).join(' ') || ''
+  await auth.updateProfile({
+    firstName,
+    lastName,
+    phone: editableUser.value.phone || null,
+    birth_date: editableUser.value.birth_date || null,
+  })
   editMode.value = false;
-};
+}
 
-const logout = () => {
-  localStorage.removeItem("pharmaderm_session");
+function doLogout() {
+  auth.logout();
   router.push("/login");
-};
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString('es-DO', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch { return iso; }
+}
+
+function formatPrice(n) {
+  return priceIn(Number(n) || 0, 'DOP', currency.value);
+}
 </script>
 
 <style scoped>
@@ -740,15 +681,10 @@ const logout = () => {
   --brand: #004e92;
   --link: #5dbcd2;
   --accent: #76b82a;
-  --banner: #5dbcd2;
   --price: #004e92;
   --cta-bg: #ffffff;
   --cta-text: #004e92;
   --primary: #004e92;
-  --nav-inactive: #94a3b8;
-  --nav-active: #004e92;
-  --fab: #004e92;
-  --fab-ring: #f8fafc;
 }
 
 .pd-dark.pd-root {
@@ -762,15 +698,10 @@ const logout = () => {
   --brand: #8cc7ff;
   --link: #66d6ff;
   --accent: #9be15d;
-  --banner: #0f3a57;
   --price: #cfe9ff;
   --cta-bg: #0f1a2e;
   --cta-text: #cfe9ff;
   --primary: #183a6b;
-  --nav-inactive: #6f8099;
-  --nav-active: #66d6ff;
-  --fab: #1f4b86;
-  --fab-ring: #0b1220;
 }
 
 .pd-root {
@@ -779,39 +710,20 @@ const logout = () => {
 }
 
 .pd-muted { color: var(--muted); }
-
-.pd-surface {
-  background: var(--surface);
-  backdrop-filter: blur(10px);
-}
-
+.pd-surface { background: var(--surface); backdrop-filter: blur(10px); }
 .pd-card { background: var(--card); }
 .pd-border { border: 1px solid var(--border); }
-.pd-border-t { border-top: 1px solid var(--border); }
-.pd-border-b { border-bottom: 1px solid var(--border); }
-
-.pd-hover:hover { background: rgba(148, 163, 184, 0.18); }
-.pd-dark .pd-hover:hover { background: rgba(255, 255, 255, 0.06); }
-
 .pd-brand { color: var(--brand); }
 .pd-accent { color: var(--accent); }
 .pd-icon { color: var(--brand); }
-.pd-banner { background: var(--banner); }
 .pd-link { color: var(--link); }
 .pd-price { color: var(--price); }
 .pd-primary { background: var(--primary); }
 
-.pd-hero {
-  background: linear-gradient(135deg, var(--brand), var(--link));
-}
-.pd-dark .pd-hero {
-  background: linear-gradient(135deg, #102a4d, #0f3a57);
-}
+.pd-hero { background: linear-gradient(135deg, var(--brand), var(--link)); }
+.pd-dark .pd-hero { background: linear-gradient(135deg, #102a4d, #0f3a57); }
 
-.pd-cta {
-  background: var(--cta-bg);
-  color: var(--cta-text);
-}
+.pd-cta { background: var(--cta-bg); color: var(--cta-text); }
 .pd-cta:hover { filter: brightness(0.98); }
 
 .pd-ghost-white {
@@ -819,13 +731,9 @@ const logout = () => {
   color: #fff;
   background: rgba(255,255,255,0.08);
 }
-.pd-ghost-white:hover {
-  background: rgba(255,255,255,0.14);
-}
+.pd-ghost-white:hover { background: rgba(255,255,255,0.14); }
 
-.pd-profile-avatar-wrap {
-  flex-shrink: 0;
-}
+.pd-profile-avatar-wrap { flex-shrink: 0; }
 
 .pd-profile-avatar {
   width: 92px;
@@ -926,7 +834,8 @@ const logout = () => {
   color: var(--muted);
 }
 
-.pd-field input {
+.pd-field input,
+.pd-field select {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -934,12 +843,10 @@ const logout = () => {
   color: var(--text);
   padding: 14px 16px;
   outline: none;
+  font-size: 14px;
 }
 
-.pd-field input:disabled {
-  opacity: 0.9;
-  cursor: default;
-}
+.pd-field input:disabled { opacity: 0.9; cursor: default; }
 
 .pd-list-row {
   display: flex;
@@ -999,70 +906,54 @@ const logout = () => {
   font-weight: 700;
 }
 
-.pd-badge {
-  position: absolute;
-  top: 0;
-  right: -2px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
+/* Toggle switch */
+.pd-toggle {
+  width: 48px;
+  height: 26px;
   border-radius: 999px;
-  background: #ef4444;
-  color: white;
-  font-size: 11px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-}
-
-.pd-navitem,
-.pd-navcenter {
-  text-decoration: none;
-  color: var(--nav-inactive);
-  display: grid;
-  place-items: center;
-  gap: 4px;
-  min-width: 64px;
-  user-select: none;
-}
-
-.pd-nav-button {
-  background: transparent;
+  background: var(--border);
   border: none;
+  position: relative;
   cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
 }
 
-.pd-navitem span,
-.pd-navcenter span {
-  font-size: 26px;
-}
+.pd-toggle--on { background: var(--primary); }
 
-.pd-navitem p,
-.pd-navcenter p {
-  font-size: 12px;
-  margin: 0;
-}
-
-.pd-navitem.active,
-.pd-navcenter.active {
-  color: var(--nav-active);
-}
-
-.pd-navcenter {
-  margin-top: -18px;
-}
-
-.pd-fab {
-  width: 56px;
-  height: 56px;
+.pd-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
-  background: var(--fab);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
-  border: 4px solid var(--fab-ring);
+  background: white;
+  transition: transform 0.2s;
+  pointer-events: none;
 }
+
+.pd-toggle--on .pd-toggle-thumb { transform: translateX(22px); }
+
+/* Tabs */
+.pd-tab-btn {
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pd-tab-btn:hover { background: var(--soft); color: var(--text); }
+.pd-tab-btn--active {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+}
+.pd-dark .pd-tab-btn--active { background: #183a6b; border-color: var(--link); }
 
 @media (max-width: 900px) {
   .pd-list-row {

@@ -1,253 +1,5 @@
 <template>
-  <div class="shop-page" @click="closeOverlays">
-    <header class="shop-header">
-      <div class="top-promos">
-        <div>FREE SHIPPING ON ORDERS OVER RD$3,000 • SHOP NOW</div>
-      </div>
-
-      <div class="header-main container">
-        <div class="brand" @click.stop="$router.push('/inicio')">
-          <img :src="logoSrc" alt="PharmaDerm" class="logo" />
-          <span class="brand-text">
-            PharmaDerm<span class="brand-accent">RD</span>
-          </span>
-        </div>
-
-        <nav class="desktop-nav">
-          <div
-            class="nav-hover-wrap"
-            @mouseenter="productsMenuOpen = true"
-            @mouseleave="productsMenuOpen = false"
-          >
-            <button
-              class="nav-link active"
-              @click.stop="productsMenuOpen = !productsMenuOpen"
-            >
-              OUR PRODUCTS
-            </button>
-
-            <transition name="fade">
-              <div
-                v-if="productsMenuOpen"
-                class="products-hover-panel"
-                @click.stop
-              >
-                <div class="hover-grid">
-                  <div class="hover-col">
-                    <h4>FACE</h4>
-                    <button
-                      v-for="item in hoverFace"
-                      :key="item"
-                      @click="applySearch(item)"
-                    >
-                      {{ item }}
-                    </button>
-                  </div>
-
-                  <div class="hover-col">
-                    <h4>SUNSCREEN</h4>
-                    <button
-                      v-for="item in hoverSunscreen"
-                      :key="item"
-                      @click="applySearch(item)"
-                    >
-                      {{ item }}
-                    </button>
-                  </div>
-
-                  <div class="hover-col">
-                    <h4>BODY</h4>
-                    <button
-                      v-for="item in hoverBody"
-                      :key="item"
-                      @click="applySearch(item)"
-                    >
-                      {{ item }}
-                    </button>
-                  </div>
-
-                  <div class="hover-col">
-                    <h4>SKIN CONCERN</h4>
-                    <button
-                      v-for="item in hoverConcerns"
-                      :key="item"
-                      @click="setConcernFilter(item)"
-                    >
-                      {{ normalizeConcernLabel(item) }}
-                    </button>
-                  </div>
-
-                  <div class="hover-col">
-                    <h4>PRODUCT LINE</h4>
-                    <button
-                      v-for="item in hoverLines"
-                      :key="item"
-                      @click="setLineFilter(item)"
-                    >
-                      {{ item }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </transition>
-          </div>
-
-
-          <button class="nav-link" @click="$router.push('/quiz')">
-            ANALYZE YOUR SKIN
-          </button>
-
-          <button class="nav-link" @click="$router.push('/inicio')">
-            EXPERT ADVICE
-          </button>
-
-          <button class="nav-link" @click="$router.push('/inicio')">
-            OUR STORY
-          </button>
-        </nav>
-
-        <div class="header-actions">
-          <button
-            class="icon-btn"
-            aria-label="Search"
-            @click.stop="toggleSearchOverlay"
-          >
-            <span class="material-symbols-outlined">search</span>
-          </button>
-
-          <button
-            class="icon-btn cart-btn"
-            aria-label="Cart"
-            @click.stop="$router.push('/carrito')"
-          >
-            <span class="material-symbols-outlined">shopping_bag</span>
-            <span v-if="cartCount" class="cart-badge">{{ cartCount }}</span>
-          </button>
-
-          <div class="profile-wrap">
-            <button
-              class="icon-btn"
-              aria-label="Profile"
-              @click.stop="profilePanelOpen = !profilePanelOpen"
-            >
-              <span class="material-symbols-outlined">person</span>
-            </button>
-
-            <transition name="fade">
-              <div
-                v-if="profilePanelOpen"
-                class="profile-panel"
-                @click.stop
-              >
-                <button @click="$router.push('/login')">Log in</button>
-                <button @click="$router.push('/registro')">Create account</button>
-                <button @click="$router.push('/carrito')">My cart</button>
-              </div>
-            </transition>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <transition name="fade">
-      <div
-        v-if="searchOverlayOpen"
-        class="search-overlay"
-        @click.self="searchOverlayOpen = false"
-      >
-        <div class="search-overlay__box" @click.stop>
-          <div class="search-overlay__top">
-            <div class="search-tabs">
-              <button class="nav-link active" @click="$router.push('/tienda')">
-                OUR PRODUCTS
-              </button>
-              <button class="nav-link" @click="$router.push('/quiz')">
-                ANALYZE YOUR SKIN
-              </button>
-              <button class="nav-link" @click="$router.push('/inicio')">
-                EXPERT ADVICE
-              </button>
-              <button class="nav-link" @click="$router.push('/inicio')">
-                OUR STORY
-              </button>
-            </div>
-
-            <button class="close-search" @click="searchOverlayOpen = false">
-              <span class="material-symbols-outlined">close</span>
-              <span>CLOSE</span>
-            </button>
-          </div>
-
-          <div class="search-overlay__input-row">
-            <span class="search-title">I’m looking for...</span>
-            <input
-              ref="searchInputRef"
-              v-model.trim="search"
-              type="text"
-              class="search-overlay__input"
-              placeholder="toleriane"
-            />
-          </div>
-
-          <div class="search-overlay__content">
-            <div class="search-left">
-              <div class="search-left__header">
-                <h3>BEST MATCHES</h3>
-                <button class="view-all-btn" @click="searchOverlayOpen = false">
-                  View all
-                </button>
-              </div>
-
-              <div class="best-matches-grid">
-                <button
-                  v-for="item in quickResults"
-                  :key="item.id"
-                  class="best-match-card"
-                  @click="openProduct(item.slug)"
-                >
-                  <img :src="item.image" :alt="item.name" />
-                  <div class="best-match-card__info">
-                    <h4>{{ shortenName(item.name) }}</h4>
-                    <p>{{ item.subtitle }}</p>
-                    <div class="mini-stars">★★★★★</div>
-                    <strong>RD${{ formatRD(item.priceFrom) }}</strong>
-                  </div>
-                </button>
-
-                <div v-if="!quickResults.length" class="search-empty">
-                  No matches yet.
-                </div>
-              </div>
-            </div>
-
-            <aside class="search-right">
-              <div class="search-side-box">
-                <h4>POPULAR SEARCHES</h4>
-                <button
-                  v-for="term in popularSearches"
-                  :key="term"
-                  @click="applySearch(term)"
-                >
-                  {{ term }}
-                </button>
-              </div>
-
-              <div class="search-side-box">
-                <h4>CATEGORIES</h4>
-                <button
-                  v-for="term in searchCategories"
-                  :key="term"
-                  @click="applySearch(term)"
-                >
-                  {{ term }}
-                </button>
-              </div>
-            </aside>
-          </div>
-        </div>
-      </div>
-    </transition>
-
+  <div class="shop-page">
     <main class="container shop-layout">
       <section class="breadcrumb-row">
         <div class="crumbs">
@@ -346,11 +98,12 @@
           </div>
         </aside>
 
-        <section class="products-zone">
+        <section class="products-zone" v-reveal>
           <div class="products-grid">
             <article
-              v-for="product in sortedProducts"
+              v-for="(product, i) in sortedProducts"
               :key="product.id"
+              v-reveal="{ delay: (i % 3) * 0.08 }"
               class="product-card"
             >
               <div class="card-image-wrap" @click="openProduct(product.slug)">
@@ -388,7 +141,7 @@
                 </div>
 
                 <div class="card-bottom">
-                  <strong class="price">RD${{ formatRD(selectedPrice(product)) }}</strong>
+                  <strong class="price">{{ fmtPrice(selectedPrice(product)) }}</strong>
 
                   <div class="action-row">
                     <button class="outline-btn" @click="openProduct(product.slug)">
@@ -419,109 +172,36 @@ import {
   ref,
   onMounted,
   onBeforeUnmount,
-  nextTick,
+  watch,
 } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { lrpCatalog } from "../data/lrpCatalog";
-import { addItemToCart, getCartCount } from "../utils/cart";
+import { ceraveCatalog } from "../data/ceraveCatalog";
+import { useCartStore } from "../stores/useCartStore";
+import { useSettingsStore } from "../stores/useSettingsStore";
+import { priceIn, convertPrice } from "../utils/currency";
 
 const router = useRouter();
+const route = useRoute();
+const cart = useCartStore();
+const settings = useSettingsStore();
+const userCurrency = settings.currency;
 
-const logoSrc =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCwGk1ZsXrDiVM1y4eYkFkLAVJyj3SEQtwpa9gS41xgybM4JsMSUQU1bAYKb4aviIWmG2GtMVM1nQrg4rTEm3bi80sHtcf-M6xSUCR2ua9YOhGfPNVmoJhBG1zcuzQq8mODOnwTQihKFT5tQ_dy8FM8IC-Z12rIEybnyvjZd3JctWEFO86kmHZonJMxnQG6HrfgLFeTwIK6wsY-4PKy7LSaqAD3iJEqDxf2JVzH6t5Aj5cneE7Af9KkyxdLRTwpToy3oqVFRaMPLFs";
+// Todos los precios ahora están en USD (lrpCatalog y ceraveCatalog) → convertir a DOP
+function priceDOP(product, sizeLabel) {
+  const sizes = product.sizes || [];
+  const size = sizes.find(s => s.label === (sizeLabel || selectedSize[product.id]));
+  const usd = size?.priceUSD ?? product.priceUSD ?? product.priceFrom ?? 0;
+  return Math.round(convertPrice(Number(usd), 'USD', 'DOP'));
+}
 
-const ceraveCatalog = [
-  {
-    id: "cerave-moisturizing-cream",
-    slug: "cerave-moisturizing-cream",
-    brand: "cerave",
-    brandLabel: "CERAVE",
-    line: "Moisturizers",
-    category: "Face Moisturizer",
-    type: "Moisturizer",
-    concerns: ["Dry Skin", "Sensitive Skin"],
-    name: "Moisturizing Cream",
-    subtitle: "Barrier-repair moisturizer for dry to very dry skin.",
-    priceFrom: 1250,
-    priceRD: 1250,
-    rating: 4.8,
-    reviews: 4200,
-    image:
-      "https://placehold.co/600x700/f8fafc/111827?text=CeraVe+Moisturizing+Cream",
-    sizes: [
-      { label: "340G", priceUSD: 1250 },
-      { label: "454G", priceUSD: 1650 },
-    ],
-    defaultSize: "340G",
-  },
-  {
-    id: "cerave-hydrating-cleanser",
-    slug: "cerave-hydrating-facial-cleanser",
-    brand: "cerave",
-    brandLabel: "CERAVE",
-    line: "Cleansers",
-    category: "Face Wash",
-    type: "Cleanser",
-    concerns: ["Dry Skin", "Sensitive Skin"],
-    name: "Hydrating Facial Cleanser",
-    subtitle: "Cream cleanser for normal to dry skin.",
-    priceFrom: 950,
-    priceRD: 950,
-    rating: 4.7,
-    reviews: 3800,
-    image:
-      "https://placehold.co/600x700/f8fafc/111827?text=CeraVe+Hydrating+Cleanser",
-    sizes: [
-      { label: "236ML", priceUSD: 950 },
-      { label: "473ML", priceUSD: 1450 },
-    ],
-    defaultSize: "236ML",
-  },
-  {
-    id: "cerave-hyaluronic-serum",
-    slug: "cerave-hyaluronic-acid-serum",
-    brand: "cerave",
-    brandLabel: "CERAVE",
-    line: "Serums",
-    category: "Face Serum",
-    type: "Serum",
-    concerns: ["Dry Skin", "Dehydrated Skin"],
-    name: "Hyaluronic Acid Serum",
-    subtitle: "Hydrating anti-aging serum with hyaluronic acid and vitamin B5.",
-    priceFrom: 2400,
-    priceRD: 2400,
-    rating: 4.6,
-    reviews: 1500,
-    image:
-      "https://placehold.co/600x700/f8fafc/111827?text=CeraVe+HA+Serum",
-    sizes: [{ label: "30ML", priceUSD: 2400 }],
-    defaultSize: "30ML",
-  },
-  {
-    id: "cerave-mineral-sunscreen",
-    slug: "cerave-mineral-sunscreen-spf-50",
-    brand: "cerave",
-    brandLabel: "CERAVE",
-    line: "Sunscreens",
-    category: "Face Sunscreen",
-    type: "Sunscreen",
-    concerns: ["UV Protection", "Sensitive Skin"],
-    name: "Mineral Sunscreen SPF 50",
-    subtitle: "Lightweight mineral sunscreen for daily UV protection.",
-    priceFrom: 950,
-    priceRD: 950,
-    rating: 4.5,
-    reviews: 900,
-    image:
-      "https://placehold.co/600x700/f8fafc/111827?text=CeraVe+Mineral+Sunscreen",
-    sizes: [{ label: "75ML", priceUSD: 950 }],
-    defaultSize: "75ML",
-  },
-];
+function fmtPrice(dopAmount) {
+  return priceIn(dopAmount, 'DOP', userCurrency.value);
+}
 
 const allProducts = computed(() => [
   ...lrpCatalog.map((p) => ({ ...p, brand: p.brand || "larocheposay" })),
-  ...ceraveCatalog,
+  ...ceraveCatalog.map((p) => ({ ...p, brand: p.brand || "cerave" })),
 ]);
 
 const activeBrand = ref("larocheposay");
@@ -535,12 +215,6 @@ const selectedLines = ref([]);
 const selectedConcerns = ref([]);
 const selectedTypes = ref([]);
 const selectedSize = reactive({});
-const cartCount = ref(0);
-
-const productsMenuOpen = ref(false);
-const profilePanelOpen = ref(false);
-const searchOverlayOpen = ref(false);
-const searchInputRef = ref(null);
 
 const brandProducts = computed(() =>
   allProducts.value.filter((p) => p.brand === activeBrand.value)
@@ -562,11 +236,25 @@ const filteredProducts = computed(() => {
   const q = search.value.toLowerCase();
 
   return brandProducts.value.filter((p) => {
-    const haystack =
-      `${p.name} ${p.subtitle || ""} ${p.line || ""} ${p.type || ""} ${p.category || ""} ${(p.concerns || []).join(" ")}`
-        .toLowerCase();
+    if (q) {
+      // FASE 8 — smart search: brand, line, concern, ingredient, description
+      const haystack = [
+        p.name,
+        p.subtitle,
+        p.brandLabel,
+        p.brand,
+        p.line,
+        p.type,
+        p.category,
+        p.description,
+        ...(p.concerns || []),
+        ...(p.ingredientsTags || []),
+        ...(p.keyIngredients || []).map(k => k.name),
+        ...(p.safety || p.productSafety || []),
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
 
-    if (q && !haystack.includes(q)) return false;
     if (selectedLines.value.length && !selectedLines.value.includes(p.line)) return false;
 
     if (
@@ -601,127 +289,21 @@ const sortedProducts = computed(() => {
   }
 });
 
-const quickResults = computed(() => {
-  const q = search.value.trim().toLowerCase();
-  const pool = brandProducts.value;
-
-  if (!q) return pool.slice(0, 4);
-
-  return pool
-    .filter((p) => {
-      const hay = `${p.name} ${p.subtitle || ""} ${p.line || ""} ${p.type || ""} ${p.category || ""}`.toLowerCase();
-      return hay.includes(q);
-    })
-    .slice(0, 4);
-});
-
-const hoverFace = computed(() =>
-  uniqueExisting([
-    "Face Wash",
-    "Face Moisturizer",
-    "Face Serum",
-    "Face Toner",
-    "Eye Care",
-    "Lip Balms",
-  ])
-);
-
-const hoverSunscreen = computed(() =>
-  uniqueExisting([
-    "Face Sunscreen",
-    "Mineral Sunscreen",
-    "Body Sunscreen",
-    "Tinted Sunscreen",
-  ])
-);
-
-const hoverBody = computed(() =>
-  uniqueExisting([
-    "Body Lotion",
-    "Body Wash",
-    "Cleansing Oil",
-    "Hand Cream",
-    "Healing Body Spray",
-  ])
-);
-
-const hoverConcerns = computed(() =>
-  availableConcerns.value.filter((c) =>
-    [
-      "Acne Prone Skin",
-      "Fine Lines & Wrinkles",
-      "Eczema",
-      "Dry Skin",
-      "Dark Spots",
-      "Oiliness",
-      "Sensitive Skin",
-      "Dehydrated Skin",
-    ].includes(c)
-  )
-);
-
-const hoverLines = computed(() => availableLines.value);
-
-const popularSearches = computed(() => {
-  return activeBrand.value === "larocheposay"
-    ? ["sunscreen", "cicaplast", "moisturizer", "b5", "effaclar"]
-    : ["moisturizer", "cleanser", "serum", "sunscreen", "cream"];
-});
-
-const searchCategories = computed(() => {
-  return activeBrand.value === "larocheposay"
-    ? ["Toleriane", "Serums", "Moisturizers", "Sunscreens"]
-    : ["Cleansers", "Serums", "Moisturizers", "Sunscreens"];
-});
-
-function uniqueExisting(items) {
-  const existing = items.filter((label) => {
-    const low = label.toLowerCase();
-    return brandProducts.value.some((p) => {
-      const cat = (p.category || "").toLowerCase();
-      const type = (p.type || "").toLowerCase();
-      const line = (p.line || "").toLowerCase();
-      const name = (p.name || "").toLowerCase();
-      return (
-        cat.includes(low) ||
-        type.includes(low) ||
-        line.includes(low) ||
-        name.includes(low)
-      );
-    });
-  });
-
-  return [...new Set(existing)];
-}
-
 function selectedPrice(product) {
-  const size = product.sizes?.find((s) => s.label === selectedSize[product.id]);
-  return size?.priceUSD ?? product.priceUSD ?? product.priceFrom ?? 0;
-}
-
-function formatRD(value) {
-  return new Intl.NumberFormat("es-DO", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Number(value || 0));
-}
-
-function updateCartCount() {
-  cartCount.value = getCartCount();
+  return priceDOP(product, selectedSize[product.id]);
 }
 
 function addToCart(product) {
-  addItemToCart(product, {
-    size: selectedSize[product.id] || product.defaultSize || product.sizes?.[0]?.label,
+  const size = selectedSize[product.id] || product.defaultSize || product.sizes?.[0]?.label;
+  cart.addItem(product, {
+    size,
     qty: 1,
-    priceUSD: selectedPrice(product),
+    priceRD: priceDOP(product, size),
     mode: "one-time",
   });
-  updateCartCount();
 }
 
 function openProduct(slug) {
-  searchOverlayOpen.value = false;
   router.push(`/producto/${slug}`);
 }
 
@@ -741,50 +323,32 @@ function setBrand(brand) {
       selectedSize[p.id] = p.defaultSize || p.sizes[0].label;
     }
   });
-  productsMenuOpen.value = false;
 }
 
 function setLineFilter(line) {
   resetFilters();
   selectedLines.value = [line];
-  productsMenuOpen.value = false;
 }
 
 function setConcernFilter(concern) {
   resetFilters();
   selectedConcerns.value = [concern];
-  productsMenuOpen.value = false;
 }
 
 function applySearch(term) {
   resetFilters();
   search.value = term;
-  productsMenuOpen.value = false;
-  searchOverlayOpen.value = false;
 }
 
-function showBestSellers() {
-  sortBy.value = "best";
-  searchOverlayOpen.value = false;
-  productsMenuOpen.value = false;
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function toggleSearchOverlay() {
-  searchOverlayOpen.value = !searchOverlayOpen.value;
-  profilePanelOpen.value = false;
-  productsMenuOpen.value = false;
-
-  if (searchOverlayOpen.value) {
-    nextTick(() => {
-      searchInputRef.value?.focus();
-    });
+function applyQueryParams() {
+  const q = route.query;
+  if (q.search) { resetFilters(); search.value = String(q.search); }
+  if (q.line) { resetFilters(); selectedLines.value = [String(q.line)]; }
+  if (q.concern) { resetFilters(); selectedConcerns.value = [String(q.concern)]; }
+  if (q.brand) {
+    const b = String(q.brand);
+    if (b === 'cerave' || b === 'larocheposay') activeBrand.value = b;
   }
-}
-
-function closeOverlays() {
-  productsMenuOpen.value = false;
-  profilePanelOpen.value = false;
 }
 
 function normalizeConcernLabel(value) {
@@ -807,14 +371,10 @@ onMounted(() => {
       selectedSize[p.id] = p.defaultSize || p.sizes[0].label;
     }
   });
-
-  updateCartCount();
-  window.addEventListener("storage", updateCartCount);
+  applyQueryParams();
 });
 
-onBeforeUnmount(() => {
-  window.removeEventListener("storage", updateCartCount);
-});
+watch(() => route.query, applyQueryParams);
 </script>
 
 <style scoped>
@@ -1393,6 +953,11 @@ onBeforeUnmount(() => {
 .product-card {
   border: 1px solid #e5e7eb;
   background: white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.10);
 }
 
 .card-image-wrap {

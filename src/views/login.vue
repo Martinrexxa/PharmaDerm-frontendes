@@ -15,27 +15,17 @@
 
         <!-- Logo -->
         <div class="mb-4 flex justify-center">
-          <svg
-            class="h-12 text-brand-dark-blue dark:text-brand-light-blue"
-            fill="currentColor"
-            viewBox="0 0 200 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <g transform="translate(40, 0)">
-              <path
-                d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm0 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"
-              />
-              <path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7z" />
-              <text x="30" y="18" font-family="Manrope, sans-serif" font-size="14" font-weight="800">
-                PharmaDerm
-              </text>
-            </g>
-          </svg>
+          <img :src="logofullSrc" alt="PharmaDerm" class="h-14 object-contain" />
         </div>
 
         <h1 class="text-brand-dark-blue dark:text-white tracking-tight text-3xl font-bold text-center pb-6 pt-2">
           Bienvenido de nuevo
         </h1>
+
+        <!-- Error -->
+        <div v-if="errorMsg" class="w-full mb-4 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
+          {{ errorMsg }}
+        </div>
 
         <!-- Formulario -->
         <div class="w-full flex flex-col gap-4">
@@ -48,6 +38,8 @@
               v-model="email"
               type="email"
               placeholder="tucorreo@ejemplo.com"
+              autocomplete="email"
+              @keyup.enter="handleLogin"
               class="form-input flex w-full rounded-lg text-brand-dark-blue dark:text-white
                      dark:bg-background-dark/50 focus:ring-2 focus:ring-brand-light-blue/50
                      border border-gray-300 dark:border-gray-600 bg-brand-soft-grey/50
@@ -60,18 +52,18 @@
             <p class="text-brand-dark-blue dark:text-gray-300 text-sm font-medium pb-2">
               Contraseña
             </p>
-
             <div class="flex w-full items-stretch">
               <input
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="Introduce tu contraseña"
+                autocomplete="current-password"
+                @keyup.enter="handleLogin"
                 class="form-input flex w-full rounded-l-lg text-brand-dark-blue dark:text-white
                        dark:bg-background-dark/50 focus:ring-2 focus:ring-brand-light-blue/50
                        border border-gray-300 dark:border-gray-600 bg-brand-soft-grey/50
                        h-14 p-4 text-base border-r-0"
               />
-
               <button
                 type="button"
                 @click="showPassword = !showPassword"
@@ -104,15 +96,20 @@
         <!-- Botones -->
         <div class="w-full flex flex-col gap-4 mt-8">
           <button
-            @click="go('/login')"
-            class="w-full h-14 rounded-lg bg-brand-light-blue text-white font-bold"
+            @click="handleLogin"
+            :disabled="loading"
+            class="w-full h-14 rounded-lg bg-brand-light-blue text-white font-bold disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Iniciar sesión
+            <svg v-if="loading" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            {{ loading ? 'Iniciando sesión…' : 'Iniciar sesión' }}
           </button>
 
           <button
             @click="go('/registro')"
-            class="w-full h-14 rounded-lg border border-brand-dark-blue text-brand-dark-blue font-bold"
+            class="w-full h-14 rounded-lg border border-brand-dark-blue text-brand-dark-blue dark:text-white dark:border-white font-bold"
           >
             Registrarse
           </button>
@@ -123,42 +120,52 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/useAuthStore.js'
+import logofullSrc from '../assets/img/logofull.jpeg'
 
-const router = useRouter();
+const router   = useRouter()
+const auth     = useAuthStore()
+const email    = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const errorMsg = ref('')
+const loading  = ref(false)
 
-const email = ref("");
-const password = ref("");
-const showPassword = ref(false);
+const go = (path) => router.push(path)
 
-const go = (path) => router.push(path);
+async function handleLogin() {
+  errorMsg.value = ''
 
-const login = () => {
-  const savedUser = JSON.parse(localStorage.getItem("pharmaderm_user") || "null");
-
-  if (!savedUser) {
-    alert("No hay una cuenta registrada todavía.");
-    return;
+  if (!email.value.trim()) {
+    errorMsg.value = 'Por favor ingresa tu correo electrónico.'
+    return
+  }
+  if (!password.value) {
+    errorMsg.value = 'Por favor ingresa tu contraseña.'
+    return
   }
 
-  if (
-    email.value.trim().toLowerCase() !== String(savedUser.email || "").trim().toLowerCase() ||
-    password.value !== savedUser.password
-  ) {
-    alert("Correo o contraseña incorrectos.");
-    return;
+  loading.value = true
+  try {
+    await auth.login(email.value.trim(), password.value)
+    router.push('/inicio')
+  } catch (err) {
+    const msg = err?.message || ''
+    if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+      errorMsg.value = 'Correo o contraseña incorrectos.'
+    } else if (msg.includes('Email not confirmed')) {
+      errorMsg.value = 'Debes confirmar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.'
+    } else if (msg.includes('Too many requests')) {
+      errorMsg.value = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.'
+    } else if (msg.includes('network') || msg.includes('fetch')) {
+      errorMsg.value = 'Error de conexión. Verifica tu internet e intenta de nuevo.'
+    } else {
+      errorMsg.value = msg || 'Error al iniciar sesión. Intenta de nuevo.'
+    }
+  } finally {
+    loading.value = false
   }
-
-  localStorage.setItem(
-    "pharmaderm_session",
-    JSON.stringify({
-      isLoggedIn: true,
-      email: savedUser.email,
-      loginAt: new Date().toISOString(),
-    })
-  );
-
-  router.push("/inicio");
-};
+}
 </script>

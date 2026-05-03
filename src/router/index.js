@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { supabase, isSupabaseConfigured } from "../lib/supabaseClient.js";
 
 // Auth
 import Login from "../views/login.vue";
@@ -17,6 +18,10 @@ import Perfil from "../views/Perfil.vue";
 import Carrito from "../views/Carrito.vue";
 import Diagnostics from "../views/Diagnostics.vue";
 import AppointmentConfirmation from "../views/AppointmentConfirmation.vue";
+import Checkout from "../views/Checkout.vue";
+import ExpertAdvice from "../views/ExpertAdvice.vue";
+import OurStory from "../views/OurStory.vue";
+import Routine from "../views/Routine.vue";
 
 const routes = [
   { path: "/", redirect: "/login" },
@@ -44,6 +49,10 @@ const routes = [
   },
   { path: "/perfil", name: "Perfil", component: Perfil },
   { path: "/carrito", name: "Carrito", component: Carrito },
+  { path: "/checkout", name: "Checkout", component: Checkout },
+  { path: "/expert-advice", name: "ExpertAdvice", component: ExpertAdvice },
+  { path: "/our-story", name: "OurStory", component: OurStory },
+  { path: "/routine", name: "Routine", component: Routine },
 ];
 
 const router = createRouter({
@@ -51,9 +60,20 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  const session = JSON.parse(localStorage.getItem("pharmaderm_session") || "null");
-  const isAuthenticated = !!session?.isLoggedIn;
+router.beforeEach(async (to, from, next) => {
+  let isAuthenticated = false;
+
+  if (isSupabaseConfigured) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      isAuthenticated = !!session?.access_token;
+    } catch {
+      isAuthenticated = false;
+    }
+  } else {
+    const s = JSON.parse(localStorage.getItem("pharmaderm_session") || "null");
+    isAuthenticated = !!s?.isLoggedIn;
+  }
 
   if (!to.meta.public && !isAuthenticated) {
     return next("/login");

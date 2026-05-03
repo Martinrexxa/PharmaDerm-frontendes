@@ -1,76 +1,14 @@
 <template>
-  <div class="diagnostics-page" @click="closeMenus">
-    <header class="sticky top-0 z-50 pd-surface pd-border-b">
-  <div class="max-w-[1200px] mx-auto px-6 py-4 flex justify-between items-center">
-    <div class="flex items-center gap-3 cursor-pointer" @click="$router.push('/inicio')">
-      <img
-        :src="logoSrc"
-        class="h-9 w-9 rounded-lg shadow-sm object-cover"
-        alt="PharmaDerm Logo"
-      />
-      <h1 class="text-lg font-bold tracking-tight pd-brand">
-        PharmaDerm<span class="pd-accent">RD</span>
-      </h1>
+  <div class="diagnostics-page">
+    <!-- Gate: no quiz result -->
+    <div v-if="!hasQuiz" class="quiz-gate">
+      <span class="material-symbols-outlined gate-icon">biotech</span>
+      <h2>Completa el quiz primero</h2>
+      <p>El diagnóstico se construye sobre tu perfil de piel generado en el quiz.<br>Haz el quiz para continuar.</p>
+      <button class="primary-btn" @click="$router.push('/quiz')">Hacer quiz de piel</button>
     </div>
 
-    <div class="flex items-center gap-4 relative">
-      <button
-        class="p-2 rounded-full pd-hover relative"
-        type="button"
-        aria-label="Search"
-        @click.stop="searchOpen = !searchOpen"
-      >
-        <span class="material-symbols-outlined pd-icon">search</span>
-      </button>
-
-      <button
-        class="p-2 rounded-full pd-hover relative"
-        type="button"
-        aria-label="Profile"
-        @click.stop="profileOpen = !profileOpen"
-      >
-        <span class="material-symbols-outlined pd-icon">person</span>
-      </button>
-
-      <button
-        class="p-2 rounded-full pd-hover relative"
-        type="button"
-        aria-label="Cart"
-        @click="$router.push('/carrito')"
-      >
-        <span class="material-symbols-outlined pd-icon">shopping_bag</span>
-      </button>
-
-      <transition name="fade">
-        <div v-if="searchOpen" class="search-popover" @click.stop>
-          <div class="search-box">
-            <span class="material-symbols-outlined">search</span>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search products, skin concerns, routines..."
-            />
-          </div>
-        </div>
-      </transition>
-
-      <transition name="fade">
-        <div v-if="profileOpen" class="profile-popover" @click.stop>
-          <h4>Your PharmaDerm space</h4>
-          <p>Review your skin case, appointments and personalized routine.</p>
-          <button class="ghost-btn" @click="$router.push('/perfil')">View Profile</button>
-          <button class="primary-btn small" @click="$router.push('/quiz')">Go to Skin Quiz</button>
-        </div>
-      </transition>
-    </div>
-  </div>
-
-  <div class="pd-banner">
-    <p class="text-center text-white text-[11px] font-semibold uppercase tracking-widest py-2">
-      FREE SHIPPING ON ORDERS OVER RD$3,000 • PHARMADERM SKINCARE EXPERIENCE
-    </p>
-  </div>
-</header>
+    <template v-else>
 
     <section class="diagnostics-hero">
       <div class="container diagnostics-hero-grid">
@@ -597,27 +535,35 @@
       <div class="container final-cta-inner">
         <div>
           <p class="eyebrow light">PHARMADERM CARE</p>
-          <h2>Care designed around your skin profile</h2>
+          <h2>Cuidado diseñado alrededor de tu perfil de piel</h2>
           <p>
-            Build your case, connect with experts and refine your skincare experience in one place.
+            Construye tu caso, conecta con especialistas y refina tu experiencia de skincare.
           </p>
         </div>
 
-        <button class="light-btn" @click="$router.push('/tienda')">Shop your routine</button>
+        <button class="light-btn" @click="$router.push('/tienda')">Ver mi rutina</button>
       </div>
     </section>
+
+    </template><!-- end v-else -->
+
+    <!-- Toast notification (FASE 9) -->
+    <transition name="fade">
+      <div v-if="toastMsg" class="diag-toast">{{ toastMsg }}</div>
+    </transition>
   </div>
 </template>
 
 <script>
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
+import { sendAppointmentConfirmation } from '../services/emailService.js';
+import { useHistoryStore } from '../stores/useHistoryStore.js';
+import { useAuthStore } from '../stores/useAuthStore.js';
+
 export default {
   name: "DiagnosticsView",
   data() {
     return {
-      logoSrc: "/images/pharmaderm-logo.png",
-      searchOpen: false,
-      profileOpen: false,
-      searchQuery: "",
       imagePreviews: [],
       selectedDoctor: null,
       casePhoto: "",
@@ -685,45 +631,60 @@ export default {
         "Pore appearance",
         "Redness relief"
       ],
+      toastMsg: '',
+      _toastTimer: null,
+      diagnosticSaved: false,
+      bookingConfirmed: false,
       doctors: [
         {
           id: 1,
-          name: "Dr. Elena Martínez",
-          specialty: "Acne, pores and sensitive skin",
+          name: "Dra. Elena Martínez",
+          specialty: "Acné, poros y piel sensible/grasa",
           mode: "Virtual",
           rating: "4.9",
-          location: "Santo Domingo, DR",
-          availability: "Next available: Tomorrow",
-          description: "Ideal for oily, acne-prone or reactive skin needing guided treatment and follow-up.",
+          location: "Santo Domingo, RD",
+          availability: "Próxima disponibilidad: Mañana",
+          description: "Ideal para piel grasa, propensa al acné o reactiva que necesita tratamiento guiado y seguimiento.",
           image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80"
         },
         {
           id: 2,
-          name: "Dr. Camila Reyes",
-          specialty: "Barrier recovery, dehydration and discoloration",
+          name: "Dra. Camila Reyes",
+          specialty: "Recuperación de barrera, deshidratación y manchas",
           mode: "In person",
           rating: "4.8",
-          location: "Santiago, DR",
-          availability: "Next available: Friday",
-          description: "Focused on calming skin, rebuilding comfort and improving uneven texture or tone.",
+          location: "Santiago, RD",
+          availability: "Próxima disponibilidad: Viernes",
+          description: "Enfocada en calmar la piel, reconstruir el confort y mejorar la textura y el tono desigual.",
           image: "https://images.unsplash.com/photo-1594824475317-d0c8f4b7d0d4?auto=format&fit=crop&w=900&q=80"
         },
         {
           id: 3,
-          name: "Dr. Laura Fernández",
-          specialty: "Comprehensive dermatology care",
+          name: "Dra. Laura Fernández",
+          specialty: "Dermatología integral",
           mode: "Virtual & In person",
           rating: "5.0",
-          location: "Santo Domingo, DR",
-          availability: "Next available: Today",
-          description: "Best for users wanting a complete skin review with flexibility for follow-up visits.",
+          location: "Santo Domingo, RD",
+          availability: "Próxima disponibilidad: Hoy",
+          description: "Ideal para quienes buscan una revisión completa de su piel con flexibilidad para seguimiento.",
           image: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&w=900&q=80"
         }
       ]
     };
   },
 
+  created() {
+    this._historyStore = useHistoryStore()
+    this._authStore = useAuthStore()
+  },
+
   computed: {
+    hasQuiz() {
+      // quizSummary.completed is set by loadQuizSummary (Supabase or localStorage)
+      if (this.quizSummary?.completed) return true
+      try { return !!(this._historyStore?.getLatestQuizResult()); } catch { return false; }
+    },
+
     quizCompleted() {
       return !!this.quizSummary.completed;
     },
@@ -952,35 +913,44 @@ export default {
     },
 
     filteredDoctors() {
-      if (!this.form.appointmentType) return this.doctors;
+      // FASE 9 — variable specialists by symptom, then by appointment type
+      const hasAcne = this.form.symptoms.some(s =>
+        ["Acne", "Oiliness", "Texture"].includes(s)
+      );
+      const hasBarrier = this.form.symptoms.some(s =>
+        ["Dry patches", "Flaking", "Redness", "Itching", "Burning sensation"].includes(s)
+      );
+
+      let pool = this.doctors;
+
+      if (hasAcne && !hasBarrier) {
+        // Prefer acne/oily specialists (id 1 and 3)
+        pool = this.doctors.filter(d => d.id === 1 || d.id === 3);
+      } else if (hasBarrier && !hasAcne) {
+        // Prefer barrier/sensitive specialists (id 2 and 3)
+        pool = this.doctors.filter(d => d.id === 2 || d.id === 3);
+      }
+
+      if (!this.form.appointmentType) return pool;
 
       if (this.form.appointmentType === "Virtual") {
-        return this.doctors.filter(
-          (doctor) => doctor.mode === "Virtual" || doctor.mode === "Virtual & In person"
-        );
+        return pool.filter(d => d.mode === "Virtual" || d.mode === "Virtual & In person");
       }
 
       if (this.form.appointmentType === "In person") {
-        return this.doctors.filter(
-          (doctor) => doctor.mode === "In person" || doctor.mode === "Virtual & In person"
-        );
+        return pool.filter(d => d.mode === "In person" || d.mode === "Virtual & In person");
       }
 
-      return this.doctors;
+      return pool;
     }
   },
 
-  mounted() {
-    this.loadQuizSummary();
-    this.loadSavedDiagnosticCase();
+  async mounted() {
+    await this.loadQuizSummary();
+    await this.loadSavedDiagnosticCase();
   },
 
   methods: {
-    closeMenus() {
-      this.searchOpen = false;
-      this.profileOpen = false;
-    },
-
     toggleArrayItem(arr, value) {
       const index = arr.indexOf(value);
       if (index === -1) arr.push(value);
@@ -1014,107 +984,281 @@ export default {
       }
     },
 
-    saveDiagnosticCase() {
+    showToast(msg) {
+      this.toastMsg = msg;
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => { this.toastMsg = ''; }, 3000);
+    },
+
+    async saveDiagnosticCase() {
+      // FASE 9 — save diagnostic case (separate from booking)
       const payload = {
+        id: Date.now(),
         title: "Diagnóstico dermatológico guardado",
         summary: this.generatedInsight.text,
         quizSummary: this.quizSummary,
-        form: this.form,
-        imagePreviews: this.imagePreviews,
-        selectedDoctor: this.selectedDoctor,
-        casePhoto: this.casePhoto,
+        form: { ...this.form },
         insight: this.generatedInsight,
-        savedAt: new Date().toISOString()
+        status: "Guardado",
+        savedAt: new Date().toISOString(),
       };
 
-      localStorage.setItem("pharmaderm_diagnostic_result", JSON.stringify(payload));
-      alert("Your diagnostic case has been saved.");
+      // Save to user-scoped localStorage via historyStore
+      try {
+        this._historyStore?.saveDiagnostic(payload);
+      } catch { /* ignore */ }
+
+      // Try Supabase if available
+      try {
+        if (isSupabaseConfigured) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('diagnosis_cases').insert({
+              user_id: user.id,
+              skin_type: this.quizSummary.skinType || null,
+              primary_concern: this.quizSummary.primaryConcern || null,
+              symptoms: this.form.symptoms,
+              areas: this.form.areas,
+              priorities: this.form.priorities,
+              description: this.form.description || null,
+              duration: this.form.duration || null,
+              urgency: this.form.urgency || null,
+              insight_title: this.generatedInsight.title,
+              insight_text: this.generatedInsight.text,
+              status: 'saved',
+            });
+          }
+        }
+      } catch { /* Supabase save is best-effort */ }
+
+      this.diagnosticSaved = true;
+      this.showToast("Diagnóstico guardado correctamente.");
     },
 
-    confirmBooking() {
+    async confirmBooking() {
+      // FASE 9 — book appointment (separate from saving diagnosis)
       if (!this.selectedDoctor) {
-        alert("Please select a dermatologist first.");
+        this.showToast("Selecciona un dermatólogo primero.");
         return;
       }
-
       if (!this.form.appointmentType || !this.form.date || !this.form.time) {
-        alert("Please complete appointment type, date and time.");
+        this.showToast("Completa el tipo de cita, la fecha y la hora.");
         return;
       }
 
+      const confirmationCode = "PH-" + Math.random().toString(36).substring(2, 8).toUpperCase();
       const appointmentPayload = {
+        id: Date.now(),
+        confirmationCode,
         doctor: this.selectedDoctor.name,
-        service: this.suggestedAppointmentType,
+        doctorId: this.selectedDoctor.id,
+        specialty: this.selectedDoctor.specialty,
         mode: this.form.appointmentType,
-        dateTime: `${this.form.date} • ${this.form.time}`,
-        reason: this.form.reason,
-        notes: this.form.notes,
-        status: "Confirmed",
-        confirmationCode: "PH-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
-        createdAt: new Date().toISOString()
+        date: this.form.date,
+        time: this.form.time,
+        reason: this.form.reason || '',
+        notes: this.form.notes || '',
+        status: "Confirmada",
+        skinType: this.quizSummary.skinType || '',
+        mainConcern: this.mainConcern || '',
+        createdAt: new Date().toISOString(),
       };
 
-      const diagnosticPayload = {
-        title: "Diagnóstico dermatológico completado",
-        summary: this.generatedInsight.text,
-        quizSummary: this.quizSummary,
-        form: this.form,
-        imagePreviews: this.imagePreviews,
-        selectedDoctor: this.selectedDoctor,
-        casePhoto: this.casePhoto,
-        insight: this.generatedInsight,
-        status: "Appointment booked",
-        savedAt: new Date().toISOString()
-      };
+      // Save appointment to user-scoped localStorage via historyStore
+      try {
+        this._historyStore?.saveAppointment(appointmentPayload);
+        // Update linked diagnostic with appointment status
+        const latestDiag = this._historyStore?.getLatestDiagnostic();
+        if (latestDiag) {
+          this._historyStore?.saveDiagnostic({ ...latestDiag, status: 'Cita agendada', appointment: appointmentPayload });
+        }
+      } catch { /* ignore */ }
 
-      localStorage.setItem("pharmaderm_appointment", JSON.stringify(appointmentPayload));
-      localStorage.setItem("pharmaderm_diagnostic_result", JSON.stringify(diagnosticPayload));
+      // Try Supabase if available
+      try {
+        if (isSupabaseConfigured) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('appointments').insert({
+              user_id: user.id,
+              dermatologist_name: this.selectedDoctor.name,
+              dermatologist_id: this.selectedDoctor.id,
+              appointment_type: this.form.appointmentType,
+              appointment_date: this.form.date,
+              appointment_time: this.form.time,
+              reason: this.form.reason || null,
+              notes: this.form.notes || null,
+              status: 'confirmed',
+              confirmation_code: confirmationCode,
+              skin_concern: this.mainConcern || null,
+            });
+          }
+        }
+      } catch { /* Supabase save is best-effort */ }
 
-      this.$router.push("/appointment-confirmation");
+      // Send email confirmation
+      try {
+        let email = null;
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          email = user?.email;
+        } catch { /* ignore */ }
+        if (!email) email = this._authStore?.user?.value?.email || null;
+        if (email) {
+          await sendAppointmentConfirmation({
+            id: appointmentPayload.id,
+            email,
+            customerName: this.selectedDoctor ? `Paciente` : '',
+            date: this.form.date,
+            time: this.form.time,
+            type: this.form.appointmentType,
+            reason: this.form.reason,
+            status: 'Confirmada',
+            diagnosisSummary: this.generatedInsight?.title || '',
+          }, 'es');
+        }
+      } catch { /* email is best-effort */ }
+
+      this.bookingConfirmed = true;
+      this.showToast(`Cita confirmada. Código: ${confirmationCode}`);
+      setTimeout(() => { this.$router.push('/perfil?tab=historial'); }, 2000);
     },
 
-    loadQuizSummary() {
-      const savedQuiz = localStorage.getItem("pharmaderm_quiz_result");
+    async loadQuizSummary() {
+      const userId = this._authStore?.user?.value?.id || null;
+      console.log('[Diagnostics] loadQuizSummary | userId:', userId);
+
+      let savedQuiz = null;
+      let source = 'none';
+
+      // Supabase is authoritative when configured
+      if (isSupabaseConfigured && userId) {
+        try {
+          const { data, error } = await supabase
+            .from('quiz_sessions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('completed_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!error && data) {
+            savedQuiz = {
+              completed: true,
+              skinType: data.skin_type || '',
+              sensitivity: data.sensitivity || '',
+              concerns: data.concerns || [],
+              primaryConcern: data.primary_concern || '',
+              profileTitle: data.profile_title || '',
+              routineFocus: data.routine_focus || '',
+              fullMetrics: data.full_metrics || [],
+              summaryMetrics: (data.full_metrics || []).slice(0, 3),
+              date: data.completed_at,
+            };
+            source = 'supabase';
+
+            // Supplement with richer localStorage data (selfie, morningSteps, etc.) if available
+            const localQuiz = this._historyStore?.getLatestQuizResult();
+            if (localQuiz?.skinType === savedQuiz.skinType || localQuiz?.primaryConcern === savedQuiz.primaryConcern) {
+              savedQuiz = { ...savedQuiz, ...localQuiz, completed: true };
+              source = 'supabase+local';
+            }
+          } else {
+            source = 'supabase:empty';
+          }
+        } catch (e) {
+          console.warn('[Diagnostics] Supabase quiz check falló:', e?.message);
+          source = 'supabase:error→fallback';
+        }
+      }
+
+      // Fallback: localStorage (non-Supabase mode, or Supabase save still pending after quiz)
+      if (!savedQuiz) {
+        savedQuiz = this._historyStore?.getLatestQuizResult() || null;
+        if (savedQuiz) source = 'localStorage';
+      }
+
+      console.log('[Diagnostics] source:', source, '|', savedQuiz
+        ? { skinType: savedQuiz.skinType, primaryConcern: savedQuiz.primaryConcern, completed: savedQuiz.completed }
+        : null
+      );
 
       if (savedQuiz) {
         try {
-          this.quizSummary = {
-            ...this.quizSummary,
-            ...JSON.parse(savedQuiz)
-          };
-          this.casePhoto = this.quizSummary.selfie || "";
+          this.quizSummary = { ...this.quizSummary, ...savedQuiz };
+          this.casePhoto = this.quizSummary.selfie || '';
         } catch (error) {
-          console.error("Error loading quiz results:", error);
+          console.error('[Diagnostics] Error applying quiz summary:', error);
         }
       }
 
       const query = this.$route.query;
-
       if (query.skinType || query.sensitivity || query.concerns) {
         this.quizSummary = {
           ...this.quizSummary,
           skinType: query.skinType || this.quizSummary.skinType,
           sensitivity: query.sensitivity || this.quizSummary.sensitivity,
           concerns: query.concerns
-            ? String(query.concerns).split(",")
+            ? String(query.concerns).split(',')
             : this.quizSummary.concerns,
-          routineFocus: query.routineFocus || this.quizSummary.routineFocus
+          routineFocus: query.routineFocus || this.quizSummary.routineFocus,
         };
       }
     },
 
-    loadSavedDiagnosticCase() {
-      const savedCase = localStorage.getItem("pharmaderm_diagnostic_result");
-      if (!savedCase) return;
+    async loadSavedDiagnosticCase() {
+      const userId = this._authStore?.user?.value?.id || null;
+      console.log('[Diagnostics] loadSavedDiagnosticCase | userId:', userId);
+
+      let parsed = null;
+      let source = 'none';
+
+      if (isSupabaseConfigured && userId) {
+        try {
+          const { data, error } = await supabase
+            .from('diagnosis_cases')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!error && data) {
+            parsed = {
+              form: {
+                description: data.description || '',
+                duration: data.duration || '',
+                urgency: data.urgency || '',
+                symptoms: data.symptoms || [],
+                areas: data.areas || [],
+                priorities: data.priorities || [],
+              },
+            };
+            source = 'supabase';
+          } else {
+            source = 'supabase:empty';
+          }
+        } catch (e) {
+          console.warn('[Diagnostics] Supabase diagnosis check falló:', e?.message);
+          parsed = this._historyStore?.getLatestDiagnostic() || null;
+          source = 'supabase:error→fallback';
+        }
+      } else {
+        parsed = this._historyStore?.getLatestDiagnostic() || null;
+        source = parsed ? 'localStorage' : 'none';
+      }
+
+      console.log('[Diagnostics] loadSavedDiagnosticCase | source:', source, '| found:', !!parsed);
+
+      if (!parsed) return;
 
       try {
-        const parsed = JSON.parse(savedCase);
         if (parsed.form) this.form = { ...this.form, ...parsed.form };
         if (parsed.imagePreviews) this.imagePreviews = parsed.imagePreviews;
         if (parsed.selectedDoctor) this.selectedDoctor = parsed.selectedDoctor;
         if (parsed.casePhoto) this.casePhoto = parsed.casePhoto;
       } catch (error) {
-        console.error("Error loading saved diagnostic case:", error);
+        console.error('[Diagnostics] Error applying saved diagnostic case:', error);
       }
     }
   }
@@ -1122,6 +1266,11 @@ export default {
 </script>
 
 <style scoped>
+.quiz-gate { text-align: center; padding: 6rem 1rem; min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; }
+.gate-icon { font-size: 64px; color: #004e92; }
+.quiz-gate h2 { font-size: 2rem; font-weight: 800; color: #0f172a; margin: 0; }
+.quiz-gate p { color: #64748b; line-height: 1.7; max-width: 480px; }
+
 .diagnostics-page {
   --bg: #f8fafc;
   --text: #0f172a;
@@ -1851,4 +2000,25 @@ input:focus {
     width: min(92vw, 340px);
   }
 }
+
+/* Toast notification */
+.diag-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

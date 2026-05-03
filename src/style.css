@@ -3,23 +3,198 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-    min-height: max(884px, 100dvh);
-      min-height: 100vh;
-
-
+/* ─── CSS Variables de Dark Mode ─────────────────────────────────────── */
+:root {
+  --pd-bg:           #ffffff;
+  --pd-bg-subtle:    #f8fafc;
+  --pd-surface:      #ffffff;
+  --pd-border:       #e5e7eb;
+  --pd-text:         #111827;
+  --pd-text-muted:   #6b7280;
+  --pd-brand:        #07579b;
+  --pd-brand-light:  #009fe3;
+  --pd-navbar-bg:    rgba(255, 255, 255, 0.97);
+  --pd-card-bg:      #ffffff;
+  --pd-input-bg:     #f9fafb;
+  --pd-input-border: #d1d5db;
+  --pd-shadow:       rgba(15, 23, 42, 0.08);
 }
 
-html, #app {
+html.dark {
+  --pd-bg:           #0a1220;
+  --pd-bg-subtle:    #0f1c30;
+  --pd-surface:      #131f35;
+  --pd-border:       #1e2f48;
+  --pd-text:         #e2e8f0;
+  --pd-text-muted:   #7a9ab8;
+  --pd-brand:        #4db8ff;
+  --pd-brand-light:  #66ccff;
+  --pd-navbar-bg:    rgba(10, 18, 32, 0.97);
+  --pd-card-bg:      #131f35;
+  --pd-input-bg:     #0f1c30;
+  --pd-input-border: #1e3250;
+  --pd-shadow:       rgba(0, 0, 0, 0.35);
+}
+
+/* ─── Reset base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #app {
   height: 100%;
   width: 100%;
   margin: 0;
 }
 
+body {
+  min-width: 320px;
+  min-height: 100dvh;
+  background-color: var(--pd-bg);
+  color: var(--pd-text);
+  transition: background-color 0.25s ease, color 0.25s ease;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+}
+
+/* ─── Dark mode: paneles y superficies globales ──────────────────────── */
+html.dark .app-header,
+html.dark header {
+  background: var(--pd-navbar-bg) !important;
+  border-bottom-color: var(--pd-border) !important;
+}
+
+html.dark .profile-panel,
+html.dark .cart-panel,
+html.dark .products-hover-panel {
+  background: var(--pd-surface) !important;
+  border-color: var(--pd-border) !important;
+}
+
+html.dark .profile-panel button,
+html.dark .cart-panel button {
+  background: var(--pd-surface) !important;
+  color: var(--pd-text) !important;
+}
+
+html.dark .profile-panel button:hover,
+html.dark .cart-panel button:hover {
+  background: var(--pd-bg-subtle) !important;
+}
+
+html.dark .nav-link {
+  color: var(--pd-text) !important;
+}
+
+html.dark .nav-link:hover,
+html.dark .nav-link.active {
+  color: var(--pd-brand) !important;
+}
+
+html.dark .hover-col button {
+  color: var(--pd-text-muted) !important;
+}
+
+html.dark .hover-col h4 {
+  color: var(--pd-text) !important;
+}
+
+html.dark .top-promos {
+  background: #003d70 !important;
+}
+
+/* ─── Cards y formularios genéricos ──────────────────────────────────── */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background: var(--pd-input-bg) !important;
+  color: var(--pd-text) !important;
+  border-color: var(--pd-input-border) !important;
+}
+
+html.dark label {
+  color: var(--pd-text) !important;
+}
+
+/* ─── Scrollbar sutil ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+html.dark ::-webkit-scrollbar-thumb { background: #2a3d58; }
+
+/* ─── Keyframes ───────────────────────────────────────────────────────── */
+@keyframes pd-fade-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pd-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pd-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pd-slide-right {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─── Scroll-reveal (toggled by v-reveal directive) ──────────────────── */
+.pd-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.55s cubic-bezier(0.22,1,0.36,1),
+              transform 0.55s cubic-bezier(0.22,1,0.36,1);
+}
+.pd-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Card hover lift (global utility) ───────────────────────────────── */
+.pd-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.pd-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.11);
+}
+
+/* ─── Hero entrance ───────────────────────────────────────────────────── */
+.pd-hero-enter {
+  animation: pd-fade-up 0.75s cubic-bezier(0.22,1,0.36,1) both;
+}
+.pd-hero-enter-delay {
+  animation: pd-fade-up 0.75s cubic-bezier(0.22,1,0.36,1) 0.18s both;
+}
+
+/* ─── Vue step transition (Quiz.vue) ─────────────────────────────────── */
+.step-fade-enter-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.step-fade-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  position: absolute;
+  width: 100%;
+}
+.step-fade-enter-from {
+  opacity: 0;
+  transform: translateX(18px);
+}
+.step-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-18px);
+}
+
+/* ─── Page route transition ───────────────────────────────────────────── */
+.page-enter-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+.page-leave-active {
+  transition: opacity 0.2s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-leave-to {
+  opacity: 0;
+}

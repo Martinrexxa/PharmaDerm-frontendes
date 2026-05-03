@@ -1,15 +1,9 @@
 <template>
   <div class="cart-page">
-    <header class="cart-header container">
-      <button class="back-btn" @click="$router.back()">← Back</button>
-      <h1>Your Cart</h1>
-      <p>{{ cart.length }} item(s)</p>
-    </header>
-
     <main class="container cart-layout">
       <section class="cart-items">
         <article
-          v-for="(item, index) in cart"
+          v-for="(item, index) in cartItems"
           :key="`${item.slug || item.id}-${item.size || 'default'}-${index}`"
           class="cart-item"
         >
@@ -22,117 +16,75 @@
               Purchase: {{ item.mode === 'autoship' ? 'Replenish & Save' : 'One-time' }}
             </p>
             <p class="muted" v-if="item.brand">Brand: {{ item.brand }}</p>
-            <strong>RD${{ money(item.priceRD) }}</strong>
+            <strong>{{ fmtPrice(item.priceRD) }}</strong>
           </div>
 
           <div class="cart-item__actions">
             <div class="qty-box">
-              <button @click="decreaseQty(index)">−</button>
+              <button @click="cart.updateQty(index, (item.quantity || 1) - 1)">−</button>
               <span>{{ item.quantity }}</span>
-              <button @click="increaseQty(index)">+</button>
+              <button @click="cart.updateQty(index, (item.quantity || 1) + 1)">+</button>
             </div>
 
-            <button class="remove-btn" @click="removeItem(index)">
+            <button class="remove-btn" @click="cart.removeItem(index)">
               Remove
             </button>
           </div>
         </article>
 
-        <div v-if="!cart.length" class="empty">
+        <div v-if="!cartItems.length" class="empty">
           <p>Your cart is empty.</p>
-          <button class="shop-btn" @click="$router.push('/tienda')">
+          <button class="shop-btn" @click="router.push('/tienda')">
             Continue Shopping
           </button>
         </div>
       </section>
 
-      <aside class="summary" v-if="cart.length">
+      <aside class="summary" v-if="cartItems.length">
         <h2>Order Summary</h2>
 
         <div class="summary-row">
           <span>Subtotal</span>
-          <strong>RD${{ money(subtotal) }}</strong>
+          <strong>{{ fmtPrice(subtotal) }}</strong>
         </div>
 
         <div class="summary-row">
           <span>Estimated shipping</span>
-          <strong>{{ subtotal >= 3000 ? "Free" : "RD$250" }}</strong>
+          <strong>{{ subtotal >= 3000 ? "Free" : fmtPrice(250) }}</strong>
         </div>
 
         <div class="summary-row total">
           <span>Total</span>
-          <strong>RD${{ money(total) }}</strong>
+          <strong>{{ fmtPrice(total) }}</strong>
         </div>
 
-        <button class="checkout-btn">Proceed to Checkout</button>
-        <button class="clear-btn" @click="clearAll">Clear Cart</button>
+        <button class="checkout-btn" @click="router.push('/checkout')">Proceed to Checkout</button>
+        <button class="clear-btn" @click="cart.clear()">Clear Cart</button>
       </aside>
     </main>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onBeforeUnmount, ref } from "vue";
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useCartStore } from "../stores/useCartStore";
+import { useSettingsStore } from "../stores/useSettingsStore";
+import { priceIn } from "../utils/currency";
 
-const cart = ref([]);
+const router = useRouter();
+const cart = useCartStore();
+const settings = useSettingsStore();
+const { items: cartItems, subtotal: cartSubtotal } = cart;
+const userCurrency = settings.currency;
 
-const loadCart = () => {
-  try {
-    const saved = JSON.parse(localStorage.getItem("pharmaderm_cart") || "[]");
-    cart.value = Array.isArray(saved) ? saved : [];
-  } catch {
-    cart.value = [];
-  }
-};
+function fmtPrice(dopAmount) {
+  return priceIn(Number(dopAmount) || 0, 'DOP', userCurrency.value);
+}
 
-onMounted(() => {
-  loadCart();
-  window.addEventListener("storage", loadCart);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("storage", loadCart);
-});
-
-const money = (value) => Number(value || 0).toLocaleString("en-US");
-
-const subtotal = computed(() =>
-  cart.value.reduce(
-    (acc, item) => acc + Number(item.priceRD || 0) * Number(item.quantity || 0),
-    0
-  )
-);
-
-const shipping = computed(() => (subtotal.value >= 3000 ? 0 : 250));
-const total = computed(() => subtotal.value + shipping.value);
-
-const saveCart = () => {
-  localStorage.setItem("pharmaderm_cart", JSON.stringify(cart.value));
-  window.dispatchEvent(new Event("storage"));
-};
-
-const increaseQty = (index) => {
-  cart.value[index].quantity = Number(cart.value[index].quantity || 1) + 1;
-  saveCart();
-};
-
-const decreaseQty = (index) => {
-  cart.value[index].quantity = Math.max(
-    1,
-    Number(cart.value[index].quantity || 1) - 1
-  );
-  saveCart();
-};
-
-const removeItem = (index) => {
-  cart.value.splice(index, 1);
-  saveCart();
-};
-
-const clearAll = () => {
-  cart.value = [];
-  saveCart();
-};
+const subtotal  = computed(() => cartSubtotal.value);
+const shipping  = computed(() => (subtotal.value >= 3000 ? 0 : 250));
+const total     = computed(() => subtotal.value + shipping.value);
 </script>
 
 <style scoped>
@@ -147,29 +99,6 @@ const clearAll = () => {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 24px;
-}
-
-.cart-header {
-  padding: 30px 24px 16px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.back-btn {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  margin-bottom: 10px;
-  color: #374151;
-}
-
-.cart-header h1 {
-  margin: 0;
-  font-size: 34px;
-}
-
-.cart-header p {
-  margin: 8px 0 0;
-  color: #6b7280;
 }
 
 .cart-layout {
@@ -246,7 +175,7 @@ const clearAll = () => {
   padding: 20px;
   height: fit-content;
   position: sticky;
-  top: 20px;
+  top: 120px;
 }
 
 .summary h2 {
