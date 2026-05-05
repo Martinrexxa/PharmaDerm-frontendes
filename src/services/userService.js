@@ -185,23 +185,89 @@ export const userService = {
     return data
   },
 
-  // ─── Addresses (localStorage — no Supabase table yet) ─────────────
+  // ─── Addresses ────────────────────────────────────────────────
 
   getAddresses() {
     return storageService.get('addresses', [])
   },
 
-  saveAddress(address) {
+  async saveAddress(address, userId) {
+    // Save to Supabase first to get the real ID
+    let supabaseId = address.id
+    
+    if (isSupabaseConfigured && userId) {
+      try {
+        const payload = {
+          user_id: userId,
+          label: address.label || 'Mi dirección',
+          full_name: address.full_name || null,
+          phone: address.phone || null,
+          address_line_1: address.address_line_1 || address.address || '',
+          address_line_2: address.address_line_2 || null,
+          city: address.city || null,
+          state: address.state || null,
+          postal_code: address.postal_code || null,
+          country_code: address.country_code || 'DO',
+          is_default: address.is_default !== false, // Default to true
+        }
+        
+        // If has ID, try to update; otherwise insert
+        let result
+        if (address.id) {
+          const { data, error } = await supabase
+            .from('addresses')
+            .update(payload)
+            .eq('id', address.id)
+            .select()
+            .single()
+          if (error) throw error
+          result = data
+        } else {
+          const { data, error } = await supabase
+            .from('addresses')
+            .insert([payload])
+            .select()
+            .single()
+          if (error) throw error
+          result = data
+          supabaseId = result.id
+        }
+        
+        console.log('[UserService] Address saved to Supabase:', supabaseId)
+      } catch (error) {
+        console.warn('[UserService] Supabase address save failed:', error.message)
+      }
+    }
+
+    // Save to localStorage with the real ID
     const addresses = this.getAddresses()
-    const entry = { ...address, id: Date.now() }
-    addresses.unshift(entry)
-    storageService.set('addresses', addresses.slice(0, 10))
+    const entry = { 
+      ...address, 
+      id: supabaseId || address.id || Date.now(),
+      address_line_1: address.address_line_1 || address.address || ''
+    }
+    
+    // Remove old entry if exists, then add new one at front
+    const filtered = addresses.filter(a => a.id !== entry.id)
+    filtered.unshift(entry)
+    storageService.set('addresses', filtered.slice(0, 10))
+    
+    console.log('[UserService] Address saved to localStorage:', entry.id)
     return entry
   },
 
   removeAddress(id) {
     const addresses = this.getAddresses().filter(a => a.id !== id)
     storageService.set('addresses', addresses)
+
+    // Remove from Supabase if configured
+    if (isSupabaseConfigured) {
+      supabase
+        .from('addresses')
+        .delete()
+        .eq('id', id)
+        .catch(err => console.warn('[UserService] Address delete failed:', err))
+    }
   },
 
   getDefaultAddress() {

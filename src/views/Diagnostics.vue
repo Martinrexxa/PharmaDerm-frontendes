@@ -296,8 +296,8 @@
               </div>
             </div>
 
-            <button class="primary-btn full" @click="saveDiagnosticCase">
-              Save my diagnostic case
+            <button class="primary-btn full" @click="saveDiagnosticCase" :disabled="isSavingDiagnostic || diagnosticSaved">
+              {{ isSavingDiagnostic ? 'Saving...' : diagnosticSaved ? 'Diagnostic Saved' : 'Save my diagnostic case' }}
             </button>
           </div>
         </div>
@@ -473,8 +473,8 @@
             placeholder="Add anything else the dermatologist should know."
           ></textarea>
 
-          <button class="primary-btn full big" @click="confirmBooking">
-            Confirm Appointment
+          <button class="primary-btn full big" @click="confirmBooking" :disabled="bookingConfirmed || isSubmitting">
+            {{ isSubmitting ? 'Processing...' : bookingConfirmed ? 'Appointment Confirmed' : 'Confirm Appointment' }}
           </button>
         </div>
 
@@ -559,12 +559,17 @@ import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
 import { sendAppointmentConfirmation } from '../services/emailService.js';
 import { useHistoryStore } from '../stores/useHistoryStore.js';
 import { useAuthStore } from '../stores/useAuthStore.js';
+import { getProductsByQuizResult } from '../data/productCatalog.js';
+import routineService from '../services/routineService.js';
+
+const DIAGNOSIS_PHOTO_BUCKET = 'diagnosis-photos';
 
 export default {
   name: "DiagnosticsView",
   data() {
     return {
       imagePreviews: [],
+      tempPhotos: [],
       selectedDoctor: null,
       casePhoto: "",
       quizSummary: {
@@ -634,7 +639,9 @@ export default {
       toastMsg: '',
       _toastTimer: null,
       diagnosticSaved: false,
+      isSavingDiagnostic: false,
       bookingConfirmed: false,
+      isSubmitting: false,
       doctors: [
         {
           id: 1,
@@ -957,8 +964,11 @@ export default {
       else arr.splice(index, 1);
     },
 
-    handleImages(event) {
+    async handleImages(event) {
       const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      // First, convert to dataUrl and show preview immediately
       files.forEach((file) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -966,6 +976,82 @@ export default {
         };
         reader.readAsDataURL(file);
       });
+
+      // Then, upload to Supabase in background
+      try {
+        // Check if user has a diagnosis case
+        let diagnosisId = null;
+        if (isSupabaseConfigured) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: existingCase } = await supabase
+              .from('diagnosis_cases')
+              .select('id')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (existingCase) {
+              diagnosisId = existingCase.id;
+            }
+          }
+        }
+
+        // Upload each file
+        const uploadPromises = files.map(async (file, index) => {
+          const fileName = `diagnosis-temp-${Date.now()}-${index}.jpg`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from(DIAGNOSIS_PHOTO_BUCKET)
+            .upload(fileName, file, {
+              contentType: 'image/jpeg',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.warn('[Diagnostics] Photo upload failed:', uploadError.message);
+            return null;
+          }
+
+          const { data: urlData } = supabase.storage
+            .from(DIAGNOSIS_PHOTO_BUCKET)
+            .getPublicUrl(fileName);
+
+          const publicUrl = urlData.publicUrl;
+
+          // If we have diagnosis_id, save to diagnosis_photos immediately
+          if (diagnosisId) {
+            const { error: insertError } = await supabase
+              .from('diagnosis_photos')
+              .insert({
+                diagnosis_id: diagnosisId,
+                url: publicUrl,
+                is_selfie: false,
+                uploaded_at: new Date().toISOString()
+              });
+            if (insertError) {
+              console.warn('[Diagnostics] Photo record insert failed:', insertError.message);
+            }
+          } else {
+            // No diagnosis case yet, save as temp photo
+            this.tempPhotos.push(publicUrl);
+          }
+
+          return publicUrl;
+        });
+
+        const uploadedUrls = await Promise.all(uploadPromises);
+        const validUrls = uploadedUrls.filter(url => url !== null);
+
+        // Replace dataUrls with public URLs if upload succeeded
+        if (validUrls.length > 0) {
+          // Remove the dataUrls and add the URLs
+          this.imagePreviews.splice(-files.length, files.length, ...validUrls);
+        }
+
+      } catch (error) {
+        console.warn('[Diagnostics] Photo upload process failed:', error);
+        // Keep the dataUrls as fallback
+      }
     },
 
     selectDoctor(doctor) {
@@ -991,60 +1077,178 @@ export default {
     },
 
     async saveDiagnosticCase() {
-      // FASE 9 — save diagnostic case (separate from booking)
-      const payload = {
-        id: Date.now(),
-        title: "Diagnóstico dermatológico guardado",
-        summary: this.generatedInsight.text,
-        quizSummary: this.quizSummary,
-        form: { ...this.form },
-        insight: this.generatedInsight,
-        status: "Guardado",
-        savedAt: new Date().toISOString(),
-      };
+      // Prevent double-submission
+      if (this.isSavingDiagnostic || this.diagnosticSaved) {
+        return;
+      }
 
-      // Save to user-scoped localStorage via historyStore
-      try {
-        this._historyStore?.saveDiagnostic(payload);
-      } catch { /* ignore */ }
+      this.isSavingDiagnostic = true;
 
-      // Try Supabase if available
       try {
-        if (isSupabaseConfigured) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase.from('diagnosis_cases').insert({
-              user_id: user.id,
-              skin_type: this.quizSummary.skinType || null,
-              primary_concern: this.quizSummary.primaryConcern || null,
-              symptoms: this.form.symptoms,
-              areas: this.form.areas,
-              priorities: this.form.priorities,
-              description: this.form.description || null,
-              duration: this.form.duration || null,
-              urgency: this.form.urgency || null,
-              insight_title: this.generatedInsight.title,
-              insight_text: this.generatedInsight.text,
-              status: 'saved',
-            });
+        // FASE 9 — save diagnostic case (separate from booking)
+        const payload = {
+          id: Date.now(),
+          title: "Diagnóstico dermatológico guardado",
+          summary: this.generatedInsight.text,
+          quizSummary: this.quizSummary,
+          form: { ...this.form },
+          insight: this.generatedInsight,
+          status: "Guardado",
+          savedAt: new Date().toISOString(),
+        };
+
+        // Save to user-scoped localStorage via historyStore
+        try {
+          this._historyStore?.saveDiagnostic(payload);
+        } catch { /* ignore */ }
+
+        // Try Supabase if available
+        try {
+          if (isSupabaseConfigured) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              // Check if diagnosis case already exists for this user
+              const { data: existingCase, error: checkError } = await supabase
+                .from('diagnosis_cases')
+                .select('id')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+              let diagnosisId;
+              if (existingCase && !checkError) {
+                // Update existing case
+                const { data: updateResult, error: updateError } = await supabase
+                  .from('diagnosis_cases')
+                  .update({
+                    description: this.form.description || null,
+                    duration: this.form.duration || null,
+                    urgency: this.form.urgency || null,
+                    symptoms: this.form.symptoms,
+                    affected_areas: this.form.areas,
+                    priorities: this.form.priorities,
+                    routine_level: this.form.routineLevel || null,
+                    previous_consult: this.form.previousConsult || null,
+                    generated_insight: this.generatedInsight,
+                    status: 'saved',
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('user_id', user.id)
+                  .select('id')
+                  .single();
+                if (updateError) {
+                  console.warn('[Diagnostics] Supabase diagnosis update failed:', updateError.message || updateError);
+                  this.isSavingDiagnostic = false;
+                  return;
+                }
+                diagnosisId = updateResult.id;
+              } else {
+                // Insert new case
+                const { data: insertResult, error: insertError } = await supabase
+                  .from('diagnosis_cases')
+                  .insert({
+                    user_id: user.id,
+                    description: this.form.description || null,
+                    duration: this.form.duration || null,
+                    urgency: this.form.urgency || null,
+                    symptoms: this.form.symptoms,
+                    affected_areas: this.form.areas,
+                    priorities: this.form.priorities,
+                    routine_level: this.form.routineLevel || null,
+                    previous_consult: this.form.previousConsult || null,
+                    generated_insight: this.generatedInsight,
+                    status: 'saved',
+                  })
+                  .select('id')
+                  .single();
+                if (insertError) {
+                  console.warn('[Diagnostics] Supabase diagnosis insert failed:', insertError.message || insertError);
+                  this.isSavingDiagnostic = false;
+                  return;
+                }
+                diagnosisId = insertResult.id;
+              }
+
+              // Save photos if any (they are already uploaded, just save records)
+              if (this.imagePreviews.length > 0 && diagnosisId) {
+                await this.savePhotosToDiagnosis(diagnosisId, this.imagePreviews);
+              }
+
+              // Save any temp photos that weren't saved before
+              if (this.tempPhotos.length > 0 && diagnosisId) {
+                await this.saveTempPhotosToDiagnosis(diagnosisId);
+              }
+            }
           }
-        }
-      } catch { /* Supabase save is best-effort */ }
+        } catch { /* Supabase save is best-effort */ }
 
-      this.diagnosticSaved = true;
-      this.showToast("Diagnóstico guardado correctamente.");
+        this.diagnosticSaved = true;
+        this.showToast("Diagnóstico guardado correctamente.");
+
+        // Generate personalized routine from diagnosis
+        await this.generateRoutineFromDiagnosis();
+      } finally {
+        this.isSavingDiagnostic = false;
+      }
+    },
+
+    async saveTempPhotosToDiagnosis(diagnosisId) {
+      try {
+        const insertPromises = this.tempPhotos.map(url =>
+          supabase
+            .from('diagnosis_photos')
+            .insert({
+              diagnosis_id: diagnosisId,
+              url: url,
+              is_selfie: false,
+              uploaded_at: new Date().toISOString()
+            })
+        );
+        await Promise.all(insertPromises);
+        // Clear temp photos after saving
+        this.tempPhotos = [];
+      } catch (error) {
+        console.warn('[Diagnostics] Save temp photos failed:', error);
+      }
+    },
+
+    async savePhotosToDiagnosis(diagnosisId, photoUrls) {
+      try {
+        const insertPromises = photoUrls.map(url =>
+          supabase
+            .from('diagnosis_photos')
+            .insert({
+              diagnosis_id: diagnosisId,
+              url: url,
+              is_selfie: false,
+              uploaded_at: new Date().toISOString()
+            })
+        );
+        await Promise.all(insertPromises);
+      } catch (error) {
+        console.warn('[Diagnostics] Save photos to diagnosis failed:', error);
+      }
     },
 
     async confirmBooking() {
-      // FASE 9 — book appointment (separate from saving diagnosis)
-      if (!this.selectedDoctor) {
-        this.showToast("Selecciona un dermatólogo primero.");
+      // Prevent double-submission
+      if (this.isSubmitting || this.bookingConfirmed) {
         return;
       }
-      if (!this.form.appointmentType || !this.form.date || !this.form.time) {
-        this.showToast("Completa el tipo de cita, la fecha y la hora.");
-        return;
-      }
+
+      this.isSubmitting = true;
+
+      try {
+        // FASE 9 — book appointment (separate from saving diagnosis)
+        if (!this.selectedDoctor) {
+          this.showToast("Selecciona un dermatólogo primero.");
+          this.isSubmitting = false;
+          return;
+        }
+        if (!this.form.appointmentType || !this.form.date || !this.form.time) {
+          this.showToast("Completa el tipo de cita, la fecha y la hora.");
+          this.isSubmitting = false;
+          return;
+        }
 
       const confirmationCode = "PH-" + Math.random().toString(36).substring(2, 8).toUpperCase();
       const appointmentPayload = {
@@ -1079,19 +1283,37 @@ export default {
         if (isSupabaseConfigured) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            await supabase.from('appointments').insert({
+            const { data: aptInsert, error: aptError } = await supabase.from('appointments').insert({
               user_id: user.id,
-              dermatologist_name: this.selectedDoctor.name,
               dermatologist_id: this.selectedDoctor.id,
               appointment_type: this.form.appointmentType,
-              appointment_date: this.form.date,
-              appointment_time: this.form.time,
+              scheduled_date: this.form.date,
+              scheduled_time: this.form.time,
               reason: this.form.reason || null,
               notes: this.form.notes || null,
               status: 'confirmed',
               confirmation_code: confirmationCode,
-              skin_concern: this.mainConcern || null,
-            });
+            }).select('id').single();
+
+            if (aptError) {
+              console.warn('[Diagnostics] Appointment insert failed:', aptError.message || aptError);
+            } else {
+              // Update diagnosis_cases with appointment_id
+              const { data: diagCase } = await supabase
+                .from('diagnosis_cases')
+                .select('id')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              if (diagCase) {
+                await supabase
+                  .from('diagnosis_cases')
+                  .update({ appointment_id: aptInsert.id })
+                  .eq('id', diagCase.id);
+              }
+            }
           }
         }
       } catch { /* Supabase save is best-effort */ }
@@ -1121,7 +1343,33 @@ export default {
 
       this.bookingConfirmed = true;
       this.showToast(`Cita confirmada. Código: ${confirmationCode}`);
-      setTimeout(() => { this.$router.push('/perfil?tab=historial'); }, 2000);
+      // Payload para la pantalla de confirmación (AppointmentConfirmation.vue)
+      try {
+        localStorage.setItem("pharmadermAppointment", JSON.stringify({
+          confirmationCode,
+          status: appointmentPayload.status || "Confirmada",
+          doctor: {
+            name: this.selectedDoctor?.name || "",
+            specialty: this.selectedDoctor?.specialty || "",
+          },
+          diagnostics: {
+            appointmentType: this.form.appointmentType,
+            date: this.form.date,
+            time: this.form.time,
+          },
+          quizSummary: {
+            concerns: this.quizSummary.concerns || [],
+            primaryConcern: this.quizSummary.primaryConcern || "",
+            skinType: this.quizSummary.skinType || "",
+            sensitivity: this.quizSummary.sensitivity || "",
+          },
+        }));
+      } catch { /* ignore */ }
+
+      setTimeout(() => { this.$router.push('/appointment-confirmation'); }, 1800);
+      } finally {
+        this.isSubmitting = false;
+      }
     },
 
     async loadQuizSummary() {
@@ -1131,40 +1379,133 @@ export default {
       let savedQuiz = null;
       let source = 'none';
 
-      // Supabase is authoritative when configured
+            // Supabase is authoritative when configured
       if (isSupabaseConfigured && userId) {
         try {
-          const { data, error } = await supabase
-            .from('quiz_sessions')
-            .select('*')
-            .eq('user_id', userId)
-            .order('completed_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+          // A) Esquema denormalizado (quiz_sessions con completed_at, skin_type, concerns...)
+          try {
+            const { data, error } = await supabase
+              .from('quiz_sessions')
+              .select('*')
+              .eq('user_id', userId)
+              .order('completed_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
 
-          if (!error && data) {
-            savedQuiz = {
-              completed: true,
-              skinType: data.skin_type || '',
-              sensitivity: data.sensitivity || '',
-              concerns: data.concerns || [],
-              primaryConcern: data.primary_concern || '',
-              profileTitle: data.profile_title || '',
-              routineFocus: data.routine_focus || '',
-              fullMetrics: data.full_metrics || [],
-              summaryMetrics: (data.full_metrics || []).slice(0, 3),
-              date: data.completed_at,
-            };
-            source = 'supabase';
+            if (!error && data?.completed_at) {
+              let selfieUrl = null;
+              try {
+                const { data: imageData, error: imageError } = await supabase
+                  .from('quiz_images')
+                  .select('public_url, storage_path')
+                  .eq('quiz_session_id', data.id)
+                  .eq('is_selfie', true)
+                  .order('uploaded_at', { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (!imageError && imageData) {
+                  selfieUrl = imageData.public_url || imageData.storage_path || null;
+                }
+              } catch { /* ignore */ }
 
-            // Supplement with richer localStorage data (selfie, morningSteps, etc.) if available
+              savedQuiz = {
+                completed: true,
+                skinType: data.skin_type || '',
+                sensitivity: data.sensitivity || '',
+                concerns: data.concerns || [],
+                primaryConcern: data.primary_concern || '',
+                profileTitle: data.profile_title || '',
+                routineFocus: data.routine_focus || '',
+                fullMetrics: data.full_metrics || [],
+                summaryMetrics: (data.full_metrics || []).slice(0, 3),
+                date: data.completed_at,
+                photoMeta: data.photo_meta || {},
+                selfie: selfieUrl,
+              };
+              source = 'supabase';
+            }
+          } catch { /* ignore */ }
+
+          // B) Esquema `database/schema.sql` (quiz_sessions + skin_analyses)
+          if (!savedQuiz) {
+            const { data: sData, error: sErr } = await supabase
+              .from('quiz_sessions')
+              .select('*')
+              .eq('user_id', userId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (!sErr && sData?.id) {
+              const { data: aData } = await supabase
+                .from('skin_analyses')
+                .select('*')
+                .eq('quiz_session_id', sData.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              let skinTypeCode = '';
+              try {
+                if (sData.skin_type_id) {
+                  const { data: stData } = await supabase
+                    .from('skin_types')
+                    .select('code')
+                    .eq('id', sData.skin_type_id)
+                    .maybeSingle();
+                  skinTypeCode = stData?.code || '';
+                }
+              } catch { /* ignore */ }
+
+              let selfieUrl = null;
+              try {
+                const { data: imageData, error: imageError } = await supabase
+                  .from('quiz_images')
+                  .select('public_url, storage_path')
+                  .eq('quiz_session_id', sData.id)
+                  .eq('is_selfie', true)
+                  .order('uploaded_at', { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (!imageError && imageData) {
+                  selfieUrl = imageData.public_url || imageData.storage_path || null;
+                }
+              } catch { /* ignore */ }
+
+              const sensitivityMap = {
+                resilient: 'Ninguna sensibilidad',
+                mild: 'Baja sensibilidad',
+                reactive: 'Sensibilidad media',
+                very_reactive: 'Sensibilidad alta',
+              };
+
+              const metrics = aData?.metrics || [];
+              savedQuiz = {
+                completed: true,
+                skinType: skinTypeCode,
+                sensitivity: sensitivityMap[sData.barrier_reactivity] || '',
+                concerns: aData?.primary_concern ? [aData.primary_concern] : [],
+                primaryConcern: aData?.primary_concern || '',
+                profileTitle: aData?.profile_title || '',
+                routineFocus: aData?.routine_focus || '',
+                fullMetrics: metrics,
+                summaryMetrics: Array.isArray(metrics) ? metrics.slice(0, 3) : [],
+                date: aData?.created_at || sData.created_at,
+                selfie: selfieUrl,
+              };
+              source = 'supabase(schema.sql)';
+            } else {
+              source = 'supabase:empty';
+            }
+          }
+
+          // Supplement with richer localStorage data (selfie, morningSteps, etc.) if available
+          if (savedQuiz) {
             const localQuiz = this._historyStore?.getLatestQuizResult();
             if (localQuiz?.skinType === savedQuiz.skinType || localQuiz?.primaryConcern === savedQuiz.primaryConcern) {
               savedQuiz = { ...savedQuiz, ...localQuiz, completed: true };
-              source = 'supabase+local';
+              source = source.includes('schema.sql') ? 'supabase(schema.sql)+local' : 'supabase+local';
             }
-          } else {
-            source = 'supabase:empty';
           }
         } catch (e) {
           console.warn('[Diagnostics] Supabase quiz check falló:', e?.message);
@@ -1224,16 +1565,72 @@ export default {
             .maybeSingle();
 
           if (!error && data) {
+            console.log('[Diagnostics] Loaded diagnosis case from DB:', data);
             parsed = {
               form: {
                 description: data.description || '',
                 duration: data.duration || '',
                 urgency: data.urgency || '',
                 symptoms: data.symptoms || [],
-                areas: data.areas || [],
+                areas: data.affected_areas || [],
                 priorities: data.priorities || [],
+                routineLevel: data.routine_level || '',
+                previousConsult: data.previous_consult || '',
               },
+              generatedInsight: data.generated_insight || null,
             };
+
+            // Set selectedDoctor if saved
+            if (data.dermatologist_id) {
+              parsed.selectedDoctor = this.doctors.find(d => d.id === data.dermatologist_id) || null;
+            }
+
+            // Load associated appointment if exists
+            if (data.appointment_id) {
+              const { data: aptData, error: aptError } = await supabase
+                .from('appointments')
+                .select('*')
+                .eq('id', data.appointment_id)
+                .maybeSingle();
+              if (!aptError && aptData) {
+                parsed.form.appointmentType = aptData.appointment_type || '';
+                parsed.form.date = aptData.scheduled_date || '';
+                try {
+                  console.log('[Diagnostics] Converting time from DB:', aptData.scheduled_time);
+                  // Convertir tiempo de DB (HH:MM:SS) a formato del select (H:MM AM/PM)
+                  const dbTime = aptData.scheduled_time;
+                  if (dbTime) {
+                    const timeStr = dbTime.toString();
+                    const [hours, minutes] = timeStr.split(':').map(Number);
+                    if (!isNaN(hours) && !isNaN(minutes)) {
+                      const period = hours >= 12 ? 'PM' : 'AM';
+                      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                      parsed.form.time = `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+                    }
+                  }
+                  console.log('[Diagnostics] Converted time result:', parsed.form.time);
+                } catch (e) {
+                  console.warn('[Diagnostics] Error converting time from DB:', e);
+                  parsed.form.time = aptData.scheduled_time || '';
+                }
+                parsed.form.reason = aptData.reason || '';
+                parsed.form.notes = aptData.notes || '';
+                // Set selectedDoctor
+                parsed.selectedDoctor = this.doctors.find(d => d.id === aptData.dermatologist_id) || null;
+              }
+            }
+
+            // Load associated photos
+            const { data: photos, error: photosError } = await supabase
+              .from('diagnosis_photos')
+              .select('url')
+              .eq('diagnosis_id', data.id)
+              .order('uploaded_at', { ascending: true });
+
+            if (!photosError && photos) {
+              parsed.imagePreviews = photos.map(photo => photo.url);
+            }
+
             source = 'supabase';
           } else {
             source = 'supabase:empty';
@@ -1252,13 +1649,69 @@ export default {
 
       if (!parsed) return;
 
+      console.log('[Diagnostics] Applying saved data:', parsed);
+
       try {
-        if (parsed.form) this.form = { ...this.form, ...parsed.form };
-        if (parsed.imagePreviews) this.imagePreviews = parsed.imagePreviews;
-        if (parsed.selectedDoctor) this.selectedDoctor = parsed.selectedDoctor;
-        if (parsed.casePhoto) this.casePhoto = parsed.casePhoto;
+        if (parsed.form) {
+          console.log('[Diagnostics] Applying form data:', parsed.form);
+          this.form = { ...this.form, ...parsed.form };
+        }
+        if (parsed.imagePreviews) {
+          console.log('[Diagnostics] Applying image previews:', parsed.imagePreviews.length, 'images');
+          this.imagePreviews = parsed.imagePreviews;
+        }
+        if (parsed.selectedDoctor) {
+          console.log('[Diagnostics] Applying selected doctor:', parsed.selectedDoctor.name);
+          this.selectedDoctor = parsed.selectedDoctor;
+        }
+        if (parsed.casePhoto) {
+          console.log('[Diagnostics] Applying case photo');
+          this.casePhoto = parsed.casePhoto;
+        }
       } catch (error) {
         console.error('[Diagnostics] Error applying saved diagnostic case:', error);
+      }
+    },
+
+    async generateRoutineFromDiagnosis() {
+      // Generate routine based on diagnostic information
+      const diagnosticResult = {
+        skinType: this.quizSummary.skinType || 'normal',
+        concerns: this.mainConcern ? [this.mainConcern] : [],
+        sensitivity: this.quizSummary.sensitivity?.includes('alta') || this.quizSummary.sensitivity?.includes('reactive') ? 'reactive' : 'mild',
+      };
+
+      const toStep = (p, i) => ({
+        ...p,
+        step: i + 1,
+        longDescription: p.description || p.longDescription || '',
+        size: p.sizes?.[0]?.label || p.size || '',
+        category: p.category || p.type || 'Cuidado',
+      });
+
+      const builtRoutine = {
+        morning: getProductsByQuizResult(diagnosticResult, 'morning').map(toStep),
+        night: getProductsByQuizResult(diagnosticResult, 'night').map(toStep),
+      };
+
+      // Save the generated routine
+      const routineData = {
+        name: `Rutina basada en diagnóstico - ${this.mainConcern || 'Piel personalizada'}`,
+        primaryConcern: this.mainConcern,
+        skinType: this.quizSummary.skinType,
+        morningSteps: builtRoutine.morning,
+        nightSteps: builtRoutine.night,
+        generatedFromDiagnosis: true,
+        diagnosisDate: new Date().toISOString(),
+      };
+
+      try {
+        await this._historyStore?.saveRoutine(routineData);
+        console.log('[Diagnostics] Routine generated and saved from diagnosis');
+        this.showToast('¡Rutina personalizada generada desde tu diagnóstico!');
+      } catch (error) {
+        console.warn('[Diagnostics] Failed to save routine from diagnosis:', error);
+        this.showToast('Error al generar la rutina. Inténtalo de nuevo.');
       }
     }
   }
@@ -2022,3 +2475,5 @@ input:focus {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
+
+

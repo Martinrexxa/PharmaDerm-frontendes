@@ -38,8 +38,6 @@ export const storageService = {
   set(key, value) {
     try {
       localStorage.setItem(PREFIX + this._key(key), JSON.stringify(value))
-      // Notifica a otros componentes que escuchan el evento storage
-      window.dispatchEvent(new Event('storage'))
       return true
     } catch (e) {
       console.warn('[storageService] No se pudo guardar:', key, e)
@@ -50,7 +48,6 @@ export const storageService = {
   remove(key) {
     try {
       localStorage.removeItem(PREFIX + this._key(key))
-      window.dispatchEvent(new Event('storage'))
       return true
     } catch {
       return false
@@ -66,7 +63,6 @@ export const storageService = {
     } else {
       keys.forEach(k => this.remove(k))
     }
-    window.dispatchEvent(new Event('storage'))
   },
 
   /** Agrega un elemento al inicio de un array guardado */
@@ -111,7 +107,6 @@ export const storageService = {
     try {
       Object.keys(sessionStorage).filter(shouldDelete).forEach(k => sessionStorage.removeItem(k))
     } catch { /* ignore in environments without sessionStorage */ }
-    window.dispatchEvent(new Event('storage'))
   },
 
   /**

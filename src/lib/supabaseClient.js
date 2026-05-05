@@ -8,7 +8,8 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const DATA_MODE = import.meta.env.VITE_DATA_MODE || 'local'
+export const DATA_MODE = import.meta.env.VITE_DATA_MODE || 'local'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 export const isSupabaseConfigured =
   DATA_MODE === 'supabase' &&

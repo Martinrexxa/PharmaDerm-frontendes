@@ -129,7 +129,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Rutinas</p>
-                <h3 class="text-2xl font-extrabold mt-2">{{ history.quizHistory.value.length }}</h3>
+                <h3 class="text-2xl font-extrabold mt-2">{{ history.routines.value.length || history.quizHistory.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
                 <span class="material-symbols-outlined">spa</span>
@@ -334,7 +334,7 @@
             <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Skin profile</p>
             <h3 class="font-bold text-xl mt-1">Mi rutina</h3>
 
-            <div v-if="latestQuiz && latestRoutineSteps.length" class="mt-5 space-y-3">
+            <div v-if="routineSource && latestRoutineSteps.length" class="mt-5 space-y-3">
               <div
                 v-for="step in latestRoutineSteps"
                 :key="step.id || step.title"
@@ -358,9 +358,9 @@
             <button
               type="button"
               class="mt-5 w-full py-3 rounded-xl pd-primary text-white font-bold shadow-lg"
-              @click="router.push('/quiz')"
+              @click="router.push(routineSource ? '/routine' : '/quiz')"
             >
-              {{ latestQuiz ? "Ver o actualizar rutina" : "Hacer rutina" }}
+              {{ routineSource ? "Ver o actualizar rutina" : "Hacer rutina" }}
             </button>
           </article>
 
@@ -559,12 +559,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "../stores/useAuthStore";
 import { useSettingsStore } from "../stores/useSettingsStore";
 import { useHistoryStore } from "../stores/useHistoryStore";
+import userService from "../services/userService.js";
 import { priceIn } from "../utils/currency";
+import { getProductsByQuizResult } from "../data/productCatalog.js";
 
 const router = useRouter();
 const route  = useRoute();
@@ -605,25 +607,113 @@ const currentInitial = computed(() => {
   return (auth.displayName.value || "U").charAt(0).toUpperCase();
 });
 
+const latestRoutine = computed(() => history.routines.value[0] || null);
 const latestQuiz = computed(() => history.quizHistory.value[0] || null);
 const latestDiagnostic = computed(() => history.diagnostics.value[0] || null);
+const routineSource = computed(() => latestRoutine.value || latestQuiz.value);
+
 const latestRoutineSteps = computed(() => {
-  const q = latestQuiz.value;
-  if (!q) return [];
-  const steps = q.morningSteps || q.routineSteps || [];
-  if (steps.length) {
-    return steps.slice(0, 4).map((p, i) => ({
-      id: i,
-      title: p.name || p.title || `Paso ${i + 1}`,
-      desc: p.category || p.type || p.desc || '',
-      icon: 'spa',
-    }));
+  const routine = routineSource.value;
+  if (!routine) return [];
+  
+  // Combinar todas las fuentes posibles de pasos
+  let morning = routine.morningSteps || routine.morningRoutine || [];
+  let night = routine.nightSteps || routine.nightRoutine || [];
+  let generic = routine.routineSteps || routine.steps || [];
+  
+  // Respaldo: Si es un resultado de quiz sin pasos explícitos, generarlos
+  if (!morning.length && !night.length && !generic.length && (routine.skinType || routine.skin_type)) {
+    try {
+      const quizPayload = {
+        skinType: routine.skinType || routine.skin_type || 'normal',
+        concerns: routine.concerns || [],
+        sensitivity: routine.sensitivity || 'mild',
+      };
+      morning = getProductsByQuizResult(quizPayload, 'morning');
+      night = getProductsByQuizResult(quizPayload, 'night');
+    } catch (e) {
+      console.warn('[Perfil] Fallback step generation failed:', e);
+    }
   }
-  return (q.morningRoutine || []).map((s, i) => ({ id: i, title: s, icon: 'wb_sunny' }));
+
+  const allSteps = [...morning, ...night, ...generic];
+  
+  if (allSteps.length) {
+    const uniqueSteps = [];
+    const seenTitles = new Set();
+    
+    for (const p of allSteps) {
+      const isString = typeof p === 'string';
+      const title = isString ? p : (p.name || p.title || p.product_name || '');
+      
+      if (title && !seenTitles.has(title)) {
+        seenTitles.add(title);
+        uniqueSteps.push({
+          id: uniqueSteps.length,
+          title,
+          desc: isString ? '' : (p.category || p.type || p.note || p.desc || ''),
+          icon: isString ? 'wb_sunny' : 'spa',
+        });
+      }
+      if (uniqueSteps.length >= 5) break;
+    }
+    
+    return uniqueSteps;
+  }
+  return [];
 });
+
+async function loadAddressFromDatabase() {
+  try {
+    // Try to load from localStorage first (fastest)
+    const addresses = userService.getAddresses()
+    if (addresses && addresses.length > 0) {
+      const defaultAddress = addresses[0]
+      editableUser.value.address = defaultAddress.address_line_1 || defaultAddress.address || ''
+      console.log('[Perfil] Address loaded from localStorage:', editableUser.value.address)
+      return
+    }
+  } catch (error) {
+    console.warn('[Perfil] localStorage address load failed:', error)
+  }
+
+  // Fallback: load from Supabase
+  try {
+    const userId = auth.user?.value?.id
+    if (!userId) {
+      console.warn('[Perfil] No user ID available')
+      return
+    }
+    
+    // Query addresses table for user's addresses
+    const supabase = (await import('../lib/supabaseClient.js')).supabase
+    const { data, error } = await supabase
+      .from('addresses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('is_default', { ascending: false })
+      .limit(1)
+    
+    if (error) {
+      console.warn('[Perfil] Supabase address query error:', error.message)
+      return
+    }
+    
+    if (data && data.length > 0) {
+      const address = data[0]
+      editableUser.value.address = address.address_line_1 || address.address || ''
+      console.log('[Perfil] Address loaded from Supabase:', editableUser.value.address)
+    } else {
+      console.log('[Perfil] No address found in Supabase for user:', userId)
+    }
+  } catch (error) {
+    console.warn('[Perfil] Supabase address load exception:', error)
+  }
+}
 
 function toggleEditMode() {
   editableUser.value = _buildEditable(currentUser.value)
+  loadAddressFromDatabase()
   editMode.value = !editMode.value;
 }
 
@@ -643,12 +733,31 @@ async function saveProfile() {
   const nameParts = (editableUser.value.name || '').trim().split(/\s+/)
   const firstName = nameParts[0] || ''
   const lastName  = nameParts.slice(1).join(' ') || ''
+  
+  // Update user profile (name, phone, birth_date)
   await auth.updateProfile({
     firstName,
     lastName,
     phone: editableUser.value.phone || null,
     birth_date: editableUser.value.birth_date || null,
   })
+
+  // Save address to Supabase if user is authenticated
+  try {
+    const userId = auth.user?.value?.id
+    if (userId && editableUser.value.address) {
+      await userService.saveAddress({
+        address: editableUser.value.address,
+        city: editableUser.value.city || null,
+        label: 'Mi dirección',
+        address_line_1: editableUser.value.address,
+        is_default: true,
+      }, userId)
+    }
+  } catch (error) {
+    console.warn('[Perfil] Address save failed:', error)
+  }
+
   editMode.value = false;
 }
 

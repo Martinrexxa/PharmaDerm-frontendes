@@ -1,11 +1,18 @@
 <template>
   <div class="routine-page">
     <!-- No quiz yet -->
-    <div v-if="!hasQuiz" class="empty-state">
+    <div v-if="!hasRoutine && !isLoadingRoutine" class="empty-state">
       <span class="material-symbols-outlined empty-icon">auto_fix_high</span>
       <h2>No hay rutina personalizada</h2>
-      <p>Completa el quiz de piel para generar tu rutina personalizada.</p>
+      <p>Completa el quiz o un diagnóstico para generar tu rutina personalizada.</p>
       <button class="btn-primary" @click="router.push('/quiz')">Hacer quiz</button>
+      <button class="btn-secondary" @click="router.push('/diagnostics')" style="margin-top: 1rem;">Ir a diagnóstico</button>
+    </div>
+
+    <!-- Loading -->
+    <div v-else-if="isLoadingRoutine" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Cargando tu rutina personalizada...</p>
     </div>
 
     <!-- Routine view -->
@@ -14,8 +21,8 @@
       <div class="routine-header">
         <div class="container">
           <p class="routine-eyebrow">MI RUTINA PERSONALIZADA</p>
-          <h1>{{ quizResult.profileTitle || 'Mi rutina de piel' }}</h1>
-          <p class="routine-sub">{{ quizResult.profileSummary?.slice(0, 160) }}...</p>
+          <h1>{{ currentRoutine.profileTitle || currentRoutine.name || quizResult.value?.profileTitle || diagnosticResult.value?.title || 'Mi rutina de piel' }}</h1>
+          <p v-if="routineDescription" class="routine-sub">{{ routineDescription }}</p>
           <div class="routine-meta-pills">
             <span class="meta-pill">{{ skinTypeLabel }}</span>
             <span class="meta-pill concern">{{ concernLabel }}</span>
@@ -50,7 +57,7 @@
             <div class="step-category">{{ step.category }}</div>
 
             <div class="step-body">
-              <img :src="step.image" :alt="step.name" class="step-img" @error="$event.target.src='https://placehold.co/300x400/e5e7eb/475569?text=PRODUCTO'" />
+              <TransparentImg :src="step.image" :alt="step.name" class="step-img" @error="$event.target.src='https://placehold.co/300x400/e5e7eb/475569?text=PRODUCTO'" />
               <div class="step-info">
                 <p class="step-brand">{{ step.brand }}</p>
                 <h3 class="step-name">{{ step.name }}</h3>
@@ -100,11 +107,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/useCartStore'
 import { useHistoryStore } from '../stores/useHistoryStore'
 import { convertPrice } from '../utils/currency'
+import TransparentImg from '../components/TransparentImg.vue'
+import routineService from '../services/routineService.js'
+import { getProductsByQuizResult } from '../data/productCatalog.js'
 
 const router = useRouter()
 const cart = useCartStore()
@@ -115,40 +125,183 @@ const toast = ref('')
 let toastTimer = null
 
 const quizResult = computed(() => history.getLatestQuizResult())
+const diagnosticResult = computed(() => history.getLatestDiagnostic())
 
 const hasQuiz = computed(() => !!quizResult.value)
 
+// Current routine data (from diagnosis or quiz)
+const currentRoutine = ref(null)
+const isLoadingRoutine = ref(true)
+
+const hasRoutine = computed(() => !!currentRoutine.value)
+
 const skinTypeLabel = computed(() => {
+  if (!currentRoutine.value) return 'Piel'
   const map = { seca: 'Piel seca', normal: 'Piel normal', mixta: 'Piel mixta', grasa: 'Piel grasa' }
-  return map[quizResult.value?.skinType] || quizResult.value?.skinType || 'Piel'
+  return map[currentRoutine.value.skinType] || currentRoutine.value.skinType || 'Piel'
 })
 
 const concernLabel = computed(() => {
+  if (!currentRoutine.value) return ''
   const map = {
     luminosidad: 'Luminosidad', deshidratacion: 'Deshidratación', manchas: 'Manchas',
     sensibilidad: 'Sensibilidad', arrugas: 'Líneas tempranas', poros: 'Poros', barrera: 'Barrera',
   }
-  return map[quizResult.value?.primaryConcern] || quizResult.value?.primaryConcern || ''
+  return map[currentRoutine.value.primaryConcern] || currentRoutine.value.primaryConcern || ''
+})
+
+const routineDescription = computed(() => {
+  const raw = currentRoutine.value?.profileSummary
+    || currentRoutine.value?.routineFocus
+    || currentRoutine.value?.summary
+    || currentRoutine.value?.description
+    || quizResult.value?.profileSummary
+    || quizResult.value?.routineFocus
+    || diagnosticResult.value?.summary
+    || diagnosticResult.value?.form?.description
+    || ''
+
+  let trimmed = raw.trim().replace(/\s+/g, ' ')
+  if (!trimmed) return 'Tu rutina se basa en tu diagnóstico, por lo que conviene...'
+
+  const marker = 'por lo que conviene'
+  const lower = trimmed.toLowerCase()
+  const markerIndex = lower.indexOf(marker)
+  if (markerIndex >= 0) {
+    const endIndex = markerIndex + marker.length
+    const result = trimmed.slice(0, endIndex).trim()
+    return `${result}...`
+  }
+
+  trimmed = trimmed.replace(/[\.\?!]+$/, '')
+  const suffix = ' por lo que conviene...'
+  const maxLength = 160 - suffix.length
+  if (trimmed.length <= maxLength) {
+    return `${trimmed}${suffix}`
+  }
+  return `${trimmed.slice(0, maxLength).trim()}${suffix}`
 })
 
 const formattedDate = computed(() => {
-  if (!quizResult.value?.date) return ''
-  return new Date(quizResult.value.date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })
+  if (!currentRoutine.value?.date) return ''
+  return new Date(currentRoutine.value.date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })
 })
 
+function buildRoutineFromQuizData(quiz) {
+  if (!quiz) return { morningSteps: [], nightSteps: [] }
+  const quizPayload = {
+    skinType: quiz.skinType || quiz.skin_type || 'normal',
+    concerns: quiz.concerns || [],
+    sensitivity: quiz.sensitivity || 'mild',
+  }
+  const toStep = (p, i) => ({
+    ...p,
+    step: i + 1,
+    longDescription: p.description || p.longDescription || '',
+    size: p.sizes?.[0]?.label || p.size || '',
+    category: p.category || p.type || 'Cuidado',
+  })
+  return {
+    morningSteps: getProductsByQuizResult(quizPayload, 'morning').map(toStep),
+    nightSteps: getProductsByQuizResult(quizPayload, 'night').map(toStep),
+  }
+}
+
+function buildStepsFromNameList(names) {
+  return (names || []).map((name, index) => ({
+    step: index + 1,
+    name,
+    category: 'Producto',
+    size: '',
+    longDescription: '',
+    brand: '',
+    image: 'https://placehold.co/300x400/e5e7eb/475569?text=Producto',
+  }))
+}
+
 const currentSteps = computed(() => {
-  const r = quizResult.value
-  if (!r) return []
+  if (!currentRoutine.value) return []
   const key = activeTab.value === 'morning' ? 'morningSteps' : 'nightSteps'
-  const raw = r[key] || r.routineSteps || []
-  return raw.map((p, i) => ({ ...p, step: i + 1 }))
+  const raw = currentRoutine.value[key] || currentRoutine.value.routineSteps || []
+  if (raw.length) return raw.map((p, i) => ({ ...p, step: i + 1 }))
+
+  // Handle older or reconstructed quiz objects with only named routines
+  const nameKey = activeTab.value === 'morning' ? 'morningRoutine' : 'nightRoutine'
+  const names = currentRoutine.value[nameKey] || []
+  if (names.length) return buildStepsFromNameList(names)
+
+  // As last fallback, rebuild from quiz metadata
+  if (quizResult.value) {
+    const fallback = buildRoutineFromQuizData(quizResult.value)
+    const steps = fallback[key] || []
+    return steps
+  }
+
+  return []
 })
 
 const currentNameList = computed(() => {
-  const r = quizResult.value
-  if (!r) return []
-  if (activeTab.value === 'morning') return r.morningRoutine || []
-  return r.nightRoutine || []
+  if (!currentRoutine.value) return []
+  const r = currentRoutine.value
+  const key = activeTab.value === 'morning' ? 'morningRoutine' : 'nightRoutine'
+  return r[key] || []
+})
+
+function getLegacyQuizResult() {
+  const keys = Object.keys(localStorage)
+  for (const key of keys) {
+    if (key.startsWith('pharmaderm_quiz_result')) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key) || 'null')
+        if (parsed && parsed.completed) return parsed
+      } catch { /* ignore invalid JSON */ }
+    }
+  }
+  return null
+}
+
+function getQuizFallback() {
+  return quizResult.value || getLegacyQuizResult()
+}
+
+async function loadRoutineData() {
+  isLoadingRoutine.value = true
+  try {
+    const savedRoutine = await routineService.getLatestRoutine()
+    if (savedRoutine) {
+      currentRoutine.value = {
+        ...savedRoutine,
+        profileTitle: savedRoutine.profileTitle || quizResult.value?.profileTitle,
+        profileSummary: savedRoutine.profileSummary || quizResult.value?.profileSummary,
+        routineFocus: savedRoutine.routineFocus || quizResult.value?.routineFocus,
+        summary: savedRoutine.summary || diagnosticResult.value?.summary,
+        description: savedRoutine.description || diagnosticResult.value?.form?.description,
+      }
+      console.log('[Routine] Loaded saved routine from Supabase:', currentRoutine.value.name || currentRoutine.value.profileTitle)
+      return
+    }
+
+    const quiz = getQuizFallback()
+    if (quiz) {
+      currentRoutine.value = quiz
+      console.log('[Routine] Loaded routine from quiz fallback')
+      return
+    }
+
+    console.log('[Routine] No routine or quiz data available yet')
+  } catch (e) {
+    console.warn('[Routine] Error loading routine data:', e)
+    currentRoutine.value = getQuizFallback()
+  } finally {
+    isLoadingRoutine.value = false
+  }
+}
+
+watch(quizResult, (newQuiz) => {
+  if (!currentRoutine.value && newQuiz) {
+    currentRoutine.value = newQuiz
+    console.log('[Routine] Reactive quiz result loaded after mount')
+  }
 })
 
 function starText(rating) {
@@ -169,6 +322,9 @@ function addToCart(product) {
   cart.addItem(product, { size, qty: 1, priceRD })
   showToast(`${product.name} agregado al carrito`)
 }
+
+// Load routine data on mount
+onMounted(loadRoutineData)
 </script>
 
 <style scoped>
@@ -237,4 +393,7 @@ function addToCart(product) {
   .step-body { grid-template-columns: 1fr; }
   .step-img { height: 180px; }
 }
+.loading-state { text-align: center; padding: 6rem 1rem; min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; }
+.loading-spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #16a6e2; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>

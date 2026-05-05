@@ -2,7 +2,7 @@
   <header class="app-header" @click="closeAll">
     <!-- Promo bar -->
     <div class="top-promos">
-      <div>FREE SHIPPING ON ORDERS OVER RD$3,000 • SHOP NOW</div>
+      <div>{{ promoText }}</div>
     </div>
 
     <!-- Main nav -->
@@ -77,7 +77,7 @@
         <div class="cart-wrap">
           <button class="icon-btn cart-btn" aria-label="Cart" @click.stop="cartOpen = !cartOpen; profileOpen = false">
             <span class="material-symbols-outlined">shopping_bag</span>
-            <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
+            <span v-if="cartCount > 0" class="cart-badge" :class="{ 'cart-badge--pop': badgePop }">{{ cartCount }}</span>
           </button>
 
           <transition name="fade">
@@ -219,7 +219,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useCartStore } from '../stores/useCartStore'
@@ -236,6 +236,11 @@ const settings = useSettingsStore()
 const { isLoggedIn, displayName } = auth
 const { items: cartItems, count: cartCount, subtotal: cartSubtotal, removeItem: _removeItem, updateQty } = cart
 const userCurrency = settings.currency
+
+const promoText = computed(() => {
+  const threshold = priceIn(3000, 'DOP', userCurrency.value)
+  return `FREE SHIPPING ON ORDERS OVER ${threshold} • SHOP NOW`
+})
 
 function fmtPrice(dopAmount) {
   return priceIn(Number(dopAmount) || 0, 'DOP', userCurrency.value)
@@ -247,6 +252,8 @@ const cartOpen = ref(false)
 const searchOpen = ref(false)
 const searchQ = ref('')
 const searchInputRef = ref(null)
+const badgePop = ref(false)
+let badgePopTimer = null
 
 const hoverFace = ['Face Wash', 'Face Moisturizer', 'Face Serum', 'Face Toner', 'Eye Care']
 const hoverSunscreen = ['Face Sunscreen', 'Body Sunscreen', 'Tinted Sunscreen']
@@ -310,9 +317,16 @@ function removeItem(index) {
   _removeItem(index)
 }
 
+let storageDebounceTimer = null
 function onStorage() {
-  cart.refresh()
-  auth.refresh()
+  if (document.hidden) return
+
+  if (storageDebounceTimer) clearTimeout(storageDebounceTimer)
+  storageDebounceTimer = setTimeout(() => {
+    cart.refresh()
+    auth.refresh()
+    storageDebounceTimer = null
+  }, 300)
 }
 
 onMounted(() => {
@@ -321,6 +335,20 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', onStorage)
+  if (storageDebounceTimer) clearTimeout(storageDebounceTimer)
+  if (badgePopTimer) clearTimeout(badgePopTimer)
+})
+
+watch(cartCount, (next, prev) => {
+  const n = Number(next || 0)
+  const p = Number(prev || 0)
+  if (n <= p) return
+  badgePop.value = false
+  requestAnimationFrame(() => {
+    badgePop.value = true
+    if (badgePopTimer) clearTimeout(badgePopTimer)
+    badgePopTimer = setTimeout(() => { badgePop.value = false }, 450)
+  })
 })
 </script>
 
@@ -444,6 +472,18 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   padding: 0 3px;
+  transform-origin: center;
+}
+
+@keyframes pd-badge-pop {
+  0%   { transform: scale(0.72) translateY(0); }
+  40%  { transform: scale(1.22) translateY(-1px); }
+  70%  { transform: scale(0.98) translateY(0); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.cart-badge--pop {
+  animation: pd-badge-pop 420ms cubic-bezier(.22, 1.2, .36, 1);
 }
 
 /* Mega menu */
@@ -848,3 +888,4 @@ onBeforeUnmount(() => {
   .cart-panel { width: calc(100vw - 20px); }
 }
 </style>
+

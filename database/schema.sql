@@ -1,6 +1,6 @@
--- PharmaDerm Database Schema
+﻿-- PharmaDerm Database Schema
 -- PostgreSQL 15+ | Supabase-compatible
--- Execute ONCE in the Supabase SQL Editor (Dashboard → SQL Editor → New query)
+-- Execute ONCE in the Supabase SQL Editor (Dashboard â†’ SQL Editor â†’ New query)
 -- =====================================================================
 
 -- =====================================================================
@@ -233,14 +233,14 @@ CREATE TABLE IF NOT EXISTS product_benefits (
   sort_order INTEGER DEFAULT 0
 );
 
--- Bridge: product ↔ skin_type (M2M)
+-- Bridge: product â†” skin_type (M2M)
 CREATE TABLE IF NOT EXISTS product_skin_types (
   product_id   UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   skin_type_id INTEGER NOT NULL REFERENCES skin_types(id),
   PRIMARY KEY (product_id, skin_type_id)
 );
 
--- Bridge: product ↔ skin_concern (M2M)
+-- Bridge: product â†” skin_concern (M2M)
 CREATE TABLE IF NOT EXISTS product_concern_tags (
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   concern_id INTEGER NOT NULL REFERENCES skin_concerns(id),
@@ -292,7 +292,7 @@ CREATE TABLE IF NOT EXISTS product_safety_info (
   updated_at           TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Bridge: product ↔ paired product (M2M, complementary products)
+-- Bridge: product â†” paired product (M2M, complementary products)
 CREATE TABLE IF NOT EXISTS product_pairings (
   product_id  UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   paired_with UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS routine_steps (
   note        TEXT
 );
 
--- Bridge: routine ↔ products (M2M, flat lookup without step ordering)
+-- Bridge: routine â†” products (M2M, flat lookup without step ordering)
 CREATE TABLE IF NOT EXISTS routine_products (
   routine_id  UUID NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
   product_id  UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -648,7 +648,7 @@ CREATE TABLE IF NOT EXISTS diagnosis_photos (
   uploaded_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Bridge: diagnosis ↔ product (products recommended by the dermatologist)
+-- Bridge: diagnosis â†” product (products recommended by the dermatologist)
 CREATE TABLE IF NOT EXISTS diagnosis_products (
   diagnosis_id UUID NOT NULL REFERENCES diagnosis_cases(id) ON DELETE CASCADE,
   product_id   UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -923,9 +923,9 @@ ALTER TABLE exchange_rate_logs        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE review_votes              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log                 ENABLE ROW LEVEL SECURITY;
 
--- ─────────────────────────────────────────────────────────────────────
--- A. PUBLIC CATALOG — anyone (anon + authenticated) can SELECT
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- A. PUBLIC CATALOG â€” anyone (anon + authenticated) can SELECT
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "public_select" ON roles               FOR SELECT USING (true);
 CREATE POLICY "public_select" ON countries           FOR SELECT USING (true);
@@ -959,9 +959,9 @@ CREATE POLICY "public_select" ON story_sections      FOR SELECT USING (is_active
 CREATE POLICY "public_select" ON bank_accounts       FOR SELECT USING (is_active = true);
 CREATE POLICY "public_select" ON promo_codes         FOR SELECT USING (is_active = true);
 
--- ─────────────────────────────────────────────────────────────────────
--- B. USERS — own row only
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- B. USERS â€” own row only
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "users_own_select" ON users
   FOR SELECT TO authenticated USING (auth.uid() = id);
@@ -970,10 +970,10 @@ CREATE POLICY "users_own_update" ON users
   FOR UPDATE TO authenticated
   USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
--- ─────────────────────────────────────────────────────────────────────
--- C. USER PRIVATE TABLES — full CRUD scoped to own user_id
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- C. USER PRIVATE TABLES â€” full CRUD scoped to own user_id
 --    FOR ALL with both USING + WITH CHECK covers SELECT/INSERT/UPDATE/DELETE
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "own_all" ON user_sessions
   FOR ALL TO authenticated
@@ -991,9 +991,9 @@ CREATE POLICY "own_all" ON favorites
   FOR ALL TO authenticated
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- D. QUIZ & ANALYSIS
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "own_all" ON quiz_sessions
   FOR ALL TO authenticated
@@ -1013,9 +1013,9 @@ CREATE POLICY "own_all" ON quiz_analysis_metrics
   USING  (analysis_id IN (SELECT id FROM skin_analyses WHERE user_id = auth.uid()))
   WITH CHECK (analysis_id IN (SELECT id FROM skin_analyses WHERE user_id = auth.uid()));
 
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- E. ROUTINES
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "own_all" ON routines
   FOR ALL TO authenticated
@@ -1035,9 +1035,9 @@ CREATE POLICY "own_all" ON routine_history
   FOR ALL TO authenticated
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- F. CART & ORDERS
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "own_all" ON carts
   FOR ALL TO authenticated
@@ -1080,9 +1080,9 @@ CREATE POLICY "own_all" ON promo_code_uses
   FOR ALL TO authenticated
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- G. APPOINTMENTS & DIAGNOSIS
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "own_all" ON appointments
   FOR ALL TO authenticated
@@ -1110,9 +1110,9 @@ CREATE POLICY "own_select" ON diagnosis_recommendations
   FOR SELECT TO authenticated
   USING (diagnosis_id IN (SELECT id FROM diagnosis_cases WHERE user_id = auth.uid()));
 
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- H. NOTIFICATIONS
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "own_all" ON user_notifications
   FOR ALL TO authenticated
@@ -1126,9 +1126,9 @@ CREATE POLICY "own_all" ON review_votes
   FOR ALL TO authenticated
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- I. ADMIN-ONLY TABLES
--- ─────────────────────────────────────────────────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CREATE POLICY "admin_select" ON email_logs
   FOR SELECT TO authenticated
@@ -1149,3 +1149,4 @@ CREATE POLICY "admin_insert" ON audit_log
 CREATE POLICY "admin_insert" ON exchange_rate_logs
   FOR INSERT TO authenticated
   WITH CHECK (EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role_id = 1));
+

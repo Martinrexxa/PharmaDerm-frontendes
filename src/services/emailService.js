@@ -63,12 +63,34 @@ function logEmail({ type, toEmail, orderId = null, appointmentId = null, status,
  * @param {string} lang  - 'es' | 'en'
  */
 export async function sendOrderConfirmation(order, lang = 'es') {
-  const templateId = TEMPLATES[`order_${lang}`] || TEMPLATES.order_es
+  const langTemplate = TEMPLATES[`order_${lang}`]
+
+  // Fallback: si no se configuró template de "order", usa el de "routine"
+  // para no bloquear el envío de correos en demo/producción temprana.
+  const routineFallback = TEMPLATES[`routine_${lang}`] || TEMPLATES.routine_es
+  const templateId = langTemplate || TEMPLATES.order_es || routineFallback
 
   if (!isConfigured || !templateId) {
     console.warn('[EmailJS] No configurado. El correo de orden NO fue enviado.')
     logEmail({ type: 'order_confirmation', toEmail: order.customer_email, orderId: order.id, status: 'pending', error: 'EmailJS no configurado' })
-    return { ok: false, simulated: true, message: 'EmailJS no está configurado. La orden fue guardada correctamente.' }
+
+    const missing = []
+    if (!SERVICE_ID) missing.push('VITE_EMAILJS_SERVICE_ID')
+    if (!PUBLIC_KEY) missing.push('VITE_EMAILJS_PUBLIC_KEY')
+    if (!templateId) {
+      // Si no hay template para el idioma, al menos requerimos el ES como fallback.
+      if (!TEMPLATES.order_es) missing.push('VITE_EMAILJS_ORDER_TEMPLATE_ID_ES')
+      // Y si el idioma pedido fue en, también sugerimos el EN (opcional pero recomendado).
+      if (lang === 'en' && !TEMPLATES.order_en) missing.push('VITE_EMAILJS_ORDER_TEMPLATE_ID_EN')
+      // También aceptamos routine como fallback
+      if (!TEMPLATES.routine_es && !TEMPLATES.routine_en) missing.push('VITE_EMAILJS_ROUTINE_TEMPLATE_ID_ES')
+    }
+
+    const msg = missing.length
+      ? `No se pudo enviar el correo porque faltan variables de EmailJS: ${missing.join(', ')}.`
+      : 'EmailJS no está configurado. La orden fue guardada correctamente.'
+
+    return { ok: false, simulated: true, message: msg }
   }
 
   const ejs = await getEmailJS()
@@ -98,6 +120,9 @@ export async function sendOrderConfirmation(order, lang = 'es') {
     items_summary:    itemsSummary,
     billing_address:  `${order.address}, ${order.city}, ${order.country}`,
     support_email:    'soporte@pharmadermrd.com',
+    // Campos extra por si el template es el de rutina (fallback)
+    email_title:      'Confirmación de compra',
+    email_subtitle:   'Detalles de tu pedido',
   }
 
   try {
@@ -117,12 +142,26 @@ export async function sendOrderConfirmation(order, lang = 'es') {
  * @param {string} lang - 'es' | 'en'
  */
 export async function sendAppointmentConfirmation(apt, lang = 'es') {
-  const templateId = TEMPLATES[`appointment_${lang}`] || TEMPLATES.appointment_es
+  const langTemplate = TEMPLATES[`appointment_${lang}`]
+  const templateId = langTemplate || TEMPLATES.appointment_es
 
   if (!isConfigured || !templateId) {
     console.warn('[EmailJS] No configurado. El correo de cita NO fue enviado.')
     logEmail({ type: 'appointment_confirmation', toEmail: apt.email, appointmentId: apt.id, status: 'pending', error: 'EmailJS no configurado' })
-    return { ok: false, simulated: true, message: 'EmailJS no está configurado. La cita fue guardada correctamente.' }
+
+    const missing = []
+    if (!SERVICE_ID) missing.push('VITE_EMAILJS_SERVICE_ID')
+    if (!PUBLIC_KEY) missing.push('VITE_EMAILJS_PUBLIC_KEY')
+    if (!templateId) {
+      if (!TEMPLATES.appointment_es) missing.push('VITE_EMAILJS_APPOINTMENT_TEMPLATE_ID_ES')
+      if (lang === 'en' && !TEMPLATES.appointment_en) missing.push('VITE_EMAILJS_APPOINTMENT_TEMPLATE_ID_EN')
+    }
+
+    const msg = missing.length
+      ? `No se pudo enviar el correo porque faltan variables de EmailJS: ${missing.join(', ')}.`
+      : 'EmailJS no está configurado. La cita fue guardada correctamente.'
+
+    return { ok: false, simulated: true, message: msg }
   }
 
   const ejs = await getEmailJS()

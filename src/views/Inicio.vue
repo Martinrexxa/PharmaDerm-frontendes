@@ -64,7 +64,7 @@
             @click="router.push(`/producto/${product.slug}`)"
           >
             <div class="relative pd-soft rounded-xl p-6 flex items-center justify-center">
-              <img class="h-40 object-contain" :src="product.image" :alt="product.name" @error="onImgError" />
+              <TransparentImg class="h-40 object-contain" :src="product.image" :alt="product.name" @error="onImgError" />
             </div>
             <p class="mt-3 text-[10px] uppercase tracking-widest pd-muted font-bold">{{ brandLabel(product.brand) }}</p>
             <h4 class="font-semibold">{{ product.name }}</h4>
@@ -129,6 +129,7 @@ import { useCartStore } from '../stores/useCartStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { allProducts } from '../data/productCatalog.js'
 import { formatPrice, convertPrice } from '../utils/currency.js'
+import TransparentImg from '../components/TransparentImg.vue'
 
 const router = useRouter()
 const cart = useCartStore()

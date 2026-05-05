@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
+import { supabase, isSupabaseConfigured, DATA_MODE, API_BASE_URL } from '../lib/supabaseClient.js'
 import { userService } from '../services/userService.js'
 import storageService from '../services/storageService.js'
 import { loadHistoryForUser, clearHistory } from './useHistoryStore.js'
@@ -109,7 +109,13 @@ export function useAuthStore() {
     } catch { /* ignore */ }
 
     // Keep state in sync with Supabase token refresh, sign in/out
-    supabase.auth.onAuthStateChange(async (_event, s) => {
+    supabase.auth.onAuthStateChange(async (event, s) => {
+      if (event === 'TOKEN_REFRESHED' && s?.user?.id === user.value?.id) {
+        session.value = s
+        return
+      }
+      if (event === 'INITIAL_SESSION' && session.value) return;
+
       session.value = s
       if (s) {
         await userService.ensurePublicUser(s.user)
@@ -130,6 +136,25 @@ export function useAuthStore() {
     loading.value = true
     try {
       if (!isSupabaseConfigured) {
+        if (DATA_MODE === 'backend') {
+          const res = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              Nombre: firstName,
+              Apellido: lastName,
+              Email: email,
+              Telefono: phone,
+              Contrasena: password,
+            }),
+          })
+
+          const data = await res.json().catch(() => ({}))
+          if (!res.ok) throw new Error(data?.error || 'No se pudo registrar')
+
+          return { success: true, needsEmailConfirmation: false }
+        }
+
         const userData = {
           name: `${firstName} ${lastName}`.trim(),
           firstName, lastName, email, phone, password,
@@ -167,6 +192,52 @@ export function useAuthStore() {
     loading.value = true
     try {
       if (!isSupabaseConfigured) {
+        if (DATA_MODE === 'backend') {
+          const res = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Email: email, Contrasena: password }),
+          })
+
+          const data = await res.json().catch(() => ({}))
+          if (!res.ok) throw new Error(data?.error || 'No se pudo iniciar sesión')
+
+          const u = data?.usuario || null
+          if (!u?.email) throw new Error('Respuesta inválida del servidor')
+
+          // Clean legacy data before loading new user
+          storageService.cleanupLegacyPrivateStorage()
+
+          const normalizedUser = {
+            id: u.id ?? u.usuarioId ?? u.UsuarioID ?? null,
+            email: u.email,
+            firstName: u.nombre || '',
+            lastName: u.apellido || '',
+            name: `${u.nombre || ''} ${u.apellido || ''}`.trim() || 'Usuario',
+            phone: u.telefono || null,
+          }
+
+          user.value = normalizedUser
+          const sess = {
+            isLoggedIn: true,
+            email: normalizedUser.email,
+            token: data?.token || null,
+            loginAt: new Date().toISOString(),
+            mode: 'backend',
+          }
+
+          session.value = sess
+          localStorage.setItem('pharmaderm_user', JSON.stringify(normalizedUser))
+          localStorage.setItem('pharmaderm_session', JSON.stringify(sess))
+
+          // Scope localStorage keys to this user
+          storageService.setCurrentUser(normalizedUser.email)
+          await loadHistoryForUser(normalizedUser.email)
+          initCartForUser()
+
+          return { success: true }
+        }
+
         const savedUser = JSON.parse(localStorage.getItem('pharmaderm_user') || 'null')
         if (!savedUser) throw new Error('No hay ninguna cuenta registrada. Crea una cuenta primero.')
         if (
@@ -188,8 +259,16 @@ export function useAuthStore() {
       storageService.cleanupLegacyPrivateStorage()
       const { session: s, user: authUser } = await userService.signInUser(email, password)
       session.value = s
-      await userService.ensurePublicUser(authUser)
-      await _loadProfile(authUser.id)
+
+      // If the app-specific profile tables (public.users, user_settings) don't exist yet,
+      // still allow the user to log in with Supabase Auth.
+      try {
+        await userService.ensurePublicUser(authUser)
+        await _loadProfile(authUser.id)
+      } catch {
+        user.value = { id: authUser.id, email: authUser.email }
+        storageService.setCurrentUser(authUser.id)
+      }
       return { success: true }
     } finally {
       loading.value = false

@@ -42,8 +42,8 @@ export function useCartStore() {
   )
 
   function addItem(product, options = {}) {
-    const { size, qty = 1, priceUSD, mode = 'one-time' } = options
-    const price = priceUSD ?? product.priceFrom ?? product.priceRD ?? 0
+    const { size, qty = 1, priceRD, mode = 'one-time' } = options
+    const price = priceRD ?? product.priceRD ?? (product.priceUSD ? Math.round(product.priceUSD * 59.4) : 0)
     const existing = items.value.find(
       (i) => i.id === product.id && (i.size || '') === (size || '')
     )

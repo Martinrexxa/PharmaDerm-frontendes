@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from "../lib/supabaseClient.js";
 import Login from "../views/login.vue";
 import Registro from "../views/Registro.vue";
 import Olvide from "../views/olvide.vue";
+import ResetPassword from "../views/ResetPassword.vue";
 
 // Main
 import Inicio from "../views/Inicio.vue";
@@ -30,6 +31,7 @@ const routes = [
   { path: "/login", name: "Login", component: Login, meta: { public: true } },
   { path: "/registro", name: "Registro", component: Registro, meta: { public: true } },
   { path: "/olvide", name: "Olvide", component: Olvide, meta: { public: true } },
+  { path: "/reset-password", name: "ResetPassword", component: ResetPassword, meta: { public: true } },
 
   // protegidas
   { path: "/inicio", name: "Inicio", component: Inicio },

@@ -1,4 +1,4 @@
-// src/data/lrpCatalog.js
+﻿// src/data/lrpCatalog.js
 
 export const money = (n) =>
   new Intl.NumberFormat("es-DO", {
@@ -8,6 +8,8 @@ export const money = (n) =>
 
 const placeholder =
   "https://placehold.co/900x1100/f5f7fb/1f2937?text=La+Roche-Posay";
+
+const localImg = (fileName) => `/images/lrp/${encodeURIComponent(fileName)}`;
 
 export const lrpCatalog = [
   {
@@ -816,6 +818,54 @@ export const lrpCatalog = [
   },
 ];
 
+// Use local product images shipped with the project (public/images/lrp/*)
+// This avoids external hotlinks and lets the UI apply background removal consistently.
+const LRP_LOCAL_IMAGES = {
+  // Use the original local images from the `images` folder (shipped as-is).
+  "lrp-hyalu-b5-serum": "Hyalu B5 Pure Hyaluronic Acid Serum.jpg",
+  "lrp-hyalu-b5-eye-serum": "Hyalu B5 Eye Serum with Hyaluronic Acid + 10% Complex.jpg",
+  "lrp-hyalu-b5-cream": "Hyalu B5 Suractivated Cream with Hyaluronic Acid.jpg",
+  "lrp-hyalu-b5-water-gel": "Hyalu B5 Water Gel Moisturizer with Hyaluronic Acid.jpg",
+
+  "lrp-toleriane-double-repair": "Toleriane Double Repair Face Moisturizer.jpg",
+  "lrp-toleriane-double-repair-spf": "Toleriane Double Repair Facial Moisturizer With SPF.jpg",
+  "lrp-toleriane-double-repair-matte": "Toleriane Double Repair Matte Face Moisturizer for Oily Skin.jpg",
+  "lrp-toleriane-hydrating-cleanser": "Toleriane Hydrating Gentle Facial Cleanser.jpg",
+  "lrp-toleriane-purifying-foaming": "Toleriane Purifying Foaming Face Wash.jpg",
+  "lrp-toleriane-milky-cleanser": "Toleriane Moisturizing Milky Facial Cleanser.jpg",
+
+  "lrp-effaclar-serum": "Effaclar Salicylic Acid Acne Treatment Serum.jpg",
+  "lrp-effaclar-medicated-wash": "Effaclar Medicated Acne Face Wash.jpg",
+  "lrp-effaclar-gel-wash": "Effaclar Gel Facial Wash for Oily Skin.jpg",
+  "lrp-effaclar-clarifying-solution": "Effaclar Clarifying Solution Acne Toner.jpg",
+  "lrp-effaclar-mat": "Effaclar Mat Mattifying Face Moisturizer for Oily Skin.jpeg",
+  "lrp-effaclar-bpo-treatment": "Effaclar BPO Multi-Target Acne Treatment with 5.5% Benzoyl Peroxide.jpg",
+
+  "lrp-anthelios-fluid-spf60": "Anthelios Ultra-Light Fluid Facial Sunscreen SPF 60.jpg",
+  "lrp-anthelios-mineral-tinted-spf50": "Anthelios Mineral Tinted Sunscreen for Face SPF 50.jpg",
+  "lrp-anthelios-uv-pro-sport": "Anthelios UV Pro-Sport Sunscreen SPF 50.jpg",
+
+  "lrp-cicaplast-balm-b5": "cicaplazt balm.jpg",
+  "lrp-cicaplast-hand-cream": "Cicaplast Hand Cream for Dry Hands & Damaged Hands.jpg",
+  "lrp-cicaplast-lips": "Cicaplast Lips Hydration Restore Lip Balm.jpg",
+  "lrp-cicaplast-balm-uv": "Cicaplast Balm B5 UV SPF 50.jpg",
+  "lrp-cicaplast-b5-spray": "Cicaplast B5 Spray Soothing Repairing Concentrate.jpg",
+
+  "lrp-lipikar-ap-max-cream": "Lipikar AP+MAX Triple Repair Moisturizing Cream.png",
+  "lrp-lipikar-cleansing-oil": "Lipikar AP+ Gentle Foaming Cleansing Oil.png",
+  "lrp-lipikar-urea-lotion": "Lipikar Urea 10% Roughness Smoothing Lotion.jpeg",
+
+  "lrp-mela-b3-serum": "Mela B3 Dark Spot Serum With Melasyl™ + Niacinamide.png",
+  "lrp-vitamin-c12-serum": "Vitamin C12 Serum.jpg",
+};
+
+for (const p of lrpCatalog) {
+  const fileName = LRP_LOCAL_IMAGES[p.id];
+  if (!fileName) continue;
+  p.image = localImg(fileName);
+  p.gallery = [localImg(fileName)];
+}
+
 export const getProductBySlug = (slug) =>
   lrpCatalog.find((p) => p.slug === slug);
 
@@ -830,3 +880,4 @@ export const relatedProductsFor = (product) => {
       (p.line === product.line || p.concerns?.some((c) => product.concerns?.includes(c)))
   ).slice(0, 4);
 };
+

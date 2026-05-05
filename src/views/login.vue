@@ -123,6 +123,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/useAuthStore.js'
+import Swal from 'sweetalert2'
 import logofullSrc from '../assets/img/logofull.jpeg'
 
 const router   = useRouter()
@@ -150,6 +151,25 @@ async function handleLogin() {
   loading.value = true
   try {
     await auth.login(email.value.trim(), password.value)
+    await Swal.fire({
+      toast: true,
+      position: 'top',
+      icon: 'success',
+      title: 'Sesión iniciada',
+      timer: 1600,
+      timerProgressBar: true,
+      showConfirmButton: false,
+      background: 'linear-gradient(135deg, #004E92 0%, #5DBCD2 100%)',
+      color: '#ffffff',
+      customClass: {
+        popup: 'rounded-2xl shadow-2xl border border-white/10',
+        title: 'font-bold',
+      },
+      didOpen: (popup) => {
+        popup.addEventListener('mouseenter', Swal.stopTimer)
+        popup.addEventListener('mouseleave', Swal.resumeTimer)
+      },
+    })
     router.push('/inicio')
   } catch (err) {
     const msg = err?.message || ''

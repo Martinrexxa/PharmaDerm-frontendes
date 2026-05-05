@@ -1,5 +1,27 @@
 <template>
   <div class="checkout-page">
+    <transition name="payfade">
+      <div v-if="paymentModalOpen" class="payment-modal-backdrop" @click.stop>
+        <div class="payment-modal" role="dialog" aria-modal="true" aria-label="Procesando pago">
+          <div v-if="paymentStep === 'processing'" class="payment-modal-body">
+            <div class="pd-spinner" aria-hidden="true"></div>
+            <h3>Procesando pago</h3>
+            <p>Estamos confirmando tu pago. Por favor espera…</p>
+          </div>
+
+          <div v-else class="payment-modal-body">
+            <div class="pd-check" aria-hidden="true">
+              <svg viewBox="0 0 52 52">
+                <circle class="pd-check-circle" cx="26" cy="26" r="25" fill="none" />
+                <path class="pd-check-mark" fill="none" d="M14 27l7 7 17-17" />
+              </svg>
+            </div>
+            <h3>Pago realizado</h3>
+            <p>Gracias. Tu compra fue confirmada.</p>
+          </div>
+        </div>
+      </div>
+    </transition>
     <!-- Confirmación -->
     <div v-if="orderPlaced" class="confirm-screen">
       <div class="confirm-box">
@@ -212,6 +234,7 @@ import { useAuthStore } from '../stores/useAuthStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { useHistoryStore } from '../stores/useHistoryStore'
 import { sendOrderConfirmation } from '../services/emailService.js'
+import orderService from '../services/orderService.js'
 import { useI18n } from '../lib/i18n.js'
 import { formatPrice, convertPrice } from '../utils/currency.js'
 
@@ -252,6 +275,8 @@ const banks = [
 
 const formError = ref('')
 const placing = ref(false)
+const paymentModalOpen = ref(false)
+const paymentStep = ref('processing') // 'processing' | 'success'
 const orderPlaced = ref(false)
 const confirmationCode = ref('')
 const placedItems = ref([])
@@ -323,7 +348,9 @@ async function placeOrder() {
   if (formError.value) return
 
   placing.value = true
-  await new Promise((r) => setTimeout(r, 900))
+  paymentModalOpen.value = true
+  paymentStep.value = 'processing'
+  await new Promise((r) => setTimeout(r, 1800))
 
   const code = 'PD-' + Date.now().toString(36).toUpperCase()
   confirmationCode.value = code
@@ -337,16 +364,21 @@ async function placeOrder() {
     customer_phone: form.value.phone,
     address: form.value.address,
     city: form.value.city,
-    country: form.value.country,
+    country_code: form.value.country || 'DO',
     payment_method: form.value.paymentMethod,
     selected_bank: form.value.selectedBank || null,
     reference_number: form.value.referenceNumber || null,
-    delivery_method: 'Delivery',
+    delivery_method: 'delivery',
     currency: cur,
     items: cartItems.value.map(i => ({
       name: i.name,
+      product_name: i.name,
+      sku: i.sku || null,
       size: i.size,
+      size_label: i.size,
       quantity: i.quantity,
+      price: i.priceRD,
+      priceRD: i.priceRD,
       subtotal: Math.round(i.priceRD * (i.quantity || 1)),
     })),
     subtotal: subtotal.value,
@@ -360,17 +392,34 @@ async function placeOrder() {
   placedItems.value = JSON.parse(JSON.stringify(cartItems.value))
   placedTotal.value = total.value
 
-  history.saveOrder(orderData)
+  // Save to localStorage
+  await history.saveOrder(orderData)
+
+  // Save to Supabase if user is authenticated
+  try {
+    const userId = auth.user?.value?.id
+    if (userId) {
+      await orderService.saveOrderToSupabase(orderData, userId)
+    }
+  } catch (error) {
+    console.warn('[Checkout] Supabase save failed:', error)
+    // Continue anyway - localStorage save is sufficient
+  }
+
   clearCart()
 
   const emailResult = await sendOrderConfirmation(orderData, lang.value)
   if (emailResult.ok) {
     emailStatusMsg.value = 'Gracias por tu compra. Se ha enviado un correo de confirmación.'
   } else if (emailResult.simulated) {
-    emailStatusMsg.value = 'El registro se guardó, pero el correo no pudo enviarse porque EmailJS no está configurado.'
+    emailStatusMsg.value = emailResult.message || 'El registro se guardó, pero el correo no pudo enviarse porque EmailJS no está configurado.'
   } else {
-    emailStatusMsg.value = 'Gracias por tu compra. Recibirás un correo de confirmación pronto.'
+    emailStatusMsg.value = emailResult.message || 'Gracias por tu compra. Recibirás un correo de confirmación pronto.'
   }
+
+  paymentStep.value = 'success'
+  await new Promise((r) => setTimeout(r, 1200))
+  paymentModalOpen.value = false
 
   placing.value = false
   orderPlaced.value = true
@@ -388,6 +437,82 @@ onMounted(() => {
 
 <style scoped>
 .checkout-page { max-width: 1200px; margin: 0 auto; padding: 32px 16px; }
+
+.payfade-enter-active,
+.payfade-leave-active { transition: opacity .2s ease; }
+.payfade-enter-from,
+.payfade-leave-to { opacity: 0; }
+
+.payment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.payment-modal {
+  width: min(440px, 100%);
+  border-radius: 18px;
+  background: white;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+
+.payment-modal-body {
+  padding: 22px 20px;
+  text-align: center;
+}
+
+.payment-modal-body h3 {
+  margin: 14px 0 6px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.payment-modal-body p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.pd-spinner {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 5px solid rgba(0, 159, 227, 0.18);
+  border-top-color: #009fe3;
+  margin: 2px auto 0;
+  animation: pd-spin 1s linear infinite;
+}
+
+@keyframes pd-spin { to { transform: rotate(360deg); } }
+
+.pd-check { width: 58px; height: 58px; margin: 0 auto; }
+.pd-check svg { width: 58px; height: 58px; }
+.pd-check-circle {
+  stroke: rgba(34, 197, 94, 0.25);
+  stroke-width: 2.5;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: pd-stroke .5s ease forwards;
+}
+.pd-check-mark {
+  stroke: #22c55e;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: pd-stroke .45s .2s ease forwards;
+}
+
+@keyframes pd-stroke { to { stroke-dashoffset: 0; } }
 
 .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
 .checkout-title { font-size: 28px; font-weight: 800; margin: 0 0 28px; color: #111827; }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     class="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden"
   >
@@ -61,14 +61,16 @@
         <div class="w-full flex flex-col gap-4 mt-8">
           <button
             @click="enviar"
-            class="w-full h-14 rounded-lg bg-brand-light-blue text-white font-bold"
+            :disabled="loading"
+            class="w-full h-14 rounded-lg bg-brand-light-blue text-white font-bold disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Enviar enlace
+            {{ loading ? "Enviando..." : "Enviar enlace" }}
           </button>
 
           <button
             @click="go('/login')"
-            class="w-full h-14 rounded-lg border border-brand-dark-blue text-brand-dark-blue font-bold"
+            :disabled="loading"
+            class="w-full h-14 rounded-lg border border-brand-dark-blue text-brand-dark-blue font-bold disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Volver a iniciar sesión
           </button>
@@ -81,14 +83,59 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { DATA_MODE, API_BASE_URL, supabase, isSupabaseConfigured } from "../lib/supabaseClient.js";
+import Swal from "sweetalert2";
 
 const router = useRouter();
 const email = ref("");
+const loading = ref(false);
 
 const go = (path) => router.push(path);
 
-const enviar = () => {
-  alert("Si el correo existe, te enviaremos un enlace de recuperación.");
-  go("/login");
+const enviar = async () => {
+  const e = email.value.trim();
+  if (!e) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Falta el correo",
+      text: "Por favor escribe tu correo electrónico.",
+      confirmButtonColor: "#5DBCD2",
+    });
+    return;
+  }
+
+  loading.value = true;
+  try {
+    if (DATA_MODE === "backend") {
+      await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Email: e }),
+      });
+    } else if (isSupabaseConfigured) {
+      const redirectTo = `${window.location.origin}/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(e, { redirectTo });
+      if (error) throw error;
+    } else {
+      throw new Error("Esta función requiere modo 'backend' o 'supabase'.");
+    }
+
+    await Swal.fire({
+      icon: "success",
+      title: "Listo",
+      text: "Si el correo existe, te enviaremos un enlace de recuperación.",
+      confirmButtonColor: "#5DBCD2",
+    });
+    go("/login");
+  } catch (err) {
+    await Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: err?.message || "No se pudo enviar el enlace. Intenta de nuevo.",
+      confirmButtonColor: "#5DBCD2",
+    });
+  } finally {
+    loading.value = false;
+  }
 };
 </script>

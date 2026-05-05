@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
+import routineService from '../services/routineService.js'
 
 // Module-level singleton state — scoped per user
 const quizHistory   = ref([])
@@ -9,6 +10,8 @@ const appointments  = ref([])
 const orders        = ref([])
 
 let _currentUserId = null
+let _lastSyncTime = 0
+const SYNC_THRESHOLD = 300000 // 5 minutes
 
 // Returns null when no userId — NO fallback to global key
 function _key(base) {
@@ -21,6 +24,19 @@ function _parse(key) {
   try { return JSON.parse(localStorage.getItem(key) || 'null') || [] } catch { return [] }
 }
 
+function _deduplicate(list, keys) {
+  if (!Array.isArray(list)) return []
+  const seen = new Set()
+  return list.filter(item => {
+    const val = keys 
+      ? keys.map(k => item[k]).join('|') 
+      : JSON.stringify({ ...item, id: null, date: null, savedAt: null, createdAt: null })
+    if (seen.has(val)) return false
+    seen.add(val)
+    return true
+  })
+}
+
 function _load() {
   if (!_currentUserId) {
     quizHistory.value  = []
@@ -31,9 +47,16 @@ function _load() {
     return
   }
   quizHistory.value  = _parse(_key('quiz_history'))
-  diagnostics.value  = _parse(_key('diagnostics_history'))
+  
+  // Deduplicate diagnostics and appointments
+  const rawDiagnostics = _parse(_key('diagnostics_history'))
+  diagnostics.value = _deduplicate(rawDiagnostics, ['summary'])
+
   routines.value     = _parse(_key('routines'))
-  appointments.value = _parse(_key('appointments_list'))
+  
+  const rawAppointments = _parse(_key('appointments_list'))
+  appointments.value = _deduplicate(rawAppointments, ['doctor', 'date', 'time'])
+
   orders.value       = _parse(_key('orders'))
 }
 
@@ -43,11 +66,10 @@ export function initHistoryForUser(userId) {
   _load()
 }
 
+
 /**
  * Async init called by useAuthStore._loadProfile().
- * When Supabase is configured:
- *   - If DB has 0 quiz sessions → clear stale localStorage cache
- *   - If DB has data but localStorage is empty → reconstruct partial data from Supabase
+ * Loads cache immediately and triggers a background sync with Supabase.
  */
 export async function loadHistoryForUser(userId) {
   _currentUserId = userId || null
@@ -57,6 +79,23 @@ export async function loadHistoryForUser(userId) {
     return
   }
 
+  // Always load from cache first for immediate responsiveness
+  _load()
+
+  // Prevent redundant syncs if already synced recently
+  const now = Date.now()
+  if (now - _lastSyncTime < SYNC_THRESHOLD) {
+    return
+  }
+
+  // Trigger sync in background
+  _syncWithSupabase(userId).catch(e => console.warn('[HistoryStore] Background sync failed:', e))
+}
+
+async function _syncWithSupabase(userId) {
+  _lastSyncTime = Date.now()
+  console.log('[HistoryStore] Starting background sync for', userId)
+
   try {
     const { count, error: cntErr } = await supabase
       .from('quiz_sessions')
@@ -64,81 +103,118 @@ export async function loadHistoryForUser(userId) {
       .eq('user_id', userId)
 
     if (!cntErr && count === 0) {
-      // DB was reset or user never did a quiz → wipe stale private localStorage
-      console.log('[HistoryStore] quiz_sessions = 0 en DB → limpiando caché obsoleta para', userId)
       const staleKeys = [
         'quiz_history', 'diagnostics_history', 'routines',
         'appointments_list', 'orders', 'quiz_result', 'diagnostic_result', 'appointment',
       ]
       staleKeys.forEach(base => localStorage.removeItem(`pharmaderm_${base}_${userId}`))
     } else if (!cntErr && count > 0) {
-      // DB has quiz data — check if localStorage is empty (e.g. after logout)
+      // 1. Reconstruct Quiz
       const localQuizResult = localStorage.getItem(`pharmaderm_quiz_result_${userId}`)
       if (!localQuizResult) {
-        // Reconstruct partial quiz data from Supabase so Diagnostics + historial work
-        const { data: qData, error: qErr } = await supabase
-          .from('quiz_sessions')
-          .select('*')
-          .eq('user_id', userId)
-          .order('completed_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
+        let reconstructed = null
+        try {
+          const { data: qData } = await supabase
+            .from('quiz_sessions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('completed_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
 
-        if (!qErr && qData) {
-          const reconstructed = {
-            completed: true,
-            id: Date.now(),
-            date: qData.completed_at,
-            skinType: qData.skin_type || '',
-            sensitivity: qData.sensitivity || '',
-            concerns: qData.concerns || [],
-            primaryConcern: qData.primary_concern || '',
-            profileTitle: qData.profile_title || '',
-            routineFocus: qData.routine_focus || '',
-            fullMetrics: qData.full_metrics || [],
-            summaryMetrics: (qData.full_metrics || []).slice(0, 3),
-            answers: qData.answers || {},
+          if (qData?.completed_at) {
+            reconstructed = {
+              completed: true, id: qData.id, date: qData.completed_at,
+              skinType: qData.skin_type || '', sensitivity: qData.sensitivity || '',
+              concerns: qData.concerns || [], primaryConcern: qData.primary_concern || '',
+              profileTitle: qData.profile_title || '', routineFocus: qData.routine_focus || '',
+              fullMetrics: qData.full_metrics || [], summaryMetrics: (qData.full_metrics || []).slice(0, 3),
+              answers: qData.answers || {}, photoMeta: qData.photo_meta || {},
+            }
           }
+        } catch { /* ignore */ }
+
+        if (reconstructed) {
           localStorage.setItem(`pharmaderm_quiz_result_${userId}`, JSON.stringify(reconstructed))
           localStorage.setItem(`pharmaderm_quiz_history_${userId}`, JSON.stringify([reconstructed]))
-          console.log('[HistoryStore] quiz reconstruido desde Supabase para', userId)
         }
+      }
 
-        // Also reconstruct latest diagnosis_case if any
-        const { data: dData, error: dErr } = await supabase
+      // 2. Sync Routine
+      try {
+        const latestR = await routineService.getLatestRoutine()
+        if (latestR) {
+          localStorage.setItem(`pharmaderm_routines_${userId}`, JSON.stringify([latestR]))
+        }
+      } catch { /* ignore */ }
+
+      // 3. Sync Diagnosis
+      try {
+        const { data: dData } = await supabase
           .from('diagnosis_cases')
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
+          .limit(5)
 
-        if (!dErr && dData) {
-          const reconstructedDiag = {
-            id: Date.now(),
-            date: dData.created_at,
-            title: dData.insight_title || 'Diagnóstico guardado',
-            summary: dData.insight_text || '',
-            form: {
-              description: dData.description || '',
-              duration: dData.duration || '',
-              urgency: dData.urgency || '',
-              symptoms: dData.symptoms || [],
-              areas: dData.areas || [],
-              priorities: dData.priorities || [],
-            },
-            status: dData.status || 'saved',
-          }
-          localStorage.setItem(`pharmaderm_diagnostic_result_${userId}`, JSON.stringify(reconstructedDiag))
-          localStorage.setItem(`pharmaderm_diagnostics_history_${userId}`, JSON.stringify([reconstructedDiag]))
-          console.log('[HistoryStore] diagnóstico reconstruido desde Supabase para', userId)
+        if (dData?.length > 0) {
+          const reconstructedDiags = dData.map(d => ({
+            id: d.id, date: d.created_at, title: d.insight_title || 'Diagnóstico',
+            summary: d.insight_text || '', form: { description: d.description || '', symptoms: d.symptoms || [] },
+            status: d.status || 'saved',
+          }))
+          localStorage.setItem(`pharmaderm_diagnostic_result_${userId}`, JSON.stringify(reconstructedDiags[0]))
+          localStorage.setItem(`pharmaderm_diagnostics_history_${userId}`, JSON.stringify(reconstructedDiags))
         }
-      }
+      } catch { /* ignore */ }
+
+      // 4. Sync Appointments
+      try {
+        const { data: aData } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('user_id', userId)
+          .order('scheduled_date', { ascending: false })
+          .limit(10)
+
+        if (aData?.length > 0) {
+          const reconstructedApts = aData.map(a => ({
+            id: a.id, date: a.scheduled_date, time: a.scheduled_time,
+            doctor: 'Dermatólogo Especialista', status: a.status === 'confirmed' ? 'Confirmada' : a.status,
+            mode: a.appointment_type, confirmationCode: a.confirmation_code
+          }))
+          localStorage.setItem(`pharmaderm_appointments_list_${userId}`, JSON.stringify(reconstructedApts))
+        }
+      } catch { /* ignore */ }
+
+      // 5. Sync Orders
+      try {
+        const { data: oData } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+
+        if (oData?.length > 0) {
+          const reconstructedOrders = oData.map(o => ({
+            id: o.id, order_number: o.order_number, customer_name: o.customer_name,
+            customer_email: o.customer_email, address: o.address_line, city: o.city,
+            country: o.country_code, payment_method: o.payment_method, currency: o.currency,
+            subtotal: o.subtotal, shipping: o.shipping, tax: o.tax, total: o.total,
+            status: o.status, date: o.created_at,
+            items: (o.order_items || []).map(oi => ({
+              name: oi.product_name, size: oi.size_label, quantity: oi.quantity, subtotal: oi.subtotal
+            }))
+          }))
+          localStorage.setItem(`pharmaderm_orders_${userId}`, JSON.stringify(reconstructedOrders))
+        }
+      } catch { /* ignore */ }
     }
   } catch (e) {
-    console.warn('[HistoryStore] sync check falló (no bloqueante):', e?.message)
+    console.warn('[HistoryStore] Sync falló:', e?.message)
   }
 
+  // Reload memory from the newly synced localStorage
   _load()
 }
 
@@ -153,19 +229,41 @@ export function clearHistory() {
 }
 
 export function useHistoryStore() {
-  function saveQuizResult(result) {
+  async function saveQuizResult(result) {
     const entry = { ...result, id: Date.now(), date: new Date().toISOString() }
     quizHistory.value.unshift(entry)
     const kh = _key('quiz_history')
     const kr = _key('quiz_result')
     if (kh) localStorage.setItem(kh, JSON.stringify(quizHistory.value))
     if (kr) localStorage.setItem(kr, JSON.stringify(entry))
+
+    if (result.morningSteps || result.nightSteps) {
+      try {
+        const routineData = {
+          name: result.profileTitle || 'Mi rutina personalizada',
+          primaryConcern: result.primaryConcern,
+          skinType: result.skinType,
+          morningSteps: result.morningSteps || [],
+          nightSteps: result.nightSteps || [],
+          generatedFromQuiz: true
+        }
+        await saveRoutine(routineData)
+      } catch (e) {
+        console.warn('[HistoryStore] Failed to save routine:', e)
+      }
+    }
     return entry
   }
 
   function saveDiagnostic(diagnostic) {
     const entry = { ...diagnostic, id: Date.now(), date: new Date().toISOString() }
-    diagnostics.value.unshift(entry)
+    const isDup = diagnostics.value.some(d => d.summary === entry.summary && d.status === entry.status)
+    if (!isDup) {
+      diagnostics.value.unshift(entry)
+    } else {
+      const idx = diagnostics.value.findIndex(d => d.summary === entry.summary)
+      if (idx !== -1) diagnostics.value[idx] = { ...diagnostics.value[idx], ...entry }
+    }
     const kh = _key('diagnostics_history')
     const kr = _key('diagnostic_result')
     if (kh) localStorage.setItem(kh, JSON.stringify(diagnostics.value))
@@ -173,17 +271,25 @@ export function useHistoryStore() {
     return entry
   }
 
-  function saveRoutine(routine) {
-    const entry = { ...routine, id: Date.now(), date: new Date().toISOString() }
-    routines.value.unshift(entry)
-    const k = _key('routines')
-    if (k) localStorage.setItem(k, JSON.stringify(routines.value))
-    return entry
+  async function saveRoutine(routine) {
+    try {
+      const entry = await routineService.saveRoutine(routine)
+      routines.value.unshift(entry)
+      return entry
+    } catch (e) {
+      console.warn('[HistoryStore] Error al guardar rutina:', e)
+      const entry = { ...routine, id: Date.now(), date: new Date().toISOString() }
+      routines.value.unshift(entry)
+      return entry
+    }
   }
 
   function saveAppointment(apt) {
     const entry = { id: Date.now(), date: new Date().toISOString(), status: 'pending', ...apt }
-    appointments.value.unshift(entry)
+    const isDup = appointments.value.some(a => a.doctor === entry.doctor && a.date === entry.date && a.time === entry.time)
+    if (!isDup) {
+      appointments.value.unshift(entry)
+    }
     const kh = _key('appointments_list')
     const ka = _key('appointment')
     if (kh) localStorage.setItem(kh, JSON.stringify(appointments.value))
@@ -191,12 +297,20 @@ export function useHistoryStore() {
     return entry
   }
 
-  function saveOrder(order) {
-    const entry = { ...order, id: Date.now(), date: new Date().toISOString(), status: 'confirmed' }
-    orders.value.unshift(entry)
-    const k = _key('orders')
-    if (k) localStorage.setItem(k, JSON.stringify(orders.value))
-    return entry
+  async function saveOrder(order) {
+    try {
+      const { orderService } = await import('../services/orderService.js')
+      const entry = await orderService.saveOrder(order)
+      orders.value.unshift(entry)
+      return entry
+    } catch (e) {
+      console.warn('[HistoryStore] Error al guardar orden:', e)
+      const entry = { ...order, id: Date.now(), date: new Date().toISOString(), status: 'confirmed' }
+      orders.value.unshift(entry)
+      const k = _key('orders')
+      if (k) localStorage.setItem(k, JSON.stringify(orders.value))
+      return entry
+    }
   }
 
   function getLatestQuizResult() {

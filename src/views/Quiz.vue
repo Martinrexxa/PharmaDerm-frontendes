@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-[#F7F7F4] text-slate-900">
     <!-- Progress bar (no header needed since AppNavbar is global) -->
     <div v-if="showProgress" class="sticky top-0 z-30 bg-[#F7F7F4] border-b border-slate-200 px-4 py-3">
@@ -304,7 +304,14 @@
             <button class="mt-4 underline text-slate-700 text-[15px] sm:text-[18px]" type="button" @click="step = 'analysis_full'">Ver análisis completo</button>
           </div>
         </div>
-        <div class="mt-8 flex justify-center"><button class="w-full max-w-[480px] h-[58px] bg-[#16A6E2] text-white text-[17px]" type="button" @click="step = 'routine_intro'">VER RUTINA</button></div>
+        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[480px] mx-auto">
+          <button class="w-full h-[58px] bg-white border border-slate-200 text-slate-900 text-[16px] shadow-[0_6px_18px_rgba(0,0,0,.05)]" type="button" @click="goToDiagnostics">
+            CONTINUAR DIAGNÓSTICO
+          </button>
+          <button class="w-full h-[58px] bg-[#16A6E2] text-white text-[16px]" type="button" @click="step = 'routine_intro'">
+            VER RUTINA
+          </button>
+        </div>
       </section>
 
       <section v-else-if="step === 'routine_intro'" class="pt-4">
@@ -360,7 +367,7 @@
                   <p class="mt-4 text-[16px] sm:text-[22px] text-slate-700 leading-relaxed">{{ product.longDescription }}</p>
                   <div class="mt-4 text-[18px] sm:text-[24px] text-slate-700">{{ product.size }}</div>
                 </div>
-                <div class="flex items-center justify-center"><img :src="product.image" :alt="product.name" class="max-h-[200px] sm:max-h-[260px] object-contain" /></div>
+                <div class="flex items-center justify-center"><TransparentImg :src="product.image" :alt="product.name" class="max-h-[200px] sm:max-h-[260px] object-contain" /></div>
               </div>
               <div class="grid grid-cols-2">
                 <button type="button" class="h-[66px] border-t border-r border-slate-300 text-[16px] sm:text-[24px] text-slate-900" @click="addProductAndGo(product)">VER EN TIENDA</button>
@@ -429,6 +436,7 @@ import { getProductsByQuizResult } from '../data/productCatalog';
 import { convertPrice } from '../utils/currency';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
 import { sendRoutineByEmail as emailRoutine, emailServiceConfigured } from '../services/emailService.js';
+import TransparentImg from '../components/TransparentImg.vue';
 
 const router = useRouter();
 const cart = useCartStore();
@@ -751,13 +759,123 @@ function generateAnalysis() {
   };
 }
 
+const QUIZ_IMAGE_BUCKET = 'quiz-selfies'
+
+async function uploadQuizSelfie(userId, quizSessionId, dataUrl, photoMeta = {}) {
+  if (!dataUrl || !dataUrl.startsWith('data:image/')) return null
+
+  let storagePath = null
+  let publicUrl = null
+
+  try {
+    const response = await fetch(dataUrl)
+    const blob = await response.blob()
+    const fileName = `quiz-images/${userId}/${quizSessionId}.jpg`
+
+    const { error: uploadError } = await supabase.storage
+      .from(QUIZ_IMAGE_BUCKET)
+      .upload(fileName, blob, { upsert: true })
+
+    if (!uploadError) {
+      storagePath = fileName
+      const { data: urlData, error: urlError } = supabase.storage
+        .from(QUIZ_IMAGE_BUCKET)
+        .getPublicUrl(fileName)
+      if (!urlError) publicUrl = urlData?.publicUrl || null
+    } else {
+      console.warn('[Quiz] Supabase storage upload failed:', uploadError.message)
+    }
+  } catch (uploadException) {
+    console.warn('[Quiz] Supabase storage upload exception:', uploadException?.message || uploadException)
+  }
+
+  if (!publicUrl) {
+    publicUrl = dataUrl
+  }
+
+  try {
+    const { error: imageError } = await supabase.from('quiz_images').insert({
+      quiz_session_id: quizSessionId,
+      storage_path: storagePath,
+      public_url: publicUrl,
+      is_selfie: true,
+      face_detected: photoMeta?.faceDetected || false,
+      brightness: photoMeta?.brightness || null,
+    })
+
+    if (imageError) {
+      console.warn('[Quiz] Supabase image record failed:', imageError.message)
+    }
+  } catch (insertException) {
+    console.warn('[Quiz] Supabase image record exception:', insertException?.message || insertException)
+  }
+
+  return { storagePath, publicUrl }
+}
+
 async function saveQuizToSupabase(quizData) {
   // FASE 10 — save quiz session to Supabase (best-effort)
   if (!isSupabaseConfigured) return
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    await supabase.from('quiz_sessions').insert({
+
+    // Preferido: esquema normalizado del repo (`database/schema.sql`)
+    // - quiz_sessions: señales del quiz + metadata
+    // - skin_analyses: resultado (perfil/título/métricas)
+    const photoMeta = quizData.photoMeta || {}
+
+    // Resolve skin_type_id if the lookup table exists
+    let skinTypeId = null
+    try {
+      if (quizData.skinType) {
+        const st = await supabase
+          .from('skin_types')
+          .select('id')
+          .eq('code', quizData.skinType)
+          .maybeSingle()
+        skinTypeId = st?.data?.id ?? null
+      }
+    } catch { /* ignore */ }
+
+    const insertQuiz = await supabase
+      .from('quiz_sessions')
+      .insert({
+        user_id: user.id,
+        skin_type_id: skinTypeId,
+        barrier_reactivity: quizData.answers?.barrierReactivity || null,
+        post_cleanse_feel: quizData.answers?.postCleanseFeel || null,
+        shine_pattern: quizData.answers?.shinePattern || null,
+        breakout_pattern: quizData.answers?.breakoutPattern || null,
+        age: quizData.age || null,
+        photo_meta: photoMeta,
+        selfie_stored: !!quizData.selfie,
+        completed: true,
+      })
+      .select('id')
+      .maybeSingle()
+
+    if (!insertQuiz.error && insertQuiz.data?.id) {
+      await uploadQuizSelfie(user.id, insertQuiz.data.id, quizData.selfie, photoMeta)
+      const analysisRes = await supabase.from('skin_analyses').insert({
+        quiz_session_id: insertQuiz.data.id,
+        user_id: user.id,
+        primary_concern: quizData.primaryConcern || null,
+        profile_title: quizData.profileTitle || null,
+        profile_summary: quizData.profileSummary || null,
+        detailed_findings: quizData.detailedFindings || null,
+        routine_focus: quizData.routineFocus || null,
+        metrics: quizData.fullMetrics || [],
+      })
+
+      if (!analysisRes.error) return
+      console.warn('[Quiz] Supabase save failed (skin_analyses):', analysisRes.error?.message)
+    } else {
+      console.warn('[Quiz] Supabase save failed (schema.sql quiz_sessions):', insertQuiz.error?.message)
+    }
+
+    // Fallback: esquema "denormalizado" (si tu BD NO tiene el schema.sql aplicado)
+    const attemptA = await supabase.from('quiz_sessions').insert({
       user_id: user.id,
       skin_type: quizData.skinType || null,
       sensitivity: quizData.sensitivity || null,
@@ -769,6 +887,8 @@ async function saveQuizToSupabase(quizData) {
       answers: quizData.answers || {},
       completed_at: new Date().toISOString(),
     })
+
+    if (attemptA.error) console.warn('[Quiz] Supabase save failed (denormalized quiz_sessions):', attemptA.error?.message)
   } catch (e) {
     console.warn('[Quiz] Supabase save failed (non-critical):', e?.message)
   }
@@ -786,11 +906,13 @@ async function generateAnalysisAndGoResults() {
   const sensitivityMap = { resilient: 'Ninguna sensibilidad', mild: 'Baja sensibilidad', reactive: 'Sensibilidad media', very_reactive: 'Sensibilidad alta' }
   const quizData = {
     completed: true,
+    age: answers.age || null,
     skinType: answers.skinType || suggestedSkinType.value,
     sensitivity: sensitivityMap[answers.barrierReactivity] || 'Baja sensibilidad',
     concerns: result.primaryConcern ? [result.primaryConcern] : [],
     profileTitle: result.profileTitle,
     profileSummary: result.profileSummary,
+    detailedFindings: result.detailedFindings,
     primaryConcern: result.primaryConcern,
     routineFocus: result.routineFocus,
     summaryMetrics: result.summaryMetrics,
@@ -803,7 +925,7 @@ async function generateAnalysisAndGoResults() {
     nightSteps: builtRoutine.night,
     routineSteps: builtRoutine.morning,
   }
-  history.saveQuizResult(quizData)
+  await history.saveQuizResult(quizData)
   // FASE 10 — save to Supabase (non-blocking, best-effort)
   saveQuizToSupabase(quizData)
   step.value = 'results_summary';
@@ -835,6 +957,10 @@ function addProductAndGo(product) {
   const size = product.sizes?.[0]?.label || product.size || 'Default';
   cart.addItem(product, { size, qty: 1, priceRD });
   router.push('/carrito');
+}
+
+function goToDiagnostics() {
+  router.push('/diagnostics')
 }
 async function sendRoutineByEmail() {
   // FASE 10 — send routine via EmailJS (static import)
@@ -920,3 +1046,5 @@ onBeforeUnmount(() => { stopCamera(); clearInterval(countdownTimer); clearTimeou
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 @media (max-width: 640px) { .promo-strip { font-size: 13px; } .email-buy-bar { grid-template-columns: 1fr 72px; } .email-cta { font-size: 13px; } .result-sheet { margin: -14px 12px 0; padding: 18px; } }
 </style>
+
+

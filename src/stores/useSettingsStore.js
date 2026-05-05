@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { setGlobalLang } from '../lib/i18n.js'
 import { countryList, countryCurrencyMap } from '../data/countries.js'
 import { currencyList } from '../utils/currency.js'
+import { useAuthStore } from './useAuthStore.js'
 
 const isDark   = ref(false)
 const language = ref('es')
@@ -57,22 +58,34 @@ function _save() {
 }
 
 export function useSettingsStore() {
+  function _syncAuth(updates) {
+    try {
+      const auth = useAuthStore()
+      Promise.resolve(auth.updateSettings(updates)).catch(() => {})
+    } catch {
+      // ignore
+    }
+  }
+
   function toggleDark() {
     isDark.value = !isDark.value
     _applyDark()
     _save()
+    _syncAuth({ isDark: isDark.value })
   }
 
   function setDark(value) {
     isDark.value = value
     _applyDark()
     _save()
+    _syncAuth({ isDark: isDark.value })
   }
 
   function setLanguage(lang) {
     language.value = lang
     setGlobalLang(lang)
     _save()
+    _syncAuth({ language: lang })
   }
 
   function setCountry(code) {
@@ -81,11 +94,13 @@ export function useSettingsStore() {
     const defaultCurrency = countryCurrencyMap[code]
     if (defaultCurrency) currency.value = defaultCurrency
     _save()
+    _syncAuth({ country: code, currency: currency.value })
   }
 
   function setCurrency(code) {
     currency.value = code
     _save()
+    _syncAuth({ currency: code })
   }
 
   return {

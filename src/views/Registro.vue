@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     class="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden"
   >
@@ -207,6 +207,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/useAuthStore.js'
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const auth   = useAuthStore()
@@ -261,9 +262,23 @@ async function registrar() {
     })
 
     if (result.needsEmailConfirmation) {
-      successMsg.value = 'Cuenta creada. Revisa tu correo y confirma tu cuenta antes de iniciar sesión.'
+      await Swal.fire({
+        icon: 'info',
+        title: 'Usuario registrado',
+        text: 'Cuenta creada. Revisa tu correo y confirma tu cuenta antes de iniciar sesión.',
+        confirmButtonText: 'Ir a login',
+        confirmButtonColor: '#5DBCD2',
+      })
+      router.push('/login')
     } else {
-      router.push('/inicio')
+      await Swal.fire({
+        icon: 'success',
+        title: 'Usuario registrado',
+        text: 'Ahora puedes iniciar sesión.',
+        timer: 1800,
+        showConfirmButton: false,
+      })
+      router.push('/login')
     }
   } catch (err) {
     const msg = err?.message || ''
@@ -283,3 +298,4 @@ async function registrar() {
   }
 }
 </script>
+
