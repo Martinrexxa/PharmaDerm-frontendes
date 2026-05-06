@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+﻿import { createRouter, createWebHistory } from "vue-router";
 import { supabase, isSupabaseConfigured } from "../lib/supabaseClient.js";
 
 // Auth
@@ -19,10 +19,13 @@ import Perfil from "../views/Perfil.vue";
 import Carrito from "../views/Carrito.vue";
 import Diagnostics from "../views/Diagnostics.vue";
 import AppointmentConfirmation from "../views/AppointmentConfirmation.vue";
+import AppointmentBooking from "../views/AppointmentBooking.vue";
 import Checkout from "../views/Checkout.vue";
 import ExpertAdvice from "../views/ExpertAdvice.vue";
 import OurStory from "../views/OurStory.vue";
 import Routine from "../views/Routine.vue";
+import MisPedidos from "../views/MisPedidos.vue";
+import MisCitas from "../views/MisCitas.vue";
 
 const routes = [
   { path: "/", redirect: "/login" },
@@ -43,6 +46,7 @@ const routes = [
     name: "AppointmentConfirmation",
     component: AppointmentConfirmation,
   },
+  { path: "/citas/agendar", name: "AppointmentBooking", component: AppointmentBooking },
   { path: "/tienda", name: "Tienda", component: Tienda },
   {
     path: "/producto/:slug",
@@ -50,6 +54,8 @@ const routes = [
     component: ProductoDetalle,
   },
   { path: "/perfil", name: "Perfil", component: Perfil },
+  { path: "/pedidos", name: "MisPedidos", component: MisPedidos },
+  { path: "/citas", name: "MisCitas", component: MisCitas },
   { path: "/carrito", name: "Carrito", component: Carrito },
   { path: "/checkout", name: "Checkout", component: Checkout },
   { path: "/expert-advice", name: "ExpertAdvice", component: ExpertAdvice },
@@ -60,6 +66,10 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    return { top: 0, left: 0 };
+  },
 });
 
 router.beforeEach(async (to, from, next) => {
@@ -89,3 +99,4 @@ router.beforeEach(async (to, from, next) => {
 });
 
 export default router;
+

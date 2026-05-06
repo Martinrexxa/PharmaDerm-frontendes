@@ -21,7 +21,11 @@
 
           <div class="cart-item__actions">
             <div class="qty-box">
-              <button @click="cart.updateQty(index, (item.quantity || 1) - 1)">−</button>
+              <button
+                @click="cart.updateQty(index, (item.quantity || 1) - 1)"
+                :disabled="(item.quantity || 1) <= 1"
+                :style="{ opacity: (item.quantity || 1) <= 1 ? '0.35' : '1', cursor: (item.quantity || 1) <= 1 ? 'not-allowed' : 'pointer' }"
+              >−</button>
               <span>{{ item.quantity }}</span>
               <button @click="cart.updateQty(index, (item.quantity || 1) + 1)">+</button>
             </div>

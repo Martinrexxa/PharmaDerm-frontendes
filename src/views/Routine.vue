@@ -95,6 +95,7 @@
       <div class="routine-actions container">
         <button class="btn-secondary" @click="router.push('/quiz')">Repetir quiz</button>
         <button class="btn-secondary" @click="router.push('/diagnostics')">Ver diagnóstico</button>
+        <button class="btn-secondary" @click="sendRoutineEmail">Enviar mi rutina por correo electrónico</button>
         <button class="btn-primary" @click="router.push('/tienda')">Ver tienda</button>
       </div>
     </div>
@@ -115,10 +116,15 @@ import { convertPrice } from '../utils/currency'
 import TransparentImg from '../components/TransparentImg.vue'
 import routineService from '../services/routineService.js'
 import { getProductsByQuizResult } from '../data/productCatalog.js'
+import { sendRoutineByEmail } from '../services/emailService.js'
+import { useAuthStore } from '../stores/useAuthStore.js'
+import { useI18n } from '../lib/i18n.js'
 
 const router = useRouter()
 const cart = useCartStore()
 const history = useHistoryStore()
+const auth = useAuthStore()
+const { lang } = useI18n()
 
 const activeTab = ref('morning')
 const toast = ref('')
@@ -321,6 +327,40 @@ function addToCart(product) {
   const size = product.sizes?.[0]?.label || product.size || 'Default'
   cart.addItem(product, { size, qty: 1, priceRD })
   showToast(`${product.name} agregado al carrito`)
+}
+
+async function sendRoutineEmail() {
+  const email = auth.user?.value?.email || ''
+  if (!email) {
+    showToast('No encontramos un correo asociado a tu cuenta.')
+    return
+  }
+
+  const morning = (currentRoutine.value?.morningSteps || []).map((s) => s.name).filter(Boolean).join(' | ')
+  const night = (currentRoutine.value?.nightSteps || []).map((s) => s.name).filter(Boolean).join(' | ')
+  const recommended = [...(currentRoutine.value?.morningSteps || []), ...(currentRoutine.value?.nightSteps || [])]
+    .map((s) => s.name)
+    .filter(Boolean)
+    .filter((v, i, arr) => arr.indexOf(v) === i)
+    .join(' | ')
+
+  const result = await sendRoutineByEmail({
+    to_email: email,
+    to_name: auth.user?.value?.name || 'Cliente',
+    skin_type: skinTypeLabel.value || '',
+    diagnosis: concernLabel.value || routineDescription.value || '',
+    morning_routine: morning || 'N/A',
+    night_routine: night || 'N/A',
+    recommended_products: recommended || 'N/A',
+    reply_to: 'soporte@pharmadermrd.com',
+    routine_id: currentRoutine.value?.id || null,
+  }, lang.value || 'es')
+
+  if (result.ok) {
+    showToast('Tu rutina fue enviada correctamente a tu correo.')
+    return
+  }
+  showToast(result.message || 'La rutina se guardó correctamente, pero el envío por correo no está configurado.')
 }
 
 // Load routine data on mount

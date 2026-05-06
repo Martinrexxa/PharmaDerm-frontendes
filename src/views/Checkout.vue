@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="checkout-page">
     <transition name="payfade">
-      <div v-if="paymentModalOpen" class="payment-modal-backdrop" @click.stop>
+      <div v-if="paymentModalOpen" class="payment-modal-backdrop" @click.stop style="pointer-events: all;">
         <div class="payment-modal" role="dialog" aria-modal="true" aria-label="Procesando pago">
           <div v-if="paymentStep === 'processing'" class="payment-modal-body">
             <div class="pd-spinner" aria-hidden="true"></div>
@@ -67,8 +67,12 @@
               <input v-model="form.email" type="email" placeholder="correo@ejemplo.com" />
             </div>
             <div class="form-field">
-              <label>Teléfono</label>
-              <input v-model="form.phone" type="tel" placeholder="+1 809 000 0000" />
+              <label>Teléfono </label>
+              <input v-model="form.phone" type="tel" placeholder="8091234567" maxlength="10" @input="form.phone = form.phone.replace(/\D/g, '').slice(0, 10)" />
+            </div>
+            <div class="form-field">
+              <label>Cédula </label>
+              <input v-model="form.cedula" type="text" placeholder="00112345678" maxlength="11" @input="form.cedula = form.cedula.replace(/\D/g, '').slice(0, 11)" />
             </div>
           </div>
         </section>
@@ -130,7 +134,7 @@
               </div>
               <div class="form-field">
                 <label>CVV</label>
-                <input v-model="card.cvv" type="password" placeholder="•••" maxlength="4" />
+                <input v-model="card.cvv" type="password" placeholder="•••" maxlength="3" @input="card.cvv = card.cvv.replace(/\D/g, '').slice(0, 3)" />
               </div>
             </div>
           </div>
@@ -227,13 +231,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/useCartStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { useHistoryStore } from '../stores/useHistoryStore'
-import { sendOrderConfirmation } from '../services/emailService.js'
+import { sendOrderConfirmationEmail } from '../services/emailService.js'
 import orderService from '../services/orderService.js'
 import { useI18n } from '../lib/i18n.js'
 import { formatPrice, convertPrice } from '../utils/currency.js'
@@ -249,7 +253,7 @@ const { items: cartItems, subtotal: cartSubtotal, clear: clearCart } = cart
 const { user } = auth
 
 const form = ref({
-  name: '', email: '', phone: '',
+  name: '', email: '', phone: '', cedula: '',
   address: '', city: '', country: 'DO',
   paymentMethod: 'card',
   selectedBank: '',
@@ -313,15 +317,58 @@ function onReceiptUpload(event) {
   reader.readAsDataURL(file)
 }
 
+function resolvePaymentDetails() {
+  const method = String(form.value.paymentMethod || '').toLowerCase()
+
+  if (method === 'card') {
+    const digits = String(card.number || '').replace(/\D/g, '')
+    const last4 = digits.slice(-4) || '****'
+    return `Tarjeta: **** **** **** ${last4}`
+  }
+
+  if (method === 'transfer') {
+    const bank = (form.value.selectedBank || '').trim()
+    const ref = (form.value.referenceNumber || '').trim()
+    if (bank && ref) {
+      return `Transferencia bancaria: pendiente de validación. Banco: ${bank}. Referencia: ${ref}`
+    }
+    if (ref) {
+      return `Transferencia bancaria: pendiente de validación. Referencia: ${ref}`
+    }
+    return 'Transferencia bancaria: pendiente de validación.'
+  }
+
+  if (method === 'cash') {
+    return 'Pago contra entrega: pagarás en efectivo al recibir tu pedido.'
+  }
+
+  return 'Método de pago registrado correctamente.'
+}
+
+const MIN_EXPIRY_MONTH = 5  // mayo
+const MIN_EXPIRY_YEAR  = 2026
+
 function validateCard() {
   const digits = card.number.replace(/\s/g, '')
   if (digits.length !== 16) return 'El número de tarjeta debe tener 16 dígitos.'
   if (!card.holder.trim()) return 'Ingresa el nombre del titular de la tarjeta.'
-  const [mm, yy] = card.expiry.split('/')
-  const month = parseInt(mm, 10), year = parseInt('20' + yy, 10)
-  const now = new Date()
-  if (!mm || !yy || month < 1 || month > 12 || year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1)) return 'Fecha de vencimiento inválida.'
-  if (card.cvv.length < 3) return 'El CVV debe tener al menos 3 dígitos.'
+
+  const [mm, yy] = (card.expiry || '').split('/')
+  const month = parseInt(mm, 10)
+  const year  = parseInt('20' + (yy || ''), 10)
+  if (
+    !mm || !yy ||
+    mm.length !== 2 || yy.length !== 2 ||
+    isNaN(month) || isNaN(year) ||
+    month < 1 || month > 12 ||
+    year < MIN_EXPIRY_YEAR ||
+    (year === MIN_EXPIRY_YEAR && month < MIN_EXPIRY_MONTH)
+  ) {
+    return 'Fecha de vencimiento inválida. Debe ser 05/26 o posterior (formato MM/AA).'
+  }
+
+  const cvvDigits = card.cvv.replace(/\D/g, '')
+  if (cvvDigits.length !== 3) return 'El CVV debe tener exactamente 3 dígitos.'
   return ''
 }
 
@@ -332,12 +379,24 @@ function validateTransfer() {
   return ''
 }
 
+function validateContact() {
+  const phone = (form.value.phone || '').replace(/\D/g, '')
+  if (phone.length !== 10) return 'El teléfono debe tener exactamente 10 dígitos (Ej: 8091234567).'
+  const cedula = (form.value.cedula || '').replace(/\D/g, '')
+  if (cedula.length !== 11) return 'La cédula debe tener exactamente 11 dígitos (Ej: 00112345678).'
+  return ''
+}
+
 function validate() {
   if (!form.value.name.trim()) return 'Ingresa tu nombre completo.'
-  if (!form.value.email.trim() || !form.value.email.includes('@')) return 'Ingresa un correo válido.'
+  if (!form.value.email.trim() || !form.value.email.includes('@')) return 'Ingresa un correo electrónico válido.'
   if (!form.value.address.trim()) return 'Ingresa tu dirección de entrega.'
   if (!form.value.city.trim()) return 'Ingresa tu ciudad.'
   if (cartItems.value.length === 0) return 'Tu carrito está vacío.'
+
+  const contactErr = validateContact()
+  if (contactErr) return contactErr
+
   if (form.value.paymentMethod === 'card') return validateCard()
   if (form.value.paymentMethod === 'transfer') return validateTransfer()
   return ''
@@ -408,13 +467,31 @@ async function placeOrder() {
 
   clearCart()
 
-  const emailResult = await sendOrderConfirmation(orderData, lang.value)
+  const productsSummary = (orderData.items || [])
+    .map(i => `${i.name} — ${i.size || 'N/A'} × ${i.quantity || 1} — ${fmtCurrency((i.priceRD || 0) * (i.quantity || 1))}`)
+    .join('\n')
+
+  const emailResult = await sendOrderConfirmationEmail({
+    to_email: orderData.customer_email,
+    to_name: orderData.customer_name,
+    order_id: orderData.id,
+    order_number: orderData.order_number,
+    order_total: `${orderData.currency} ${orderData.total}`,
+    order_status: orderData.status,
+    payment_method: orderData.payment_method,
+    payment_details: resolvePaymentDetails(),
+    delivery_method: orderData.delivery_method,
+    products: productsSummary,
+    shipping_address: [orderData.address, orderData.city, orderData.country_code].filter(Boolean).join(', '),
+    support_email: 'soporte@pharmadermrd.com',
+    reply_to: 'soporte@pharmadermrd.com',
+  }, lang.value)
   if (emailResult.ok) {
-    emailStatusMsg.value = 'Gracias por tu compra. Se ha enviado un correo de confirmación.'
+    emailStatusMsg.value = 'Pedido confirmado. Enviamos la confirmación a tu correo.'
   } else if (emailResult.simulated) {
-    emailStatusMsg.value = emailResult.message || 'El registro se guardó, pero el correo no pudo enviarse porque EmailJS no está configurado.'
+    emailStatusMsg.value = emailResult.message || 'El pedido se guardó correctamente, pero el correo de confirmación no está configurado.'
   } else {
-    emailStatusMsg.value = emailResult.message || 'Gracias por tu compra. Recibirás un correo de confirmación pronto.'
+    emailStatusMsg.value = emailResult.message || 'El pedido se guardó correctamente, pero no pudimos enviar el correo de confirmación.'
   }
 
   paymentStep.value = 'success'
@@ -426,6 +503,7 @@ async function placeOrder() {
 }
 
 onMounted(() => {
+  nextTick(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }))
   if (user.value) {
     form.value.name = user.value.name || `${user.value.firstName || ''} ${user.value.lastName || ''}`.trim()
     form.value.email = user.value.email || ''
@@ -600,3 +678,5 @@ onMounted(() => {
   .form-field.full { grid-column: auto; }
 }
 </style>
+
+

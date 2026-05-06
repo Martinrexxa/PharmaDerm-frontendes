@@ -24,8 +24,8 @@
             <button class="primary-btn" @click="scrollToSection('detailsSection')">
               Continue diagnosis
             </button>
-            <button class="ghost-btn" @click="scrollToSection('bookingSection')">
-              Book appointment
+            <button class="ghost-btn" @click="goToAppointmentBooking">
+              Agendar cita
             </button>
           </div>
         </div>
@@ -85,16 +85,16 @@
             <p>Add more symptoms, priorities and case details.</p>
           </div>
 
-          <div class="timeline-step" :class="{ completed: !!selectedDoctor }">
-            <div class="timeline-icon">{{ selectedDoctor ? '✓' : '3' }}</div>
-            <h4>Doctor selected</h4>
-            <p>Choose the dermatologist that best matches your case.</p>
+          <div class="timeline-step">
+            <div class="timeline-icon" style="cursor:pointer" @click="goToAppointmentBooking">3</div>
+            <h4>Agendar cita</h4>
+            <p>Elige un especialista y reserva tu consulta.</p>
           </div>
 
-          <div class="timeline-step" :class="{ completed: bookingReady }">
-            <div class="timeline-icon">{{ bookingReady ? '✓' : '4' }}</div>
-            <h4>Appointment booked</h4>
-            <p>Confirm your consultation and save your skin case.</p>
+          <div class="timeline-step">
+            <div class="timeline-icon" style="cursor:pointer" @click="$router.push('/citas')">4</div>
+            <h4>Ver mis citas</h4>
+            <p>Consulta el historial de tus citas agendadas.</p>
           </div>
         </div>
       </div>
@@ -378,143 +378,15 @@
     </section>
 
     <section class="section-white">
-      <div class="container">
-        <div class="section-heading">
-          <p class="eyebrow section-eyebrow">STEP 3</p>
-          <h2>Choose your dermatologist</h2>
-          <p>Select the dermatologist that best fits your concerns and preferred consultation type.</p>
-        </div>
-
-        <div class="doctors-grid">
-          <article
-            v-for="doctor in filteredDoctors"
-            :key="doctor.id"
-            class="doctor-card"
-            :class="{ selected: selectedDoctor && selectedDoctor.id === doctor.id }"
-          >
-            <img :src="doctor.image" :alt="doctor.name" class="doctor-image" />
-
-            <div class="doctor-body">
-              <div class="doctor-topline">
-                <span class="doctor-tag">{{ doctor.mode }}</span>
-                <span class="doctor-rating">★ {{ doctor.rating }}</span>
-              </div>
-
-              <h3>{{ doctor.name }}</h3>
-              <p class="doctor-specialty">{{ doctor.specialty }}</p>
-              <p class="doctor-description">{{ doctor.description }}</p>
-
-              <div class="doctor-meta">
-                <span>{{ doctor.location }}</span>
-                <span>{{ doctor.availability }}</span>
-              </div>
-
-              <button class="primary-btn full" @click="selectDoctor(doctor)">
-                {{ selectedDoctor && selectedDoctor.id === doctor.id ? "Selected" : "Choose dermatologist" }}
-              </button>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-light" ref="bookingSection">
-      <div class="container booking-layout">
-        <div class="booking-card">
-          <div class="section-heading">
-            <p class="eyebrow section-eyebrow">STEP 4</p>
-            <h2>Book your appointment</h2>
-            <p>Finalize your case and save the consultation details.</p>
-          </div>
-
-          <div class="form-grid two">
-            <div>
-              <label class="field-label">Appointment type</label>
-              <select v-model="form.appointmentType">
-                <option value="">Select type</option>
-                <option>Virtual</option>
-                <option>In person</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="field-label">Preferred date</label>
-              <input v-model="form.date" type="date" />
-            </div>
-          </div>
-
-          <div class="form-grid two">
-            <div>
-              <label class="field-label">Preferred time</label>
-              <select v-model="form.time">
-                <option value="">Select time</option>
-                <option>9:00 AM</option>
-                <option>10:30 AM</option>
-                <option>12:00 PM</option>
-                <option>2:00 PM</option>
-                <option>4:30 PM</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="field-label">Consult reason</label>
-              <input
-                v-model="form.reason"
-                type="text"
-                placeholder="Example: Persistent bumps, pores and redness"
-              />
-            </div>
-          </div>
-
-          <label class="field-label">Additional notes</label>
-          <textarea
-            v-model="form.notes"
-            rows="4"
-            placeholder="Add anything else the dermatologist should know."
-          ></textarea>
-
-          <button class="primary-btn full big" @click="confirmBooking" :disabled="bookingConfirmed || isSubmitting">
-            {{ isSubmitting ? 'Processing...' : bookingConfirmed ? 'Appointment Confirmed' : 'Confirm Appointment' }}
-          </button>
-        </div>
-
-        <aside class="booking-summary">
-          <h3>Your Consultation Summary</h3>
-
-          <div class="summary-block">
-            <span>Selected dermatologist</span>
-            <strong>{{ selectedDoctor ? selectedDoctor.name : "Not selected yet" }}</strong>
-          </div>
-
-          <div class="summary-block">
-            <span>Main concern</span>
-            <strong>{{ mainConcern }}</strong>
-          </div>
-
-          <div class="summary-block">
-            <span>Skin type</span>
-            <strong>{{ formattedSkinType }}</strong>
-          </div>
-
-          <div class="summary-block">
-            <span>Urgency</span>
-            <strong>{{ form.urgency || "Not specified" }}</strong>
-          </div>
-
-          <div class="summary-block">
-            <span>Uploaded photos</span>
-            <strong>{{ imagePreviews.length + (casePhoto ? 1 : 0) }} file(s)</strong>
-          </div>
-
-          <div class="summary-block">
-            <span>Case status</span>
-            <strong>{{ caseStatus }}</strong>
-          </div>
-
-          <div class="summary-note">
-            Once confirmed, this case can later be used for appointment history, routine refinement and product recommendations.
-          </div>
-        </aside>
+      <div class="container" style="text-align:center;padding:3rem 1rem;">
+        <p class="eyebrow section-eyebrow">SIGUIENTE PASO</p>
+        <h2 style="margin-bottom:0.75rem">¿Listo para agendar tu consulta?</h2>
+        <p style="color:#64748b;margin-bottom:1.5rem">
+          Guarda tu diagnóstico y luego elige un especialista para tu cita.
+        </p>
+        <button class="primary-btn" @click="goToAppointmentBooking">
+          Agendar cita con especialista
+        </button>
       </div>
     </section>
 
@@ -541,7 +413,7 @@
           </p>
         </div>
 
-        <button class="light-btn" @click="$router.push('/tienda')">Ver mi rutina</button>
+        <button class="light-btn" @click="$router.push('/routine')">Ver mi rutina</button>
       </div>
     </section>
 
@@ -556,7 +428,6 @@
 
 <script>
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
-import { sendAppointmentConfirmation } from '../services/emailService.js';
 import { useHistoryStore } from '../stores/useHistoryStore.js';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { getProductsByQuizResult } from '../data/productCatalog.js';
@@ -570,7 +441,6 @@ export default {
     return {
       imagePreviews: [],
       tempPhotos: [],
-      selectedDoctor: null,
       casePhoto: "",
       quizSummary: {
         completed: false,
@@ -597,11 +467,6 @@ export default {
         priorities: [],
         routineLevel: "",
         previousConsult: "",
-        appointmentType: "",
-        date: "",
-        time: "",
-        reason: "",
-        notes: ""
       },
       symptomsOptions: [
         "Redness",
@@ -640,43 +505,6 @@ export default {
       _toastTimer: null,
       diagnosticSaved: false,
       isSavingDiagnostic: false,
-      bookingConfirmed: false,
-      isSubmitting: false,
-      doctors: [
-        {
-          id: 1,
-          name: "Dra. Elena Martínez",
-          specialty: "Acné, poros y piel sensible/grasa",
-          mode: "Virtual",
-          rating: "4.9",
-          location: "Santo Domingo, RD",
-          availability: "Próxima disponibilidad: Mañana",
-          description: "Ideal para piel grasa, propensa al acné o reactiva que necesita tratamiento guiado y seguimiento.",
-          image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80"
-        },
-        {
-          id: 2,
-          name: "Dra. Camila Reyes",
-          specialty: "Recuperación de barrera, deshidratación y manchas",
-          mode: "In person",
-          rating: "4.8",
-          location: "Santiago, RD",
-          availability: "Próxima disponibilidad: Viernes",
-          description: "Enfocada en calmar la piel, reconstruir el confort y mejorar la textura y el tono desigual.",
-          image: "https://images.unsplash.com/photo-1594824475317-d0c8f4b7d0d4?auto=format&fit=crop&w=900&q=80"
-        },
-        {
-          id: 3,
-          name: "Dra. Laura Fernández",
-          specialty: "Dermatología integral",
-          mode: "Virtual & In person",
-          rating: "5.0",
-          location: "Santo Domingo, RD",
-          availability: "Próxima disponibilidad: Hoy",
-          description: "Ideal para quienes buscan una revisión completa de su piel con flexibilidad para seguimiento.",
-          image: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&w=900&q=80"
-        }
-      ]
     };
   },
 
@@ -739,30 +567,19 @@ export default {
       );
     },
 
-    bookingReady() {
-      return !!(
-        this.selectedDoctor &&
-        this.form.appointmentType &&
-        this.form.date &&
-        this.form.time
-      );
-    },
-
     completionProgress() {
-      let progress = this.quizCompleted ? 25 : 0;
-      if (this.detailsCompleted) progress += 30;
+      let progress = this.quizCompleted ? 30 : 0;
+      if (this.detailsCompleted) progress += 40;
       if (this.imagePreviews.length) progress += 15;
-      if (this.selectedDoctor) progress += 15;
-      if (this.bookingReady) progress += 15;
+      if (this.diagnosticSaved) progress += 15;
       return progress;
     },
 
     caseStatus() {
-      if (this.bookingReady) return "Appointment ready";
-      if (this.selectedDoctor) return "Doctor selected";
-      if (this.detailsCompleted) return "Under review";
-      if (this.quizCompleted) return "Quiz imported";
-      return "New case";
+      if (this.diagnosticSaved) return "Diagnóstico guardado";
+      if (this.detailsCompleted) return "En revisión";
+      if (this.quizCompleted) return "Quiz importado";
+      return "Nuevo caso";
     },
 
     suggestedAppointmentType() {
@@ -919,37 +736,6 @@ export default {
       };
     },
 
-    filteredDoctors() {
-      // FASE 9 — variable specialists by symptom, then by appointment type
-      const hasAcne = this.form.symptoms.some(s =>
-        ["Acne", "Oiliness", "Texture"].includes(s)
-      );
-      const hasBarrier = this.form.symptoms.some(s =>
-        ["Dry patches", "Flaking", "Redness", "Itching", "Burning sensation"].includes(s)
-      );
-
-      let pool = this.doctors;
-
-      if (hasAcne && !hasBarrier) {
-        // Prefer acne/oily specialists (id 1 and 3)
-        pool = this.doctors.filter(d => d.id === 1 || d.id === 3);
-      } else if (hasBarrier && !hasAcne) {
-        // Prefer barrier/sensitive specialists (id 2 and 3)
-        pool = this.doctors.filter(d => d.id === 2 || d.id === 3);
-      }
-
-      if (!this.form.appointmentType) return pool;
-
-      if (this.form.appointmentType === "Virtual") {
-        return pool.filter(d => d.mode === "Virtual" || d.mode === "Virtual & In person");
-      }
-
-      if (this.form.appointmentType === "In person") {
-        return pool.filter(d => d.mode === "In person" || d.mode === "Virtual & In person");
-      }
-
-      return pool;
-    }
   },
 
   async mounted() {
@@ -1054,19 +840,42 @@ export default {
       }
     },
 
-    selectDoctor(doctor) {
-      this.selectedDoctor = doctor;
-
-      if (!this.form.appointmentType) {
-        if (doctor.mode === "Virtual") this.form.appointmentType = "Virtual";
-        else if (doctor.mode === "In person") this.form.appointmentType = "In person";
-      }
-    },
-
     scrollToSection(refName) {
       const el = this.$refs[refName];
       if (el && el.scrollIntoView) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    },
+
+    goToAppointmentBooking() {
+      const query = {}
+      if (this.generatedInsight?.title) query.diagnosis = this.generatedInsight.title
+      // Pass the quiz concern code (e.g. 'poros', 'manchas') — used for recommendation scoring
+      const concernCode = this.quizSummary?.primaryConcern || this.form?.priorities?.[0]
+      if (concernCode) query.concern = concernCode
+      if (this.quizSummary?.skinType) query.skinType = this.quizSummary.skinType
+      if (this.form?.urgency) query.urgency = this.form.urgency
+      if (this.form?.symptoms?.length) query.symptoms = this.form.symptoms.join(',')
+      // Pass the saved diagnosis ID so AppointmentBooking can link the appointment
+      try {
+        if (isSupabaseConfigured) {
+          supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) {
+              supabase.from('diagnosis_cases').select('id').eq('user_id', user.id)
+                .order('created_at', { ascending: false }).limit(1).maybeSingle()
+                .then(({ data }) => {
+                  if (data?.id) query.diagnosisId = data.id
+                  this.$router.push({ path: '/citas/agendar', query })
+                })
+            } else {
+              this.$router.push({ path: '/citas/agendar', query })
+            }
+          })
+        } else {
+          this.$router.push({ path: '/citas/agendar', query })
+        }
+      } catch {
+        this.$router.push({ path: '/citas/agendar', query })
       }
     },
 
@@ -1226,149 +1035,6 @@ export default {
         await Promise.all(insertPromises);
       } catch (error) {
         console.warn('[Diagnostics] Save photos to diagnosis failed:', error);
-      }
-    },
-
-    async confirmBooking() {
-      // Prevent double-submission
-      if (this.isSubmitting || this.bookingConfirmed) {
-        return;
-      }
-
-      this.isSubmitting = true;
-
-      try {
-        // FASE 9 — book appointment (separate from saving diagnosis)
-        if (!this.selectedDoctor) {
-          this.showToast("Selecciona un dermatólogo primero.");
-          this.isSubmitting = false;
-          return;
-        }
-        if (!this.form.appointmentType || !this.form.date || !this.form.time) {
-          this.showToast("Completa el tipo de cita, la fecha y la hora.");
-          this.isSubmitting = false;
-          return;
-        }
-
-      const confirmationCode = "PH-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-      const appointmentPayload = {
-        id: Date.now(),
-        confirmationCode,
-        doctor: this.selectedDoctor.name,
-        doctorId: this.selectedDoctor.id,
-        specialty: this.selectedDoctor.specialty,
-        mode: this.form.appointmentType,
-        date: this.form.date,
-        time: this.form.time,
-        reason: this.form.reason || '',
-        notes: this.form.notes || '',
-        status: "Confirmada",
-        skinType: this.quizSummary.skinType || '',
-        mainConcern: this.mainConcern || '',
-        createdAt: new Date().toISOString(),
-      };
-
-      // Save appointment to user-scoped localStorage via historyStore
-      try {
-        this._historyStore?.saveAppointment(appointmentPayload);
-        // Update linked diagnostic with appointment status
-        const latestDiag = this._historyStore?.getLatestDiagnostic();
-        if (latestDiag) {
-          this._historyStore?.saveDiagnostic({ ...latestDiag, status: 'Cita agendada', appointment: appointmentPayload });
-        }
-      } catch { /* ignore */ }
-
-      // Try Supabase if available
-      try {
-        if (isSupabaseConfigured) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { data: aptInsert, error: aptError } = await supabase.from('appointments').insert({
-              user_id: user.id,
-              dermatologist_id: this.selectedDoctor.id,
-              appointment_type: this.form.appointmentType,
-              scheduled_date: this.form.date,
-              scheduled_time: this.form.time,
-              reason: this.form.reason || null,
-              notes: this.form.notes || null,
-              status: 'confirmed',
-              confirmation_code: confirmationCode,
-            }).select('id').single();
-
-            if (aptError) {
-              console.warn('[Diagnostics] Appointment insert failed:', aptError.message || aptError);
-            } else {
-              // Update diagnosis_cases with appointment_id
-              const { data: diagCase } = await supabase
-                .from('diagnosis_cases')
-                .select('id')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-              if (diagCase) {
-                await supabase
-                  .from('diagnosis_cases')
-                  .update({ appointment_id: aptInsert.id })
-                  .eq('id', diagCase.id);
-              }
-            }
-          }
-        }
-      } catch { /* Supabase save is best-effort */ }
-
-      // Send email confirmation
-      try {
-        let email = null;
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          email = user?.email;
-        } catch { /* ignore */ }
-        if (!email) email = this._authStore?.user?.value?.email || null;
-        if (email) {
-          await sendAppointmentConfirmation({
-            id: appointmentPayload.id,
-            email,
-            customerName: this.selectedDoctor ? `Paciente` : '',
-            date: this.form.date,
-            time: this.form.time,
-            type: this.form.appointmentType,
-            reason: this.form.reason,
-            status: 'Confirmada',
-            diagnosisSummary: this.generatedInsight?.title || '',
-          }, 'es');
-        }
-      } catch { /* email is best-effort */ }
-
-      this.bookingConfirmed = true;
-      this.showToast(`Cita confirmada. Código: ${confirmationCode}`);
-      // Payload para la pantalla de confirmación (AppointmentConfirmation.vue)
-      try {
-        localStorage.setItem("pharmadermAppointment", JSON.stringify({
-          confirmationCode,
-          status: appointmentPayload.status || "Confirmada",
-          doctor: {
-            name: this.selectedDoctor?.name || "",
-            specialty: this.selectedDoctor?.specialty || "",
-          },
-          diagnostics: {
-            appointmentType: this.form.appointmentType,
-            date: this.form.date,
-            time: this.form.time,
-          },
-          quizSummary: {
-            concerns: this.quizSummary.concerns || [],
-            primaryConcern: this.quizSummary.primaryConcern || "",
-            skinType: this.quizSummary.skinType || "",
-            sensitivity: this.quizSummary.sensitivity || "",
-          },
-        }));
-      } catch { /* ignore */ }
-
-      setTimeout(() => { this.$router.push('/appointment-confirmation'); }, 1800);
-      } finally {
-        this.isSubmitting = false;
       }
     },
 
@@ -1580,46 +1246,6 @@ export default {
               generatedInsight: data.generated_insight || null,
             };
 
-            // Set selectedDoctor if saved
-            if (data.dermatologist_id) {
-              parsed.selectedDoctor = this.doctors.find(d => d.id === data.dermatologist_id) || null;
-            }
-
-            // Load associated appointment if exists
-            if (data.appointment_id) {
-              const { data: aptData, error: aptError } = await supabase
-                .from('appointments')
-                .select('*')
-                .eq('id', data.appointment_id)
-                .maybeSingle();
-              if (!aptError && aptData) {
-                parsed.form.appointmentType = aptData.appointment_type || '';
-                parsed.form.date = aptData.scheduled_date || '';
-                try {
-                  console.log('[Diagnostics] Converting time from DB:', aptData.scheduled_time);
-                  // Convertir tiempo de DB (HH:MM:SS) a formato del select (H:MM AM/PM)
-                  const dbTime = aptData.scheduled_time;
-                  if (dbTime) {
-                    const timeStr = dbTime.toString();
-                    const [hours, minutes] = timeStr.split(':').map(Number);
-                    if (!isNaN(hours) && !isNaN(minutes)) {
-                      const period = hours >= 12 ? 'PM' : 'AM';
-                      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-                      parsed.form.time = `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-                    }
-                  }
-                  console.log('[Diagnostics] Converted time result:', parsed.form.time);
-                } catch (e) {
-                  console.warn('[Diagnostics] Error converting time from DB:', e);
-                  parsed.form.time = aptData.scheduled_time || '';
-                }
-                parsed.form.reason = aptData.reason || '';
-                parsed.form.notes = aptData.notes || '';
-                // Set selectedDoctor
-                parsed.selectedDoctor = this.doctors.find(d => d.id === aptData.dermatologist_id) || null;
-              }
-            }
-
             // Load associated photos
             const { data: photos, error: photosError } = await supabase
               .from('diagnosis_photos')
@@ -1659,10 +1285,6 @@ export default {
         if (parsed.imagePreviews) {
           console.log('[Diagnostics] Applying image previews:', parsed.imagePreviews.length, 'images');
           this.imagePreviews = parsed.imagePreviews;
-        }
-        if (parsed.selectedDoctor) {
-          console.log('[Diagnostics] Applying selected doctor:', parsed.selectedDoctor.name);
-          this.selectedDoctor = parsed.selectedDoctor;
         }
         if (parsed.casePhoto) {
           console.log('[Diagnostics] Applying case photo');

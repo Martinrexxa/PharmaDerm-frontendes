@@ -71,8 +71,8 @@ export function useCartStore() {
   }
 
   function updateQty(index, qty) {
-    if (qty <= 0) return removeItem(index)
-    items.value[index].quantity = qty
+    const clamped = Math.max(1, qty)
+    items.value[index].quantity = clamped
     _save()
   }
 

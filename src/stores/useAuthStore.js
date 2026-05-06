@@ -1,18 +1,18 @@
-import { ref, computed } from 'vue'
+﻿import { ref, computed } from 'vue'
 import { supabase, isSupabaseConfigured, DATA_MODE, API_BASE_URL } from '../lib/supabaseClient.js'
 import { userService } from '../services/userService.js'
 import storageService from '../services/storageService.js'
 import { loadHistoryForUser, clearHistory } from './useHistoryStore.js'
 import { initCartForUser, clearCartForUser } from './useCartStore.js'
 
-// ─── Singleton state (shared across all imports) ──────────────────────────────
+// â”€â”€â”€ Singleton state (shared across all imports) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const user      = ref(null)    // public.users profile row
 const session   = ref(null)    // Supabase Auth session (or legacy object)
 const settings  = ref(null)    // user_settings row
 const loading   = ref(false)
 const initialized = ref(false)
 
-// ─── Internal helpers ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Internal helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function _loadProfile(userId) {
   // Scope all localStorage keys to this user
@@ -62,7 +62,7 @@ function _clearState() {
   storageService.hardResetPrivateClientData()
 }
 
-// ─── Store factory ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Store factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export function useAuthStore() {
   const isLoggedIn = computed(() => {
@@ -80,7 +80,7 @@ export function useAuthStore() {
 
   const currentUser = computed(() => user.value)
 
-  // ── initAuth ────────────────────────────────────────────────────────────────
+  // â”€â”€ initAuth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function initAuth() {
     if (initialized.value) return
@@ -121,7 +121,7 @@ export function useAuthStore() {
         await userService.ensurePublicUser(s.user)
         await _loadProfile(s.user.id)
       } else {
-        // Full reset — clears cart, history, storageService user context,
+        // Full reset â€” clears cart, history, storageService user context,
         // and legacy global keys so the next user starts clean
         _clearState()
       }
@@ -130,7 +130,7 @@ export function useAuthStore() {
     initialized.value = true
   }
 
-  // ── register ────────────────────────────────────────────────────────────────
+  // â”€â”€ register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function register({ firstName, lastName, email, phone, password, birthDate }) {
     loading.value = true
@@ -186,7 +186,7 @@ export function useAuthStore() {
     }
   }
 
-  // ── login ───────────────────────────────────────────────────────────────────
+  // â”€â”€ login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function login(email, password) {
     loading.value = true
@@ -275,7 +275,7 @@ export function useAuthStore() {
     }
   }
 
-  // ── logout ──────────────────────────────────────────────────────────────────
+  // â”€â”€ logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function logout() {
     loading.value = true
@@ -287,7 +287,7 @@ export function useAuthStore() {
     }
   }
 
-  // ── updateProfile ────────────────────────────────────────────────────────────
+  // â”€â”€ updateProfile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function updateProfile(data) {
     if (!user.value) return
@@ -310,7 +310,7 @@ export function useAuthStore() {
     return user.value
   }
 
-  // ── updateSettings ──────────────────────────────────────────────────────────
+  // â”€â”€ updateSettings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function updateSettings(data) {
     if (isSupabaseConfigured && user.value) {
@@ -326,7 +326,7 @@ export function useAuthStore() {
     return settings.value
   }
 
-  // ── Legacy compat ────────────────────────────────────────────────────────────
+  // â”€â”€ Legacy compat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   function updateUser(partial) {
     user.value = { ...user.value, ...partial }
@@ -357,3 +357,4 @@ export function useAuthStore() {
     refresh: () => {},
   }
 }
+

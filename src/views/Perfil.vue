@@ -74,17 +74,17 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3 mt-6">
-              <button type="button" class="pd-soft-btn" @click="router.push('/diagnostics')">
+              <button type="button" class="pd-soft-btn" @click="router.push('/citas')">
                 <span class="material-symbols-outlined">clinical_notes</span>
                 <span>Mis citas</span>
               </button>
 
-              <button type="button" class="pd-soft-btn" @click="router.push('/quiz')">
+              <button type="button" class="pd-soft-btn" @click="router.push('/routine')">
                 <span class="material-symbols-outlined">dermatology</span>
                 <span>Mi rutina</span>
               </button>
 
-              <button type="button" class="pd-soft-btn" @click="router.push('/tienda')">
+              <button type="button" class="pd-soft-btn" @click="router.push('/pedidos')">
                 <span class="material-symbols-outlined">inventory_2</span>
                 <span>Pedidos</span>
               </button>
@@ -180,7 +180,6 @@
                 class="pd-outline-btn"
                 @click="toggleEditMode"
               >
-                {{ editMode ? "Cancelar edición" : "Editar información" }}
               </button>
             </div>
 
@@ -298,7 +297,7 @@
                 <h3 class="font-bold text-xl mt-1">Mis citas</h3>
               </div>
 
-              <button type="button" class="pd-outline-btn" @click="router.push('/diagnostics')">
+              <button type="button" class="pd-outline-btn" @click="router.push('/citas')">
                 Agendar
               </button>
             </div>
@@ -310,13 +309,13 @@
                 class="pd-list-row"
               >
                 <div>
-                  <h4 class="font-semibold">{{ apt.service || "Consulta dermatológica" }}</h4>
-                  <p class="text-sm pd-muted">{{ apt.dateTime || fmtDate(apt.date) }}</p>
+                  <h4 class="font-semibold">{{ apt.appointment_type || apt.service || "Consulta dermatológica" }}</h4>
+                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `· ${apt.scheduled_time}` : '' }}</p>
                 </div>
 
                 <div class="text-right">
                   <p class="font-semibold">{{ apt.mode || "Presencial" }}</p>
-                  <p class="text-sm pd-link font-semibold">{{ apt.doctor || "Especialista" }}</p>
+                  <p class="text-sm pd-link font-semibold">{{ apt.doctor_name || apt.doctor || "Especialista" }}</p>
                 </div>
               </div>
 
@@ -462,12 +461,12 @@
           <div class="mt-4 space-y-3">
             <div v-for="apt in history.appointments.value" :key="apt.id" class="pd-list-row">
               <div>
-                <h4 class="font-semibold">{{ apt.service || 'Consulta dermatológica' }}</h4>
-                <p class="text-sm pd-muted">{{ apt.dateTime || fmtDate(apt.date) }}</p>
+                  <h4 class="font-semibold">{{ apt.appointment_type || apt.service || 'Consulta dermatológica' }}</h4>
+                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `· ${apt.scheduled_time}` : '' }}</p>
               </div>
               <div class="text-right">
                 <p class="text-sm font-semibold">{{ apt.mode || 'Presencial' }}</p>
-                <p class="text-sm pd-link">{{ apt.doctor || 'Especialista' }}</p>
+                <p class="text-sm pd-link">{{ apt.doctor_name || apt.doctor || 'Especialista' }}</p>
               </div>
             </div>
             <div v-if="!history.appointments.value.length" class="pd-empty-box">

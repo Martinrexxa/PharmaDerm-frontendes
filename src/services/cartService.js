@@ -38,8 +38,7 @@ export const cartService = {
   updateQty(index, qty) {
     const items = this.getItems()
     if (!items[index]) return items
-    if (qty <= 0) return this.removeItem(index)
-    items[index].quantity = qty
+    items[index].quantity = Math.max(1, qty)
     storageService.set('cart', items)
     return items
   },

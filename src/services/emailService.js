@@ -1,33 +1,43 @@
-/**
- * emailService — Envío de correos via EmailJS.
- *
- * Para activar:
- *  1. npm install @emailjs/browser
- *  2. Crea cuenta en https://www.emailjs.com/
- *  3. Llena las variables en .env (ver .env.example)
- *
- * Si EmailJS no está configurado, las funciones retornan { ok: false, simulated: true }
- * y la orden/cita se guarda igual — NO se pierde ningún dato.
- */
-
-import storageService from './storageService.js'
+﻿import storageService from './storageService.js'
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
 
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 const TEMPLATES = {
-  order_es:       import.meta.env.VITE_EMAILJS_ORDER_TEMPLATE_ID_ES,
-  order_en:       import.meta.env.VITE_EMAILJS_ORDER_TEMPLATE_ID_EN,
-  appointment_es: import.meta.env.VITE_EMAILJS_APPOINTMENT_TEMPLATE_ID_ES,
-  appointment_en: import.meta.env.VITE_EMAILJS_APPOINTMENT_TEMPLATE_ID_EN,
-  routine_es:     import.meta.env.VITE_EMAILJS_ROUTINE_TEMPLATE_ID_ES,
-  routine_en:     import.meta.env.VITE_EMAILJS_ROUTINE_TEMPLATE_ID_EN,
+  routine: {
+    es: import.meta.env.VITE_EMAILJS_ROUTINE_TEMPLATE_ID_ES,
+    en: import.meta.env.VITE_EMAILJS_ROUTINE_TEMPLATE_ID_EN,
+  },
+  order: {
+    es: import.meta.env.VITE_EMAILJS_ORDER_TEMPLATE_ID_ES,
+    en: import.meta.env.VITE_EMAILJS_ORDER_TEMPLATE_ID_EN,
+  },
+  appointment: {
+    es: import.meta.env.VITE_EMAILJS_APPOINTMENT_TEMPLATE_ID_ES,
+    en: import.meta.env.VITE_EMAILJS_APPOINTMENT_TEMPLATE_ID_EN,
+  },
 }
 
-const isConfigured = !!SERVICE_ID && !!PUBLIC_KEY &&
-  SERVICE_ID !== '' && PUBLIC_KEY !== ''
-
 let emailjs = null
+
+function hasValue(v) {
+  return !!String(v || '').trim()
+}
+
+function safeMessageForMissingConfig(emailType) {
+  if (emailType === 'order') {
+    return 'El pedido se guardó correctamente, pero el correo de confirmación no está configurado.'
+  }
+  return 'La rutina se guardó correctamente, pero el envío por correo no está configurado.'
+}
+
+function safeMessageForTemplateNotFound(emailType) {
+  if (emailType === 'order') {
+    return 'El pedido se guardó correctamente, pero el template de EmailJS no existe o no pertenece a este servicio.'
+  }
+  return 'La rutina se guardó correctamente, pero el template de EmailJS no existe o no pertenece a este servicio.'
+}
 
 async function getEmailJS() {
   if (emailjs) return emailjs
@@ -36,193 +46,242 @@ async function getEmailJS() {
     emailjs = mod.default || mod
     emailjs.init(PUBLIC_KEY)
     return emailjs
-  } catch {
+  } catch (error) {
+    console.error('[EmailJS error]', error)
     return null
   }
 }
 
-/** Guarda log del intento de correo en localStorage */
-function logEmail({ type, toEmail, orderId = null, appointmentId = null, status, error = null }) {
-  storageService.prepend('email_logs', {
+function resolveTemplateId(emailType, lang = 'es') {
+  const typeTemplates = TEMPLATES[emailType] || {}
+  return typeTemplates[lang] || typeTemplates.es || null
+}
+
+function validateConfig(emailType, lang = 'es') {
+  const serviceId = SERVICE_ID
+  const templateId = resolveTemplateId(emailType, lang)
+  const publicKeyExists = hasValue(PUBLIC_KEY)
+
+  console.log('[EmailJS config]', {
+    emailType,
+    serviceId,
+    templateId,
+    publicKeyExists,
+  })
+
+  if (!hasValue(serviceId) || !publicKeyExists || !hasValue(templateId)) {
+    return {
+      ok: false,
+      serviceId,
+      templateId,
+      message: safeMessageForMissingConfig(emailType),
+      reason: 'missing_config',
+    }
+  }
+
+  return {
+    ok: true,
+    serviceId,
+    templateId,
+  }
+}
+
+async function writeEmailLog({
+  type,
+  to_email,
+  order_id = null,
+  appointment_id = null,
+  routine_id = null,
+  status,
+  provider = 'emailjs',
+  error_message = null,
+  sent_at = null,
+}) {
+  const entry = {
     id: Date.now(),
     type,
-    to_email: toEmail,
-    order_id: orderId,
-    appointment_id: appointmentId,
+    to_email,
+    order_id,
+    appointment_id,
+    routine_id,
     status,
-    provider: 'emailjs',
-    error_message: error,
-    sent_at: status === 'sent' ? new Date().toISOString() : null,
+    provider,
+    error_message,
+    sent_at,
     created_at: new Date().toISOString(),
+  }
+
+  storageService.prepend('email_logs', entry)
+
+  if (!isSupabaseConfigured) return
+
+  try {
+    await supabase.from('email_logs').insert({
+      type,
+      to_email,
+      order_id,
+      appointment_id,
+      routine_id,
+      status,
+      provider,
+      error_message,
+      sent_at,
+    })
+  } catch (error) {
+    console.warn('[EmailJS log] email_logs table unavailable or insert failed:', error?.message || error)
+  }
+}
+
+async function sendEmail({ emailType, lang = 'es', params, log }) {
+  const cfg = validateConfig(emailType, lang)
+
+  if (!cfg.ok) {
+    await writeEmailLog({ ...log, status: 'failed', error_message: cfg.message })
+    return { ok: false, simulated: true, message: cfg.message }
+  }
+
+  const ejs = await getEmailJS()
+  if (!ejs) {
+    const message = safeMessageForMissingConfig(emailType)
+    await writeEmailLog({ ...log, status: 'failed', error_message: message })
+    return { ok: false, message }
+  }
+
+  try {
+    await ejs.send(cfg.serviceId, cfg.templateId, params)
+    await writeEmailLog({ ...log, status: 'sent', sent_at: new Date().toISOString(), error_message: null })
+    return { ok: true }
+  } catch (error) {
+    console.error('[EmailJS error]', error)
+    const errorText = String(error?.text || error?.message || 'Error desconocido')
+    const lower = errorText.toLowerCase()
+    const templateNotFound = lower.includes('template') && lower.includes('not found')
+
+    const message = templateNotFound
+      ? safeMessageForTemplateNotFound(emailType)
+      : safeMessageForMissingConfig(emailType)
+
+    await writeEmailLog({ ...log, status: 'failed', error_message: errorText })
+
+    return {
+      ok: false,
+      message,
+      rawError: errorText,
+    }
+  }
+}
+
+export async function sendRoutineByEmail(payload, lang = 'es') {
+  const params = {
+    to_email: payload.to_email,
+    to_name: payload.to_name || 'Cliente',
+    skin_type: payload.skin_type || '',
+    diagnosis: payload.diagnosis || '',
+    morning_routine: payload.morning_routine || '',
+    night_routine: payload.night_routine || '',
+    recommended_products: payload.recommended_products || '',
+    reply_to: payload.reply_to || 'soporte@pharmadermrd.com',
+  }
+
+  return sendEmail({
+    emailType: 'routine',
+    lang,
+    params,
+    log: {
+      type: 'routine_ready',
+      to_email: payload.to_email,
+      routine_id: payload.routine_id || null,
+    },
   })
 }
 
-/**
- * Envía correo de confirmación de orden.
- * @param {object} order - Objeto de orden completa
- * @param {string} lang  - 'es' | 'en'
- */
+export async function sendOrderConfirmationEmail(payload, lang = 'es') {
+  const params = {
+    to_email: payload.to_email,
+    to_name: payload.to_name || 'Cliente',
+    order_number: payload.order_number,
+    order_total: payload.order_total,
+    order_status: payload.order_status || 'confirmed',
+    payment_method: payload.payment_method || 'card',
+    payment_details: payload.payment_details || 'Método de pago registrado correctamente.',
+    delivery_method: payload.delivery_method || 'delivery',
+    products: payload.products || '',
+    shipping_address: payload.shipping_address || '',
+    support_email: payload.support_email || 'soporte@pharmadermrd.com',
+    reply_to: payload.reply_to || 'soporte@pharmadermrd.com',
+  }
+
+  return sendEmail({
+    emailType: 'order',
+    lang,
+    params,
+    log: {
+      type: 'order_confirmation',
+      to_email: payload.to_email,
+      order_id: payload.order_id || null,
+    },
+  })
+}
+
+export async function sendAppointmentConfirmationEmail(payload, lang = 'es') {
+  const params = {
+    to_email: payload.to_email,
+    to_name: payload.to_name || 'Paciente',
+    appointment_id: payload.appointment_id,
+    appointment_date: payload.appointment_date || '',
+    appointment_time: payload.appointment_time || '',
+    appointment_type: payload.appointment_type || 'consulta_general',
+    appointment_reason: payload.appointment_reason || '',
+    appointment_status: payload.appointment_status || 'pending',
+    support_email: payload.support_email || 'soporte@pharmadermrd.com',
+    reply_to: payload.reply_to || 'soporte@pharmadermrd.com',
+  }
+
+  return sendEmail({
+    emailType: 'appointment',
+    lang,
+    params,
+    log: {
+      type: 'appointment_confirmation',
+      to_email: payload.to_email,
+      appointment_id: payload.appointment_id || null,
+    },
+  })
+}
+
 export async function sendOrderConfirmation(order, lang = 'es') {
-  const langTemplate = TEMPLATES[`order_${lang}`]
+  const products = (order.items || [])
+    .map(i => `${i.name || i.product_name} x${i.quantity || 1} (${i.size || i.size_label || 'N/A'})`)
+    .join(', ')
 
-  // Fallback: si no se configuró template de "order", usa el de "routine"
-  // para no bloquear el envío de correos en demo/producción temprana.
-  const routineFallback = TEMPLATES[`routine_${lang}`] || TEMPLATES.routine_es
-  const templateId = langTemplate || TEMPLATES.order_es || routineFallback
-
-  if (!isConfigured || !templateId) {
-    console.warn('[EmailJS] No configurado. El correo de orden NO fue enviado.')
-    logEmail({ type: 'order_confirmation', toEmail: order.customer_email, orderId: order.id, status: 'pending', error: 'EmailJS no configurado' })
-
-    const missing = []
-    if (!SERVICE_ID) missing.push('VITE_EMAILJS_SERVICE_ID')
-    if (!PUBLIC_KEY) missing.push('VITE_EMAILJS_PUBLIC_KEY')
-    if (!templateId) {
-      // Si no hay template para el idioma, al menos requerimos el ES como fallback.
-      if (!TEMPLATES.order_es) missing.push('VITE_EMAILJS_ORDER_TEMPLATE_ID_ES')
-      // Y si el idioma pedido fue en, también sugerimos el EN (opcional pero recomendado).
-      if (lang === 'en' && !TEMPLATES.order_en) missing.push('VITE_EMAILJS_ORDER_TEMPLATE_ID_EN')
-      // También aceptamos routine como fallback
-      if (!TEMPLATES.routine_es && !TEMPLATES.routine_en) missing.push('VITE_EMAILJS_ROUTINE_TEMPLATE_ID_ES')
-    }
-
-    const msg = missing.length
-      ? `No se pudo enviar el correo porque faltan variables de EmailJS: ${missing.join(', ')}.`
-      : 'EmailJS no está configurado. La orden fue guardada correctamente.'
-
-    return { ok: false, simulated: true, message: msg }
-  }
-
-  const ejs = await getEmailJS()
-  if (!ejs) {
-    logEmail({ type: 'order_confirmation', toEmail: order.customer_email, orderId: order.id, status: 'failed', error: '@emailjs/browser no instalado' })
-    return { ok: false, message: 'No se pudo cargar el módulo de correo.' }
-  }
-
-  const itemsSummary = (order.items || [])
-    .map(i => `${i.name} (${i.size || 'Standard'}) × ${i.quantity} — ${order.currency}${i.subtotal}`)
-    .join('\n')
-
-  const params = {
-    to_email:         order.customer_email,
-    customer_name:    order.customer_name,
-    order_id:         order.order_number || order.id,
-    order_date:       new Date(order.created_at).toLocaleDateString('es-DO'),
-    order_status:     order.status,
-    payment_method:   order.payment_method,
-    delivery_method:  order.delivery_method || 'Delivery',
-    country:          order.country || 'República Dominicana',
-    currency:         order.currency,
-    subtotal:         `${order.currency}${order.subtotal}`,
-    shipping:         order.shipping > 0 ? `${order.currency}${order.shipping}` : 'Gratis',
-    tax:              order.tax > 0 ? `${order.currency}${order.tax}` : '0',
-    total:            `${order.currency}${order.total}`,
-    items_summary:    itemsSummary,
-    billing_address:  `${order.address}, ${order.city}, ${order.country}`,
-    support_email:    'soporte@pharmadermrd.com',
-    // Campos extra por si el template es el de rutina (fallback)
-    email_title:      'Confirmación de compra',
-    email_subtitle:   'Detalles de tu pedido',
-  }
-
-  try {
-    await ejs.send(SERVICE_ID, templateId, params)
-    logEmail({ type: 'order_confirmation', toEmail: order.customer_email, orderId: order.id, status: 'sent' })
-    return { ok: true }
-  } catch (err) {
-    const msg = err?.text || err?.message || 'Error desconocido'
-    logEmail({ type: 'order_confirmation', toEmail: order.customer_email, orderId: order.id, status: 'failed', error: msg })
-    return { ok: false, message: msg }
-  }
+  return sendOrderConfirmationEmail({
+    to_email: order.customer_email,
+    to_name: order.customer_name,
+    order_id: order.id,
+    order_number: order.order_number || order.id,
+    order_total: `${order.currency || 'DOP'} ${order.total || 0}`,
+    order_status: order.status,
+    payment_method: order.payment_method,
+    payment_details: order.payment_details || 'Método de pago registrado correctamente.',
+    delivery_method: order.delivery_method,
+    products,
+    shipping_address: [order.address, order.city, order.country_code].filter(Boolean).join(', '),
+    support_email: 'soporte@pharmadermrd.com',
+    reply_to: 'soporte@pharmadermrd.com',
+  }, lang)
 }
 
-/**
- * Envía correo de confirmación de cita.
- * @param {object} apt - Objeto de cita
- * @param {string} lang - 'es' | 'en'
- */
 export async function sendAppointmentConfirmation(apt, lang = 'es') {
-  const langTemplate = TEMPLATES[`appointment_${lang}`]
-  const templateId = langTemplate || TEMPLATES.appointment_es
-
-  if (!isConfigured || !templateId) {
-    console.warn('[EmailJS] No configurado. El correo de cita NO fue enviado.')
-    logEmail({ type: 'appointment_confirmation', toEmail: apt.email, appointmentId: apt.id, status: 'pending', error: 'EmailJS no configurado' })
-
-    const missing = []
-    if (!SERVICE_ID) missing.push('VITE_EMAILJS_SERVICE_ID')
-    if (!PUBLIC_KEY) missing.push('VITE_EMAILJS_PUBLIC_KEY')
-    if (!templateId) {
-      if (!TEMPLATES.appointment_es) missing.push('VITE_EMAILJS_APPOINTMENT_TEMPLATE_ID_ES')
-      if (lang === 'en' && !TEMPLATES.appointment_en) missing.push('VITE_EMAILJS_APPOINTMENT_TEMPLATE_ID_EN')
-    }
-
-    const msg = missing.length
-      ? `No se pudo enviar el correo porque faltan variables de EmailJS: ${missing.join(', ')}.`
-      : 'EmailJS no está configurado. La cita fue guardada correctamente.'
-
-    return { ok: false, simulated: true, message: msg }
-  }
-
-  const ejs = await getEmailJS()
-  if (!ejs) {
-    return { ok: false, message: 'No se pudo cargar el módulo de correo.' }
-  }
-
-  const params = {
-    to_email:            apt.email,
-    customer_name:       apt.customerName,
-    appointment_id:      apt.id,
-    appointment_date:    apt.date,
-    appointment_time:    apt.time || 'Por confirmar',
-    appointment_type:    apt.type || 'Consulta general',
-    appointment_reason:  apt.reason || '',
-    appointment_status:  apt.status || 'Pendiente',
-    diagnosis_summary:   apt.diagnosisSummary || 'N/A',
-    support_email:       'soporte@pharmadermrd.com',
-  }
-
-  try {
-    await ejs.send(SERVICE_ID, templateId, params)
-    logEmail({ type: 'appointment_confirmation', toEmail: apt.email, appointmentId: apt.id, status: 'sent' })
-    return { ok: true }
-  } catch (err) {
-    const msg = err?.text || err?.message || 'Error desconocido'
-    logEmail({ type: 'appointment_confirmation', toEmail: apt.email, appointmentId: apt.id, status: 'failed', error: msg })
-    return { ok: false, message: msg }
-  }
+  return sendAppointmentConfirmationEmail({
+    to_email: apt.email,
+    to_name: apt.customerName,
+    appointment_id: apt.id,
+    appointment_date: apt.date,
+    appointment_time: apt.time,
+    appointment_type: apt.type,
+    appointment_reason: apt.reason,
+    appointment_status: apt.status,
+  }, lang)
 }
 
-/**
- * Envía correo con rutina personalizada.
- */
-export async function sendRoutineByEmail(routine, toEmail, lang = 'es') {
-  const templateId = TEMPLATES[`routine_${lang}`] || TEMPLATES.routine_es
-
-  if (!isConfigured || !templateId) {
-    console.warn('[EmailJS] No configurado. El correo de rutina NO fue enviado.')
-    return { ok: false, simulated: true, message: 'EmailJS no está configurado.' }
-  }
-
-  const ejs = await getEmailJS()
-  if (!ejs) return { ok: false, message: 'No se pudo cargar el módulo de correo.' }
-
-  const morning = (routine.morning || []).map((p, i) => `Paso ${i + 1}: ${p.name}`).join('\n')
-  const night   = (routine.night   || []).map((p, i) => `Paso ${i + 1}: ${p.name}`).join('\n')
-
-  try {
-    await ejs.send(SERVICE_ID, templateId, {
-      to_email:        toEmail,
-      skin_type:       routine.skinType || '',
-      primary_concern: routine.primaryConcern || '',
-      morning_routine: morning,
-      night_routine:   night,
-      support_email:   'soporte@pharmadermrd.com',
-    })
-    return { ok: true }
-  } catch (err) {
-    return { ok: false, message: err?.text || err?.message }
-  }
-}
-
-export const emailServiceConfigured = isConfigured
+export const emailServiceConfigured = hasValue(SERVICE_ID) && hasValue(PUBLIC_KEY)

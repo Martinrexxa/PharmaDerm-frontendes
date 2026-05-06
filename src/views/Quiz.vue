@@ -119,7 +119,7 @@
       </section>
 
       <section v-else-if="step === 'about_you'" class="pt-6">
-        <h2 class="text-center text-[32px] sm:text-[44px] font-light text-slate-900">Acerca de usted</h2>
+        <h2 class="text-center text-[22px] sm:text-[30px] font-light text-slate-900">Acerca de usted</h2>
         <div class="mt-8 space-y-4">
           <div class="chat-bubble">¡Hola! Soy el asistente del bot de análisis de la piel de La Roche-Posay.</div>
           <div class="chat-bubble">Analizaré su piel para ayudarle a comprender sus prioridades. Le haré algunas preguntas para completar el análisis.</div>
@@ -135,7 +135,7 @@
       </section>
 
       <section v-else-if="step === 'skin_type'" class="pt-6">
-        <h2 class="text-center text-[32px] sm:text-[44px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
+        <h2 class="text-center text-[22px] sm:text-[30px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
 
         <div class="mt-8 space-y-4">
           <div class="chat-bubble">Estamos comparando tu foto con otras 50,000 imágenes.</div>
@@ -171,8 +171,8 @@
       </section>
 
       <section v-else-if="step === 'barrier_reactivity'" class="pt-6">
-        <h2 class="text-center text-[32px] sm:text-[44px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
-        <div class="mt-4 text-center text-[13px] sm:text-[15px] uppercase tracking-[0.18em] text-[#16A6E2]">Diagnóstico guiado 1 de 4</div>
+        <h2 class="text-center text-[22px] sm:text-[30px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
+        <div class="mt-3 text-center text-[11px] sm:text-[13px] uppercase tracking-[0.18em] text-[#16A6E2]">Diagnóstico guiado 1 de 4</div>
         <div class="mt-8 space-y-4">
           <div class="chat-bubble">¿Cómo suele reaccionar su piel ante productos nuevos, clima fuerte o exfoliación?</div>
           <div class="chat-bubble">Esta respuesta nos ayuda a estimar la tolerancia cutánea y el estado de la barrera.</div>
@@ -183,10 +183,10 @@
               <div class="question-icon" :class="{ selected: answers.barrierReactivity === option.key }"><span class="material-symbols-outlined text-[24px]">{{ option.icon }}</span></div>
               <div class="flex-1 text-left">
                 <div class="flex items-start justify-between gap-3">
-                  <h3 class="text-[19px] sm:text-[24px] text-slate-900 leading-tight">{{ option.title }}</h3>
+                  <h3 class="text-[16px] sm:text-[19px] text-slate-900 leading-tight">{{ option.title }}</h3>
                   <span v-if="answers.barrierReactivity === option.key" class="material-symbols-outlined text-[#16A6E2] text-[24px]">check_circle</span>
                 </div>
-                <p class="mt-2 text-[15px] sm:text-[18px] text-slate-600 leading-relaxed">{{ option.description }}</p>
+                <p class="mt-2 text-[13px] sm:text-[15px] text-slate-600 leading-relaxed">{{ option.description }}</p>
               </div>
             </div>
           </button>
@@ -194,8 +194,8 @@
       </section>
 
       <section v-else-if="step === 'post_cleanse_feel'" class="pt-6">
-        <h2 class="text-center text-[32px] sm:text-[44px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
-        <div class="mt-4 text-center text-[13px] sm:text-[15px] uppercase tracking-[0.18em] text-[#16A6E2]">Diagnóstico guiado 2 de 4</div>
+        <h2 class="text-center text-[22px] sm:text-[30px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
+        <div class="mt-3 text-center text-[11px] sm:text-[13px] uppercase tracking-[0.18em] text-[#16A6E2]">Diagnóstico guiado 2 de 4</div>
         <div class="mt-8 space-y-4">
           <div class="chat-bubble">Después de lavarse la cara y esperar unos minutos, ¿cómo se siente su piel normalmente?</div>
           <div class="chat-bubble">Con esto diferenciamos mejor entre deshidratación, resequedad real y equilibrio cutáneo.</div>
@@ -206,10 +206,10 @@
               <div class="question-icon" :class="{ selected: answers.postCleanseFeel === option.key }"><span class="material-symbols-outlined text-[24px]">{{ option.icon }}</span></div>
               <div class="flex-1 text-left">
                 <div class="flex items-start justify-between gap-3">
-                  <h3 class="text-[19px] sm:text-[24px] text-slate-900 leading-tight">{{ option.title }}</h3>
+                  <h3 class="text-[16px] sm:text-[19px] text-slate-900 leading-tight">{{ option.title }}</h3>
                   <span v-if="answers.postCleanseFeel === option.key" class="material-symbols-outlined text-[#16A6E2] text-[24px]">check_circle</span>
                 </div>
-                <p class="mt-2 text-[15px] sm:text-[18px] text-slate-600 leading-relaxed">{{ option.description }}</p>
+                <p class="mt-2 text-[13px] sm:text-[15px] text-slate-600 leading-relaxed">{{ option.description }}</p>
               </div>
             </div>
           </button>
@@ -217,8 +217,8 @@
       </section>
 
       <section v-else-if="step === 'shine_pattern'" class="pt-6">
-        <h2 class="text-center text-[32px] sm:text-[44px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
-        <div class="mt-4 text-center text-[13px] sm:text-[15px] uppercase tracking-[0.18em] text-[#16A6E2]">Diagnóstico guiado 3 de 4</div>
+        <h2 class="text-center text-[22px] sm:text-[30px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
+        <div class="mt-3 text-center text-[11px] sm:text-[13px] uppercase tracking-[0.18em] text-[#16A6E2]">Diagnóstico guiado 3 de 4</div>
         <div class="mt-8 space-y-4">
           <div class="chat-bubble">Al final del día, ¿en qué zonas nota brillo o exceso de grasa con más frecuencia?</div>
           <div class="chat-bubble">Esto afina si el comportamiento sebáceo es global, localizado o mínimo.</div>
@@ -229,10 +229,10 @@
               <div class="question-icon" :class="{ selected: answers.shinePattern === option.key }"><span class="material-symbols-outlined text-[24px]">{{ option.icon }}</span></div>
               <div class="flex-1 text-left">
                 <div class="flex items-start justify-between gap-3">
-                  <h3 class="text-[19px] sm:text-[24px] text-slate-900 leading-tight">{{ option.title }}</h3>
+                  <h3 class="text-[16px] sm:text-[19px] text-slate-900 leading-tight">{{ option.title }}</h3>
                   <span v-if="answers.shinePattern === option.key" class="material-symbols-outlined text-[#16A6E2] text-[24px]">check_circle</span>
                 </div>
-                <p class="mt-2 text-[15px] sm:text-[18px] text-slate-600 leading-relaxed">{{ option.description }}</p>
+                <p class="mt-2 text-[13px] sm:text-[15px] text-slate-600 leading-relaxed">{{ option.description }}</p>
               </div>
             </div>
           </button>
@@ -240,8 +240,8 @@
       </section>
 
       <section v-else-if="step === 'breakout_pattern'" class="pt-6">
-        <h2 class="text-center text-[32px] sm:text-[44px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
-        <div class="mt-4 text-center text-[13px] sm:text-[15px] uppercase tracking-[0.18em] text-[#16A6E2]">Diagnóstico guiado 4 de 4</div>
+        <h2 class="text-center text-[22px] sm:text-[30px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
+        <div class="mt-3 text-center text-[11px] sm:text-[13px] uppercase tracking-[0.18em] text-[#16A6E2]">Diagnóstico guiado 4 de 4</div>
         <div class="mt-8 space-y-4">
           <div class="chat-bubble">¿Con qué frecuencia presenta poros obstruidos, granitos o brotes?</div>
           <div class="chat-bubble">Esto nos permite separar una piel grasa estable de una piel con tendencia acneica o congestiva.</div>
@@ -252,10 +252,10 @@
               <div class="question-icon" :class="{ selected: answers.breakoutPattern === option.key }"><span class="material-symbols-outlined text-[24px]">{{ option.icon }}</span></div>
               <div class="flex-1 text-left">
                 <div class="flex items-start justify-between gap-3">
-                  <h3 class="text-[19px] sm:text-[24px] text-slate-900 leading-tight">{{ option.title }}</h3>
+                  <h3 class="text-[16px] sm:text-[19px] text-slate-900 leading-tight">{{ option.title }}</h3>
                   <span v-if="answers.breakoutPattern === option.key" class="material-symbols-outlined text-[#16A6E2] text-[24px]">check_circle</span>
                 </div>
-                <p class="mt-2 text-[15px] sm:text-[18px] text-slate-600 leading-relaxed">{{ option.description }}</p>
+                <p class="mt-2 text-[13px] sm:text-[15px] text-slate-600 leading-relaxed">{{ option.description }}</p>
               </div>
             </div>
           </button>
@@ -263,7 +263,7 @@
       </section>
 
       <section v-else-if="step === 'profile_complete'" class="pt-6">
-        <h2 class="text-center text-[32px] sm:text-[44px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
+        <h2 class="text-center text-[22px] sm:text-[30px] font-light tracking-wide text-slate-900">PERFIL DE LA PIEL</h2>
         <div class="mt-8 space-y-5">
           <div class="chat-bubble">Ya tengo suficiente información para construir un perfil más personalizado de su piel.</div>
           <div class="pill-blue">Mi tipo de piel es {{ skinTypeLabel(answers.skinType || suggestedSkinType) }}</div>
@@ -977,19 +977,38 @@ async function sendRoutineByEmail() {
     if (!email) email = auth.user?.value?.email || null
     if (!email) { showToast('Inicia sesión para recibir tu rutina por correo.'); return }
     const r = routine.value
+    const profileUser = auth.user?.value || auth.user
+    const userName = profileUser?.first_name || profileUser?.firstName || profileUser?.name || 'Cliente'
+    const morning = (r.morning || []).map((p, i) => `Paso ${i + 1}: ${p.name}`).join('\n')
+    const night = (r.night || []).map((p, i) => `Paso ${i + 1}: ${p.name}`).join('\n')
+    const recommended = [...(r.morning || []), ...(r.night || [])]
+      .map(p => p.name)
+      .filter((v, i, arr) => arr.indexOf(v) === i)
+      .join(', ')
+
     const result = await emailRoutine({
-      skinType: answers.skinType || suggestedSkinType.value,
-      primaryConcern: analysis.value.primaryConcern,
-      morning: r.morning,
-      night: r.night,
-    }, email, 'es')
-    showToast(result.ok ? 'Rutina enviada a tu correo.' : (result.simulated ? 'Correo no configurado aún.' : 'No se pudo enviar el correo.'))
+      to_email: email,
+      to_name: userName,
+      skin_type: answers.skinType || suggestedSkinType.value,
+      diagnosis: analysis.value.primaryConcern || '',
+      morning_routine: morning,
+      night_routine: night,
+      recommended_products: recommended,
+      reply_to: 'soporte@pharmadermrd.com',
+      routine_id: Date.now(),
+    }, 'es')
+    showToast(
+      result.ok
+        ? 'Rutina enviada a tu correo.'
+        : result.message || (result.simulated ? 'El envío por correo no está configurado correctamente.' : 'No se pudo enviar el correo.')
+    )
   } catch {
     showToast('No se pudo enviar el correo.')
   }
 }
 
 onMounted(() => {
+  nextTick(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }))
   // FASE 10 — pre-populate age from user profile if available
   const profileUser = auth.user?.value || auth.user
   if (profileUser?.birth_date) {
