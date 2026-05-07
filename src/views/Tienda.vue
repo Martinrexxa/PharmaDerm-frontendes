@@ -63,7 +63,7 @@
             <input v-model.trim="search" type="text" placeholder="Search products..." />
           </div>
 
-          <div class="filter-box">
+          <div v-if="activeBrand === 'larocheposay'" class="filter-box">
             <h4>PRODUCT LINE</h4>
             <div class="scroll-checks">
               <label v-for="line in availableLines" :key="line" class="check-row">
@@ -93,6 +93,24 @@
               <label v-for="type in availableTypes" :key="type" class="check-row">
                 <input type="checkbox" :value="type" v-model="selectedTypes" />
                 <span>{{ type }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="activeBrand === 'cerave'" class="filter-box">
+            <h4>PRODUCT KEY INGREDIENTS</h4>
+            <div class="scroll-checks">
+              <label
+                v-for="ingredient in availableKeyIngredients"
+                :key="ingredient.name"
+                class="check-row"
+              >
+                <input
+                  type="checkbox"
+                  :value="ingredient.name"
+                  v-model="selectedIngredients"
+                />
+                <span>{{ ingredient.name }} ({{ ingredient.count }})</span>
               </label>
             </div>
           </div>
@@ -213,7 +231,67 @@ const sortBy = ref("best");
 const selectedLines = ref([]);
 const selectedConcerns = ref([]);
 const selectedTypes = ref([]);
+const selectedIngredients = ref([]);
 const selectedSize = reactive({});
+
+const CERAVE_KEY_INGREDIENTS = [
+  "Benzoyl Peroxide",
+  "Ceramides",
+  "Dimethicone",
+  "Hyaluronic Acid",
+  "Lactic Acid",
+  "Niacinamide",
+  "Peptides",
+  "Petrolatum",
+  "Pramoxine Hydrochloride",
+  "Retinol",
+  "Salicylic Acid",
+  "Titanium Dioxide",
+  "Urea",
+  "Vitamin C",
+  "Zinc Oxide",
+];
+
+const ingredientNormalizationMap = {
+  "benzoyl peroxide": "Benzoyl Peroxide",
+  ceramides: "Ceramides",
+  dimethicone: "Dimethicone",
+  "hyaluronic acid": "Hyaluronic Acid",
+  "lactic acid": "Lactic Acid",
+  niacinamide: "Niacinamide",
+  peptides: "Peptides",
+  petrolatum: "Petrolatum",
+  "pramoxine hydrochloride": "Pramoxine Hydrochloride",
+  retinol: "Retinol",
+  "salicylic acid": "Salicylic Acid",
+  "titanium dioxide": "Titanium Dioxide",
+  urea: "Urea",
+  "vitamin c": "Vitamin C",
+  "zinc oxide": "Zinc Oxide",
+};
+
+function normalizeIngredientName(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const lower = raw.toLowerCase();
+
+  for (const [token, canonical] of Object.entries(ingredientNormalizationMap)) {
+    if (lower === token || lower.includes(token)) return canonical;
+  }
+
+  return "";
+}
+
+function getProductIngredientSet(product) {
+  const merged = [
+    ...(product.ingredientsTags || []),
+    ...(product.keyIngredients || []).map((k) => k.name),
+  ];
+  const normalized = merged
+    .map(normalizeIngredientName)
+    .filter((name) => CERAVE_KEY_INGREDIENTS.includes(name));
+  return new Set(normalized);
+}
 
 const brandProducts = computed(() =>
   allProducts.value.filter((p) => p.brand === activeBrand.value)
@@ -230,6 +308,22 @@ const availableConcerns = computed(() =>
 const availableTypes = computed(() =>
   [...new Set(brandProducts.value.map((p) => p.type).filter(Boolean))].sort()
 );
+
+const availableKeyIngredients = computed(() => {
+  if (activeBrand.value !== "cerave") return [];
+
+  const ceraveProducts = allProducts.value.filter((p) => p.brand === "cerave");
+
+  return CERAVE_KEY_INGREDIENTS
+    .map((ingredient) => {
+      const count = ceraveProducts.reduce((acc, product) => {
+        const set = getProductIngredientSet(product);
+        return set.has(ingredient) ? acc + 1 : acc;
+      }, 0);
+      return { name: ingredient, count };
+    })
+    .filter((item) => item.count > 0);
+});
 
 const filteredProducts = computed(() => {
   const q = search.value.toLowerCase();
@@ -254,7 +348,13 @@ const filteredProducts = computed(() => {
       if (!haystack.includes(q)) return false;
     }
 
-    if (selectedLines.value.length && !selectedLines.value.includes(p.line)) return false;
+    if (
+      activeBrand.value === "larocheposay" &&
+      selectedLines.value.length &&
+      !selectedLines.value.includes(p.line)
+    ) {
+      return false;
+    }
 
     if (
       selectedConcerns.value.length &&
@@ -265,6 +365,14 @@ const filteredProducts = computed(() => {
 
     if (selectedTypes.value.length && !selectedTypes.value.includes(p.type)) {
       return false;
+    }
+
+    if (activeBrand.value === "cerave" && selectedIngredients.value.length) {
+      const ingredientSet = getProductIngredientSet(p);
+      const hasAnySelected = selectedIngredients.value.some((ingredient) =>
+        ingredientSet.has(ingredient)
+      );
+      if (!hasAnySelected) return false;
     }
 
     return true;
@@ -311,6 +419,7 @@ function resetFilters() {
   selectedLines.value = [];
   selectedConcerns.value = [];
   selectedTypes.value = [];
+  selectedIngredients.value = [];
   sortBy.value = "best";
 }
 
@@ -344,6 +453,13 @@ function applyQueryParams() {
   if (q.search) { resetFilters(); search.value = String(q.search); }
   if (q.line) { resetFilters(); selectedLines.value = [String(q.line)]; }
   if (q.concern) { resetFilters(); selectedConcerns.value = [String(q.concern)]; }
+  if (q.ingredient) {
+    const normalized = normalizeIngredientName(String(q.ingredient));
+    if (normalized) {
+      resetFilters();
+      selectedIngredients.value = [normalized];
+    }
+  }
   if (q.brand) {
     const b = String(q.brand);
     if (b === 'cerave' || b === 'larocheposay') activeBrand.value = b;

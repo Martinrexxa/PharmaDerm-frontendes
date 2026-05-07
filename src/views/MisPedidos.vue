@@ -34,7 +34,7 @@
 
           <div class="order-card__items">
             <div v-for="item in (order.items || []).slice(0, 3)" :key="item.name" class="order-item">
-              <img :src="item.image || 'https://placehold.co/60x60/e5e7eb/475569?text=P'" :alt="item.name" />
+              <img :src="item.image || fallbackOrderImage" :alt="item.name" />
               <div>
                 <p class="item-name">{{ item.name }}</p>
                 <p class="item-meta">{{ item.size }} × {{ item.quantity }}</p>
@@ -65,6 +65,8 @@ import { useAuthStore } from '../stores/useAuthStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { formatPrice, convertPrice } from '../utils/currency.js'
 import orderService from '../services/orderService.js'
+import { lrpCatalog } from '../data/lrpCatalog'
+import { ceraveCatalog } from '../data/ceraveCatalog'
 
 const router = useRouter()
 const history = useHistoryStore()
@@ -73,6 +75,8 @@ const settings = useSettingsStore()
 
 const orders = ref([])
 const isLoading = ref(true)
+const fallbackOrderImage = 'https://placehold.co/60x60/e5e7eb/475569?text=P'
+const productIndex = [...lrpCatalog, ...ceraveCatalog]
 
 function fmtPrice(dop) {
   const cur = settings.currency?.value || 'DOP'
@@ -105,6 +109,34 @@ function paymentLabel(method) {
   return map[method] || method || 'N/A'
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function findCatalogImageByName(name) {
+  const needle = normalizeText(name)
+  if (!needle) return ''
+  const exact = productIndex.find((p) => normalizeText(p.name) === needle)
+  if (exact?.image) return exact.image
+  const partial = productIndex.find((p) => normalizeText(p.name).includes(needle) || needle.includes(normalizeText(p.name)))
+  return partial?.image || ''
+}
+
+function hydrateOrderImages(list) {
+  return (list || []).map((order) => ({
+    ...order,
+    items: (order.items || []).map((item) => ({
+      ...item,
+      image: item.image || findCatalogImageByName(item.name) || fallbackOrderImage,
+    })),
+  }))
+}
+
 async function loadOrders() {
   isLoading.value = true
   try {
@@ -112,17 +144,17 @@ async function loadOrders() {
     if (userId) {
       const remoteOrders = await orderService.getUserOrdersFromSupabase(userId)
       if (remoteOrders.length > 0) {
-        orders.value = remoteOrders
+        orders.value = hydrateOrderImages(remoteOrders)
         return
       }
     }
 
     // Fallback: historial local
     const localOrders = history.getOrders?.() || []
-    orders.value = localOrders
+    orders.value = hydrateOrderImages(localOrders)
   } catch (e) {
     console.warn('[MisPedidos] Error cargando pedidos:', e)
-    orders.value = history.getOrders?.() || []
+    orders.value = hydrateOrderImages(history.getOrders?.() || [])
   } finally {
     isLoading.value = false
   }

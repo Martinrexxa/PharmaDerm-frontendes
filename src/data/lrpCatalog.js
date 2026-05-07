@@ -830,20 +830,26 @@ const LRP_LOCAL_IMAGES = {
   "lrp-toleriane-double-repair": "Toleriane Double Repair Face Moisturizer.jpg",
   "lrp-toleriane-double-repair-spf": "Toleriane Double Repair Facial Moisturizer With SPF.jpg",
   "lrp-toleriane-double-repair-matte": "Toleriane Double Repair Matte Face Moisturizer for Oily Skin.jpg",
+  "lrp-toleriane-matte": "Toleriane Double Repair Matte Face Moisturizer for Oily Skin.jpg",
   "lrp-toleriane-hydrating-cleanser": "Toleriane Hydrating Gentle Facial Cleanser.jpg",
   "lrp-toleriane-purifying-foaming": "Toleriane Purifying Foaming Face Wash.jpg",
+  "lrp-toleriane-purifying-foam": "Toleriane Purifying Foaming Face Wash.jpg",
   "lrp-toleriane-milky-cleanser": "Toleriane Moisturizing Milky Facial Cleanser.jpg",
 
   "lrp-effaclar-serum": "Effaclar Salicylic Acid Acne Treatment Serum.jpg",
+  "lrp-effaclar-sa-serum": "Effaclar Salicylic Acid Acne Treatment Serum.jpg",
   "lrp-effaclar-medicated-wash": "Effaclar Medicated Acne Face Wash.jpg",
   "lrp-effaclar-gel-wash": "Effaclar Gel Facial Wash for Oily Skin.jpg",
   "lrp-effaclar-clarifying-solution": "Effaclar Clarifying Solution Acne Toner.jpg",
+  "lrp-effaclar-toner": "Effaclar Clarifying Solution Acne Toner.jpg",
   "lrp-effaclar-mat": "Effaclar Mat Mattifying Face Moisturizer for Oily Skin.jpeg",
   "lrp-effaclar-bpo-treatment": "Effaclar BPO Multi-Target Acne Treatment with 5.5% Benzoyl Peroxide.jpg",
 
   "lrp-anthelios-fluid-spf60": "Anthelios Ultra-Light Fluid Facial Sunscreen SPF 60.jpg",
   "lrp-anthelios-mineral-tinted-spf50": "Anthelios Mineral Tinted Sunscreen for Face SPF 50.jpg",
+  "lrp-anthelios-mineral-tinted": "Anthelios Mineral Tinted Sunscreen for Face SPF 50.jpg",
   "lrp-anthelios-uv-pro-sport": "Anthelios UV Pro-Sport Sunscreen SPF 50.jpg",
+  "lrp-anthelios-pro-sport": "Anthelios UV Pro-Sport Sunscreen SPF 50.jpg",
 
   "lrp-cicaplast-balm-b5": "cicaplazt balm.jpg",
   "lrp-cicaplast-hand-cream": "Cicaplast Hand Cream for Dry Hands & Damaged Hands.jpg",
@@ -854,9 +860,31 @@ const LRP_LOCAL_IMAGES = {
   "lrp-lipikar-ap-max-cream": "Lipikar AP+MAX Triple Repair Moisturizing Cream.png",
   "lrp-lipikar-cleansing-oil": "Lipikar AP+ Gentle Foaming Cleansing Oil.png",
   "lrp-lipikar-urea-lotion": "Lipikar Urea 10% Roughness Smoothing Lotion.jpeg",
+  "lrp-lipikar-urea10": "Lipikar Urea 10% Roughness Smoothing Lotion.jpeg",
 
   "lrp-mela-b3-serum": "Mela B3 Dark Spot Serum With Melasyl™ + Niacinamide.png",
   "lrp-vitamin-c12-serum": "Vitamin C12 Serum.jpg",
+  "lrp-retinol-b3-serum": "Retinol B3 Serum.jpg",
+  "lrp-hyalu-b5-ampoules": "Hyalu B5 Ampoules.jpg",
+  "lrp-effaclar-adapalene-0-1-gel": "Effaclar Adapalene Gel 0.1% Topical Retinoid For Acne.jpg",
+  "lrp-effaclar-multi-target-salicylic-treatment": "Effaclar Multi-Target Acne Treatment with Salicylic Acid.png",
+  "lrp-effaclar-duo-plus-m": "Effaclar Duo+M Multi-Target Blemish Treatment.png",
+  "lrp-effaclar-blemish-patches": "Effaclar Duo+M Multi-Target Blemish Patches.jpg",
+  "lrp-toleriane-double-repair-matte-spf30": "Toleriane Double Repair Matte Face Moisturizer SPF 30 for Oily Skin.png",
+  "lrp-anthelios-clear-skin-oil-free-spf60": "Anthelios Clear Skin Oil Free Sunscreen SPF 60.jpg",
+  "lrp-anthelios-age-correct-spf50": "Anthelios Age Correct SPF 50.jpg",
+  "lrp-anthelios-melt-in-milk-spf100": "Anthelios Melt-In Milk Sunscreen SPF 100.jpg",
+  "lrp-anthelios-uv-correct-spf70": "Anthelios UV Correct SPF 70.jpg",
+  "lrp-anthelios-ao-x-daily-antioxidant-serum-spf50": "Anthelios AOX Daily Antioxidant Serum SPF 50.jpg",
+  "lrp-cicaplast-balm-b5-40ml": "Cicaplast Balm B5+ 40ML.jpg",
+  "lrp-cicaplast-baume-b5-baby": "Cicaplast Baume B5 Baby.jpg",
+  "lrp-cicaplast-levres-repair-lip-balm": "Cicaplast Levres Repair Lip Balm.jpg",
+  "lrp-lipikar-syndet-ap-plus": "Lipikar Syndet AP+ Cream Wash.jpg",
+  "lrp-lipikar-lait-body-lotion": "Lipikar Lait Body Lotion.jpg",
+  "lrp-lipikar-baum-light-apm": "Lipikar Baume Light AP+M.png",
+  "lrp-mela-b3-uv-daily-spf30": "Mela B3 UV Daily SPF 30.png",
+  "lrp-pure-vitamin-c-eye-cream": "Pure Vitamin C Eye Cream.jpg",
+  "lrp-redermic-c-vitamin-c-cream": "Redermic C Vitamin C Cream.jpg",
 };
 
 for (const p of lrpCatalog) {
@@ -865,6 +893,17 @@ for (const p of lrpCatalog) {
   p.image = localImg(fileName);
   p.gallery = [localImg(fileName)];
 }
+
+const LRP_LINE_FALLBACK_IMAGE = {
+  Effaclar: localImg("Effaclar Gel Facial Wash for Oily Skin.jpg"),
+  Anthelios: localImg("Anthelios Ultra-Light Fluid Facial Sunscreen SPF 60.jpg"),
+  Toleriane: localImg("Toleriane Hydrating Gentle Facial Cleanser.jpg"),
+  Hyalu: localImg("Hyalu B5 Pure Hyaluronic Acid Serum.jpg"),
+  Cicaplast: localImg("cicaplazt balm.jpg"),
+  Lipikar: localImg("Lipikar AP+MAX Triple Repair Moisturizing Cream.png"),
+  "Mela B3": localImg("Mela B3 Dark Spot Serum With Melasyl™ + Niacinamide.png"),
+  "Vitamin C": localImg("Vitamin C12 Serum.jpg"),
+};
 
 const lrpExtraCatalog = [
   { id: "lrp-effaclar-adapalene-0-1-gel", slug: "effaclar-adapalene-gel-0-1-topical-retinoid-for-acne", line: "Effaclar", category: "Acne Treatment", type: "Treatment", concerns: ["Acne Prone Skin", "Acne Prone", "Rough Texture"], ingredientsTags: ["Adapalene"], name: "Effaclar Adapalene Gel 0.1% Topical Retinoid For Acne", subtitle: "Daily topical retinoid treatment for acne-prone skin", priceUSD: 39.99, rating: 4.4, reviews: 1280, sizes: [{ label: "45G", priceUSD: 39.99, pricePer: "" }], defaultSize: "45G" },
@@ -918,8 +957,14 @@ const normalizeLrpProduct = (item) => {
       ? item.sizes
       : [{ label: item.defaultSize || "30ML", priceUSD: item.priceUSD ?? item.priceFrom ?? 0, pricePer: "" }],
     defaultSize: item.defaultSize || item.sizes?.[0]?.label || "30ML",
-    image: item.image || placeholder,
-    gallery: item.gallery?.length ? item.gallery : [item.image || placeholder],
+    image:
+      (item.image && item.image !== placeholder)
+        ? item.image
+        : (LRP_LINE_FALLBACK_IMAGE[item.line] || placeholder),
+    gallery:
+      (item.gallery?.length && item.gallery[0] !== placeholder)
+        ? item.gallery
+        : [((item.image && item.image !== placeholder) ? item.image : (LRP_LINE_FALLBACK_IMAGE[item.line] || placeholder))],
     description: item.description || `${item.name} is a dermatologist-tested formula designed for daily skincare support.`,
     benefits: item.benefits?.length ? item.benefits : [
       "Dermatologist-tested daily care",
@@ -959,6 +1004,24 @@ for (const extra of lrpExtraCatalog) {
 
 for (let i = 0; i < lrpCatalog.length; i += 1) {
   lrpCatalog[i] = normalizeLrpProduct(lrpCatalog[i])
+}
+
+// Final image override (also covers products appended from lrpExtraCatalog).
+for (const p of lrpCatalog) {
+  const fileName = LRP_LOCAL_IMAGES[p.id];
+  if (!fileName) continue;
+  p.image = localImg(fileName);
+  p.gallery = [localImg(fileName)];
+}
+
+// Normalize image URLs to safe, deterministic paths without special characters.
+for (const p of lrpCatalog) {
+  const decoded = decodeURIComponent(String(p.image || ""));
+  const dot = decoded.lastIndexOf(".");
+  const ext = dot > -1 ? decoded.slice(dot).toLowerCase() : ".jpg";
+  const safePath = `/images/lrp/normalized/${p.id}${ext}`;
+  p.image = safePath;
+  p.gallery = [safePath];
 }
 
 export const getProductBySlug = (slug) =>

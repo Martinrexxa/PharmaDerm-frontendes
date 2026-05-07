@@ -430,9 +430,12 @@ async function placeOrder() {
     delivery_method: 'delivery',
     currency: cur,
     items: cartItems.value.map(i => ({
+      id: i.id || null,
+      slug: i.slug || null,
       name: i.name,
       product_name: i.name,
       sku: i.sku || null,
+      image: i.image || null,
       size: i.size,
       size_label: i.size,
       quantity: i.quantity,

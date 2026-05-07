@@ -315,7 +315,11 @@ async function _syncWithSupabase(userId) {
             subtotal: o.subtotal, shipping: o.shipping, tax: o.tax, total: o.total,
             status: o.status, date: o.created_at,
             items: (o.order_items || []).map(oi => ({
-              name: oi.product_name, size: oi.size_label, quantity: oi.quantity, subtotal: oi.subtotal
+              name: oi.product_name,
+              image: oi.product_image || null,
+              size: oi.size_label,
+              quantity: oi.quantity,
+              subtotal: oi.subtotal
             }))
           }))
           localStorage.setItem(`pharmaderm_orders_${userId}`, JSON.stringify(reconstructedOrders))
@@ -438,11 +442,12 @@ export function useHistoryStore() {
   }
 
   function refresh() { _load() }
+  function getOrders() { return orders.value || [] }
 
   return {
     quizHistory, diagnostics, routines, appointments, orders,
     saveQuizResult, saveDiagnostic, saveRoutine, saveAppointment, saveOrder,
     getLatestQuizResult, getLatestDiagnostic,
-    refresh,
+    refresh, getOrders,
   }
 }

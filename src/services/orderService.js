@@ -83,6 +83,7 @@ export const orderService = {
           order_id: orderInsert.id,
           product_name: item.name || item.product_name || 'Product',
           product_sku: item.sku || item.product_sku || null,
+          product_image: item.image || null,
           size_label: item.size || item.size_label || null,
           quantity: item.quantity || 1,
           unit_price_dop: item.priceRD || item.price || 0,
@@ -159,6 +160,7 @@ export const orderService = {
         items: (order.order_items || []).map(item => ({
           id: item.id,
           name: item.product_name || 'Producto',
+          image: item.product_image || null,
           size: item.size_label || '',
           quantity: item.quantity || 1,
           priceRD: Number(item.unit_price_dop || 0),

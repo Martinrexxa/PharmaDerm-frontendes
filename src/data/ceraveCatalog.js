@@ -430,13 +430,140 @@ const ceraveExtraCatalog = [
   { id: 'cerave-skin-renewing-day-cream-spf30', slug: 'cerave-skin-renewing-day-cream-spf30', line: 'Sunscreens', type: 'Moisturizer SPF', category: 'Moisturizer SPF', concerns: ['Fine Lines & Wrinkles', 'UV Protection', 'Dehydrated Skin'], name: 'Skin Renewing Day Cream SPF 30', subtitle: 'Anti-Aging Day Moisturizer With SPF', priceUSD: 24.99, rating: 4.4, reviews: 940, size: '50ML' },
 ]
 
+const CERAVE_IMAGE_BY_SLUG = {
+  'cerave-moisturizing-cream': '/images/cerave/official/moisturizing-cream.jpg',
+  'cerave-hydrating-facial-cleanser': '/images/cerave/official/hydrating-cleanser.jpg',
+  'cerave-foaming-facial-cleanser': '/images/cerave/official/foaming-cleanser.jpg',
+  'cerave-pm-facial-moisturizing-lotion': '/images/cerave/official/pm-lotion.jpg',
+  'cerave-skin-renewing-retinol-serum': '/images/cerave/official/retinol-serum.jpg',
+  'cerave-acne-control-cleanser': '/images/cerave/official/acne-control-cleanser.jpg',
+  'cerave-acne-foaming-cream-cleanser': '/images/cerave/official/acne-foaming-cream-cleanser.jpg',
+  'cerave-renewing-sa-cleanser': '/images/cerave/official/renewing-sa.jpg',
+  'cerave-cream-to-foam-cleanser': '/images/cerave/official/cream-to-foam.jpg',
+  'cerave-am-facial-moisturizing-lotion-spf30': '/images/cerave/official/am-spf30.jpg',
+  'cerave-acne-control-gel': '/images/cerave/official/acne-control-gel.jpg',
+  'cerave-daily-moisturizing-lotion': '/images/cerave/official/cerave-daily-moisturizing-lotion.jpg',
+  'cerave-ultra-light-moisturizing-lotion-spf30': '/images/cerave/official/cerave-ultra-light-moisturizing-lotion-spf30.jpg',
+  'cerave-skin-renewing-night-cream': '/images/cerave/official/cerave-skin-renewing-night-cream.jpg',
+  'cerave-healing-ointment': '/images/cerave/official/cerave-healing-ointment.jpg',
+  'cerave-itch-relief-moisturizing-cream': '/images/cerave/official/cerave-itch-relief-moisturizing-cream.jpg',
+  'cerave-eye-repair-cream': '/images/cerave/official/cerave-eye-repair-cream.jpg',
+  'cerave-baby-moisturizing-lotion': '/images/cerave/official/cerave-baby-moisturizing-lotion.jpg',
+  'cerave-baby-cream': '/images/cerave/official/cerave-baby-cream.jpg',
+  'cerave-resurfacing-retinol-serum': '/images/cerave/official/cerave-resurfacing-retinol-serum.jpg',
+  'cerave-skin-renewing-vitamin-c-serum': '/images/cerave/official/cerave-skin-renewing-vitamin-c-serum.jpg',
+  'cerave-hydrating-cleanser-bar': '/images/cerave/official/cerave-hydrating-cleanser-bar.jpg',
+  'cerave-hydrating-micellar-water': '/images/cerave/official/cerave-hydrating-micellar-water.jpg',
+  'cerave-hydrating-hyaluronic-acid-serum': '/images/cerave/official/cerave-hydrating-hyaluronic-acid-serum.jpg',
+  'cerave-foaming-oil-cleanser': ph('CeraVe Foaming Oil Cleanser'),
+  'cerave-hydrating-cleanser-bar': ph('CeraVe Hydrating Cleanser Bar'),
+  'cerave-blemish-control-cleanser': ph('CeraVe Blemish Control Cleanser'),
+  'cerave-hydrating-micellar-water': ph('CeraVe Hydrating Micellar Water'),
+  'cerave-moisturizing-lotion': ph('CeraVe Moisturizing Lotion'),
+  'cerave-daily-moisturizing-lotion': ph('CeraVe Daily Moisturizing Lotion'),
+  'cerave-am-facial-moisturizing-lotion-spf30': ph('CeraVe AM Facial Moisturizing Lotion SPF 30'),
+  'cerave-am-facial-moisturizing-lotion-spf50': ph('CeraVe AM Facial Moisturizing Lotion SPF 50'),
+  'cerave-ultra-light-moisturizing-lotion-spf30': ph('CeraVe Ultra Light Moisturizing Lotion SPF 30'),
+  'cerave-oil-control-moisturizing-gel-cream': ph('CeraVe Oil Control Moisturizing Gel Cream'),
+  'cerave-skin-renewing-night-cream': ph('CeraVe Skin Renewing Night Cream'),
+  'cerave-healing-ointment': ph('CeraVe Healing Ointment'),
+  'cerave-itch-relief-moisturizing-cream': ph('CeraVe Itch Relief Moisturizing Cream'),
+  'cerave-diabetics-dry-skin-relief': ph('CeraVe Diabetics Dry Skin Relief'),
+  'cerave-eye-repair-cream': ph('CeraVe Eye Repair Cream'),
+  'cerave-baby-moisturizing-lotion': ph('CeraVe Baby Moisturizing Lotion'),
+  'cerave-baby-cream': ph('CeraVe Baby Cream'),
+  'cerave-resurfacing-retinol-serum': ph('CeraVe Resurfacing Retinol Serum'),
+  'cerave-skin-renewing-vitamin-c-serum': ph('CeraVe Skin Renewing Vitamin C Serum'),
+  'cerave-hydrating-hyaluronic-serum': ph('CeraVe Hydrating Hyaluronic Serum'),
+  'cerave-acne-control-gel': ph('CeraVe Acne Control Gel'),
+  'cerave-skin-renewing-retinol-serum-alt': ph('CeraVe Skin Renewing Retinol Serum'),
+  'cerave-hydrating-mineral-sunscreen-spf30': ph('CeraVe Hydrating Mineral Sunscreen SPF 30'),
+  'cerave-hydrating-mineral-sunscreen-spf30-sheer-tint': ph('CeraVe Hydrating Mineral Sunscreen SPF 30 Sheer Tint'),
+  'cerave-invisible-zinc-sunscreen-spf50': ph('CeraVe Invisible Zinc Sunscreen SPF 50'),
+  'cerave-hydrating-sheer-sunscreen-spf30': ph('CeraVe Hydrating Sheer Sunscreen SPF 30'),
+  'cerave-body-mineral-sunscreen-spf50': ph('CeraVe Body Mineral Sunscreen SPF 50'),
+  'cerave-ultra-light-moisturizing-gel': ph('CeraVe Ultra Light Moisturizing Gel'),
+};
+
+const CERAVE_LINE_FALLBACK = {
+  Cleansers: '/images/cerave/official/foaming-cleanser.jpg',
+  Moisturizers: '/images/cerave/official/moisturizing-cream.jpg',
+  Serums: '/images/cerave/official/retinol-serum.jpg',
+  Sunscreens: '/images/cerave/official/am-spf30.jpg',
+};
+
+const isPlaceholderImage = (value) =>
+  typeof value === 'string' && value.includes('placehold.co');
+
+const CERAVE_OFFICIAL_IMAGE_BY_SLUG = {
+  'cerave-moisturizing-cream': '/images/cerave/official/moisturizing-cream.jpg',
+  'cerave-hydrating-facial-cleanser': '/images/cerave/official/Hydrating Facial Cleanser.jpg',
+  'cerave-foaming-facial-cleanser': '/images/cerave/official/Foaming Facial Cleanser.jpg',
+  'cerave-skin-renewing-retinol-serum': '/images/cerave/official/Skin Renewing Retinol Serum.jpg',
+  'cerave-hydrating-hyaluronic-acid-serum': '/images/cerave/official/Hydrating Hyaluronic Acid Serum.jpg',
+  'cerave-pm-facial-moisturizing-lotion': '/images/cerave/official/PM Facial Moisturizing Lotion.jpg',
+  'cerave-hydrating-mineral-sunscreen-spf50': '/images/cerave/official/Hydrating Mineral Sunscreen SPF 50.jpg',
+  'cerave-acne-control-cleanser': '/images/cerave/official/acne-control-cleanser.jpg',
+  'cerave-acne-foaming-cream-cleanser': '/images/cerave/official/acne-foaming-cream-cleanser.jpg',
+  'cerave-renewing-sa-cleanser': '/images/cerave/official/renewing-sa.jpg',
+  'cerave-cream-to-foam-cleanser': '/images/cerave/official/cream-to-foam.jpg',
+  'cerave-foaming-oil-cleanser': '/images/cerave/official/Foaming Oil Cleanser.jpg',
+  'cerave-hydrating-cleanser-bar': '/images/cerave/official/Hydrating Cleanser Bar.png',
+  'cerave-blemish-control-cleanser': '/images/cerave/official/Blemish Control Cleanser.png',
+  'cerave-hydrating-micellar-water': '/images/cerave/official/Hydrating Micellar Water.png',
+  'cerave-moisturizing-lotion': '/images/cerave/official/Moisturizing Lotion.jpg',
+  'cerave-daily-moisturizing-lotion': '/images/cerave/official/Daily Moisturizing Lotion.jpg',
+  'cerave-am-facial-moisturizing-lotion-spf30': '/images/cerave/official/AM Facial Moisturizing Lotion SPF 30.jpg',
+  'cerave-am-facial-moisturizing-lotion-spf50': '/images/cerave/official/AM Facial Moisturizing Lotion SPF 50.jpg',
+  'cerave-ultra-light-moisturizing-lotion-spf30': '/images/cerave/official/Ultra-Light Moisturizing Lotion SPF 30.jpg',
+  'cerave-oil-control-moisturizing-gel-cream': '/images/cerave/official/Oil Control Moisturizing Gel-Cream.jpeg',
+  'cerave-skin-renewing-night-cream': '/images/cerave/official/Skin Renewing Night Cream.png',
+  'cerave-healing-ointment': '/images/cerave/official/Healing Ointment.jpg',
+  'cerave-itch-relief-moisturizing-cream': '/images/cerave/official/Itch Relief Moisturizing Cream.jpg',
+  'cerave-diabetics-dry-skin-relief': '/images/cerave/official/Diabetics’ Dry Skin Relief Moisturizing Cream.png',
+  'cerave-eye-repair-cream': '/images/cerave/official/Eye Repair Cream.jpg',
+  'cerave-baby-moisturizing-lotion': '/images/cerave/official/Baby Moisturizing Lotion.jpg',
+  'cerave-baby-cream': '/images/cerave/official/Baby Cream.png',
+  'cerave-resurfacing-retinol-serum': '/images/cerave/official/cerave-resurfacing-retinol-serum.jpg',
+  'cerave-skin-renewing-vitamin-c-serum': '/images/cerave/official/Skin Renewing Vitamin C Serum.jpg',
+  'cerave-hydrating-hyaluronic-serum': '/images/cerave/official/Hydrating Hyaluronic Serum.jpg',
+  'cerave-acne-control-gel': '/images/cerave/official/acne-control-gel.jpg',
+  'cerave-skin-renewing-retinol-serum-alt': '/images/cerave/official/Skin Renewing Retinol Serum (Advanced).png',
+  'cerave-hydrating-mineral-sunscreen-spf30': '/images/cerave/official/Hydrating Mineral Sunscreen SPF 30.jpg',
+  'cerave-hydrating-mineral-sunscreen-spf30-sheer-tint': '/images/cerave/official/Hydrating Mineral Sunscreen SPF 30 Sheer Tint.jpg',
+  'cerave-invisible-zinc-sunscreen-spf50': '/images/cerave/official/Invisible Zinc Sunscreen SPF 50.jpeg',
+  'cerave-hydrating-sheer-sunscreen-spf30': '/images/cerave/official/Hydrating Sheer Sunscreen SPF 30.jpg',
+  'cerave-body-mineral-sunscreen-spf50': '/images/cerave/official/Body Mineral Sunscreen SPF 50.jpg',
+  'cerave-ultra-light-moisturizing-gel': '/images/cerave/official/Ultra-Light Moisturizing Gel.jpg',
+  'cerave-acne-control-spot-treatment': '/images/cerave/official/Acne Control Spot Treatment.jpg',
+  'cerave-skin-renewing-gel-oil': '/images/cerave/official/Skin Renewing Gel Oil.jpg',
+  'cerave-moisturizing-cream-spf30': '/images/cerave/official/Moisturizing Cream SPF 30.png',
+  'cerave-renewing-nightly-exfoliating-treatment': '/images/cerave/official/Renewing Nightly Exfoliating Treatment.png',
+  'cerave-mineral-sunscreen-stick-spf50': '/images/cerave/official/Mineral Sunscreen Stick SPF 50.jpg',
+  'cerave-anti-dandruff-hydrating-shampoo': '/images/cerave/official/Anti-Dandruff Hydrating Shampoo.png',
+  'cerave-anti-dandruff-hydrating-conditioner': '/images/cerave/official/Anti-Dandruff Hydrating Conditioner.jpg',
+  'cerave-gentle-hydrating-shampoo': '/images/cerave/official/Gentle Hydrating Shampoo.jpg',
+  'cerave-gentle-hydrating-conditioner': '/images/cerave/official/Gentle Hydrating Conditioner.jpg',
+  'cerave-eczema-relief-cream-oil': '/images/cerave/official/Eczema Relief Creamy Oil.jpg',
+  'cerave-skin-renewing-day-cream-spf30': '/images/cerave/official/Skin Renewing Day Cream SPF 30.jpg',
+};
+
+const resolveCeraveImage = (item) => {
+  const bySlugSvg = `/images/cerave/products/${item.slug}.svg`;
+  const byOfficial = CERAVE_OFFICIAL_IMAGE_BY_SLUG[item.slug];
+  if (byOfficial) return byOfficial;
+  const specific = CERAVE_IMAGE_BY_SLUG[item.slug];
+  if (specific && !isPlaceholderImage(specific)) return specific;
+  return bySlugSvg;
+};
+
 const normalizeCeraVeProduct = (item) => ({
   brand: 'cerave',
   brandLabel: 'CERAVE',
   safety: ['Fragrance Free', 'Non Comedogenic'],
   ingredientsTags: ['Ceramides', 'Hyaluronic Acid', 'Niacinamide'],
-  gallery: [ph(item.name)],
-  image: ph(item.name),
+  gallery: [resolveCeraveImage(item)],
+  image: resolveCeraveImage(item),
   priceFrom: item.priceUSD,
   sizes: [{ label: item.size || 'Default', priceUSD: item.priceUSD, pricePer: '' }],
   defaultSize: item.size || 'Default',
@@ -461,7 +588,11 @@ const normalizeCeraVeProduct = (item) => ({
 })
 
 export const ceraveCatalog = [
-  ...ceraveCoreCatalog,
+  ...ceraveCoreCatalog.map((item) => ({
+    ...item,
+    image: resolveCeraveImage(item),
+    gallery: [resolveCeraveImage(item)],
+  })),
   ...ceraveExtraCatalog.map(normalizeCeraVeProduct),
 ];
 
