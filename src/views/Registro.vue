@@ -282,7 +282,7 @@ async function registrar() {
     }
   } catch (err) {
     const msg = err?.message || ''
-    if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('User already registered') || msg.includes('Email already exists')) {
+    if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('User already registered')) {
       errorMsg.value = 'An account with that email already exists. Please sign in.'
     } else if (msg.includes('weak') || msg.includes('password')) {
       errorMsg.value = 'Password is too weak. Use at least 6 characters.'
