@@ -1153,7 +1153,7 @@ export default {
             }
           } catch { /* ignore */ }
 
-          // B) Esquema `database/schema.sql` (quiz_sessions + skin_analyses)
+          // B) Esquema `PharmaDerm-Backend/database/schema.sql` (quiz_sessions + skin_analyses)
           if (!savedQuiz) {
             const { data: sData, error: sErr } = await withTimeout(supabase
               .from('quiz_sessions')

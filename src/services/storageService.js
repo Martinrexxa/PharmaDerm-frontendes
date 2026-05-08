@@ -86,7 +86,10 @@ export const storageService = {
    * Preserva: sb-* (Supabase auth), pharmaderm_user, pharmaderm_session,
    *            settings, products, countries, currencies.
    */
-  hardResetPrivateClientData() {
+  hardResetPrivateClientData(options = {}) {
+    const preserveContains = Array.isArray(options.preserveContains)
+      ? options.preserveContains.map((v) => String(v).toLowerCase())
+      : []
     const PRIVATE_PATTERNS = [
       'quiz', 'diagnostic', 'diagnosis', 'routine', 'analysis',
       'appointment', 'order', 'cart', 'history', 'skin',
@@ -100,6 +103,7 @@ export const storageService = {
       if (PRESERVE_EXACT.includes(key)) return false
       if (PRESERVE_STARTS.some(p => key.startsWith(p))) return false
       if (PRESERVE_CONTAINS.some(p => lower.includes(p))) return false
+      if (preserveContains.some(p => lower.includes(p))) return false
       return PRIVATE_PATTERNS.some(p => lower.includes(p))
     }
 

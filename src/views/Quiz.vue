@@ -845,7 +845,7 @@ async function saveQuizToSupabase(quizData) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Preferido: esquema normalizado del repo (`database/schema.sql`)
+    // Preferido: esquema normalizado del backend (`PharmaDerm-Backend/database/schema.sql`)
     // - quiz_sessions: señales del quiz + metadata
     // - skin_analyses: resultado (perfil/título/métricas)
     const photoMeta = quizData.photoMeta || {}

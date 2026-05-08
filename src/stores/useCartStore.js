@@ -1,9 +1,11 @@
 import { ref, computed } from 'vue'
 import storageService from '../services/storageService.js'
+import { DATA_MODE } from '../lib/supabaseClient.js'
+import { apiFetch } from '../services/apiClient.js'
 
 const items = ref([])
 
-function _load() {
+function _loadLocal() {
   try {
     items.value = storageService.get('cart', [])
   } catch {
@@ -11,20 +13,43 @@ function _load() {
   }
 }
 
+function _isBackendModeWithSession() {
+  if (DATA_MODE !== 'backend') return false
+  try {
+    const s = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
+    return Boolean(s?.token)
+  } catch {
+    return false
+  }
+}
+
+async function _loadFromBackend() {
+  if (!_isBackendModeWithSession()) return
+  try {
+    const data = await apiFetch('/cart')
+    const remoteItems = Array.isArray(data?.items) ? data.items : []
+    items.value = remoteItems
+    storageService.set('cart', remoteItems)
+  } catch {
+    // Keep local cart as fallback if backend request fails.
+  }
+}
+
 function _save() {
   storageService.set('cart', items.value)
+  if (_isBackendModeWithSession()) {
+    apiFetch('/cart', { method: 'PUT', body: { items: items.value } }).catch(() => {})
+  }
   window.dispatchEvent(new Event('storage'))
 }
 
-// Load cart for guest on module init (storageService has no user yet → global key)
-_load()
+_loadLocal()
 
-// Called by useAuthStore after login — reloads using user-scoped key
-export function initCartForUser() {
-  _load()
+export async function initCartForUser() {
+  _loadLocal()
+  await _loadFromBackend()
 }
 
-// Called by useAuthStore on logout — clears in-memory cart
 export function clearCartForUser() {
   items.value = []
 }
@@ -82,7 +107,8 @@ export function useCartStore() {
   }
 
   function refresh() {
-    _load()
+    _loadLocal()
+    _loadFromBackend()
   }
 
   return { items, count, subtotal, addItem, removeItem, updateQty, clear, refresh }

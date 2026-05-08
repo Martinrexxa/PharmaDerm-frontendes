@@ -31,7 +31,7 @@ async function _loadProfile(userId) {
   }
   // Bind history and cart stores to this user (async: checks Supabase sync)
   await loadHistoryForUser(userId)
-  initCartForUser()
+  await initCartForUser()
 }
 
 function _applySettings(s) {
@@ -57,8 +57,8 @@ function _clearState() {
   // Remove fallback session keys (non-Supabase mode)
   localStorage.removeItem('pharmaderm_user')
   localStorage.removeItem('pharmaderm_session')
-  // Wipe ALL private localStorage data (including UUID-scoped) on logout
-  storageService.hardResetPrivateClientData()
+  // Wipe private client data on logout but keep cart persistence per user.
+  storageService.hardResetPrivateClientData({ preserveContains: ['cart'] })
 }
 
 // â”€â”€â”€ Store factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -232,7 +232,7 @@ export function useAuthStore() {
           // Scope localStorage keys to this user
           storageService.setCurrentUser(normalizedUser.email)
           await loadHistoryForUser(normalizedUser.email)
-          initCartForUser()
+          await initCartForUser()
 
           return { success: true }
         }
