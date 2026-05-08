@@ -151,7 +151,7 @@ export function useAuthStore() {
           const data = await res.json().catch(() => ({}))
           if (!res.ok) throw new Error(data?.error || 'Could not create the account')
 
-          return { success: true, needsEmailConfirmation: data?.needsEmailConfirmation !== false }
+          return { success: true, needsEmailConfirmation: false }
         }
 
         const userData = {
