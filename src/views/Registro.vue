@@ -181,8 +181,9 @@
             class="flex w-full items-center justify-center rounded-lg bg-brand-light-blue h-14 text-center text-base font-bold text-white shadow-sm hover:bg-opacity-90 transition-colors"
             type="button"
             @click="registrar"
+            :disabled="loading"
           >
-            Create account
+            {{ loading ? 'Creating account...' : 'Create account' }}
           </button>
 
           <button
@@ -239,14 +240,32 @@ async function registrar() {
   if (!nombre.value.trim() || !apellido.value.trim() || !email.value.trim() ||
       !telefono.value.trim() || !birthDate.value || !password.value || !confirmPassword.value) {
     errorMsg.value = 'Please fill in all fields.'
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Missing information',
+      text: errorMsg.value,
+      confirmButtonColor: '#5DBCD2',
+    })
     return
   }
   if (password.value.length < 6) {
     errorMsg.value = 'Password must be at least 6 characters.'
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Invalid password',
+      text: errorMsg.value,
+      confirmButtonColor: '#5DBCD2',
+    })
     return
   }
   if (password.value !== confirmPassword.value) {
     errorMsg.value = 'Passwords do not match.'
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Passwords do not match',
+      text: 'Please check both password fields and try again.',
+      confirmButtonColor: '#5DBCD2',
+    })
     return
   }
 
@@ -293,6 +312,12 @@ async function registrar() {
     } else {
       errorMsg.value = msg || 'Error creating account. Please try again.'
     }
+    await Swal.fire({
+      icon: 'error',
+      title: 'Could not create account',
+      text: errorMsg.value,
+      confirmButtonColor: '#5DBCD2',
+    })
   } finally {
     loading.value = false
   }
