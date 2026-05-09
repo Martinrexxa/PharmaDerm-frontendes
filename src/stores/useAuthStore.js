@@ -66,7 +66,11 @@ function _clearState() {
 
 export function useAuthStore() {
   const isLoggedIn = computed(() => {
-    if (isSupabaseConfigured) return !!session.value?.access_token
+    // Backend/hybrid mode stores a JWT token in pharmaderm_session.
+    // Supabase mode uses access_token in session.value.
+    if (session.value?.token) return true
+    if (session.value?.isLoggedIn) return true
+    if (isSupabaseConfigured && session.value?.access_token) return true
     return !!storageService.get('session', null)?.isLoggedIn
   })
 
