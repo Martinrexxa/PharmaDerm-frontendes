@@ -1342,55 +1342,57 @@ export default {
         console.warn('[Diagnostics] Backend history diagnostic load failed:', e?.message || e)
       }
 
-      if (!parsed && isSupabaseConfigured && userId) {
-        try {
-          const { data, error } = await withTimeout(supabase
-            .from('diagnosis_cases')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(), 8000, 'Load saved diagnostic');
+      if (!parsed) {
+        if (isSupabaseConfigured && userId) {
+          try {
+            const { data, error } = await withTimeout(supabase
+              .from('diagnosis_cases')
+              .select('*')
+              .eq('user_id', userId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle(), 8000, 'Load saved diagnostic');
 
-          if (!error && data) {
-            console.log('[Diagnostics] Loaded diagnosis case from DB:', data);
-            parsed = {
-              form: {
-                description: data.description || '',
-                duration: data.duration || '',
-                urgency: data.urgency || '',
-                symptoms: data.symptoms || [],
-                areas: data.affected_areas || [],
-                priorities: data.priorities || [],
-                routineLevel: data.routine_level || '',
-                previousConsult: data.previous_consult || '',
-              },
-              generatedInsight: data.generated_insight || null,
-            };
+            if (!error && data) {
+              console.log('[Diagnostics] Loaded diagnosis case from DB:', data);
+              parsed = {
+                form: {
+                  description: data.description || '',
+                  duration: data.duration || '',
+                  urgency: data.urgency || '',
+                  symptoms: data.symptoms || [],
+                  areas: data.affected_areas || [],
+                  priorities: data.priorities || [],
+                  routineLevel: data.routine_level || '',
+                  previousConsult: data.previous_consult || '',
+                },
+                generatedInsight: data.generated_insight || null,
+              };
 
-            // Load associated photos
-            const { data: photos, error: photosError } = await withTimeout(supabase
-              .from('diagnosis_photos')
-              .select('url')
-              .eq('diagnosis_id', data.id)
-              .order('uploaded_at', { ascending: true }), 8000, 'Load diagnostic photos');
+              // Load associated photos
+              const { data: photos, error: photosError } = await withTimeout(supabase
+                .from('diagnosis_photos')
+                .select('url')
+                .eq('diagnosis_id', data.id)
+                .order('uploaded_at', { ascending: true }), 8000, 'Load diagnostic photos');
 
-            if (!photosError && photos) {
-              parsed.imagePreviews = photos.map(photo => photo.url);
+              if (!photosError && photos) {
+                parsed.imagePreviews = photos.map(photo => photo.url);
+              }
+
+              source = 'supabase';
+            } else {
+              source = 'supabase:empty';
             }
-
-            source = 'supabase';
-          } else {
-            source = 'supabase:empty';
+          } catch (e) {
+            console.warn('[Diagnostics] Supabase diagnosis check failed:', e?.message);
+            parsed = this._historyStore?.getLatestDiagnostic() || null;
+            source = 'supabase:error->fallback';
           }
-        } catch (e) {
-          console.warn('[Diagnostics] Supabase diagnosis check failed:', e?.message);
+        } else {
           parsed = this._historyStore?.getLatestDiagnostic() || null;
-          source = 'supabase:error->fallback';
+          source = parsed ? 'localStorage' : 'none';
         }
-      } else {
-        parsed = this._historyStore?.getLatestDiagnostic() || null;
-        source = parsed ? 'localStorage' : 'none';
       }
 
       console.log('[Diagnostics] loadSavedDiagnosticCase | source:', source, '| found:', !!parsed);
@@ -1410,10 +1412,6 @@ export default {
         if (parsed.imagePreviews) {
           console.log('[Diagnostics] Applying image previews:', parsed.imagePreviews.length, 'images');
           this.imagePreviews = parsed.imagePreviews;
-        }
-        // Fallback: if no step-2 photos were saved yet, show the quiz selfie as reference.
-        if ((!this.imagePreviews || !this.imagePreviews.length) && this.casePhoto) {
-          this.imagePreviews = [this.casePhoto];
         }
         if (parsed.casePhoto) {
           console.log('[Diagnostics] Applying case photo');
