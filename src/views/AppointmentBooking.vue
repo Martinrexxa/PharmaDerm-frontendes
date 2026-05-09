@@ -46,6 +46,7 @@
               </div>
             </div>
           </div>
+          <div v-else class="form-error">{{ ui.noSpecialists }}</div>
         </section>
 
         <section class="booking-section" v-if="!doctorSelectionLocked && otherDoctors.length">
@@ -105,7 +106,6 @@
               </select>
             </div>
           </div>
-          <div v-else class="form-error">{{ ui.noSpecialists }}</div>
         </section>
 
         <section class="booking-section" v-if="selectedDoctor && form.type && form.date">
