@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
+import { apiFetch } from '../services/apiClient.js'
 import routineService from '../services/routineService.js'
 
 // Module-level singleton state — scoped per user
@@ -12,6 +13,59 @@ const orders        = ref([])
 let _currentUserId = null
 let _lastSyncTime = 0
 const SYNC_THRESHOLD = 300000 // 5 minutes
+
+function _hasBackendSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
+    return Boolean(s?.token)
+  } catch {
+    return false
+  }
+}
+
+async function _syncWithBackend() {
+  if (!_hasBackendSession()) return
+  const data = await apiFetch('/history')
+  quizHistory.value = Array.isArray(data?.quiz_history) ? data.quiz_history : []
+  diagnostics.value = Array.isArray(data?.diagnostics_history) ? data.diagnostics_history : []
+  routines.value = Array.isArray(data?.routines) ? data.routines : []
+  appointments.value = Array.isArray(data?.appointments_list) ? data.appointments_list : []
+  orders.value = Array.isArray(data?.orders) ? data.orders : []
+
+  const kh = _key('quiz_history')
+  const kr = _key('quiz_result')
+  const dh = _key('diagnostics_history')
+  const dr = _key('diagnostic_result')
+  const rh = _key('routines')
+  const ah = _key('appointments_list')
+  const ap = _key('appointment')
+  const oh = _key('orders')
+  if (kh) localStorage.setItem(kh, JSON.stringify(quizHistory.value))
+  if (kr) localStorage.setItem(kr, JSON.stringify(data?.quiz_result || null))
+  if (dh) localStorage.setItem(dh, JSON.stringify(diagnostics.value))
+  if (dr) localStorage.setItem(dr, JSON.stringify(data?.diagnostic_result || null))
+  if (rh) localStorage.setItem(rh, JSON.stringify(routines.value))
+  if (ah) localStorage.setItem(ah, JSON.stringify(appointments.value))
+  if (ap) localStorage.setItem(ap, JSON.stringify(data?.appointment || null))
+  if (oh) localStorage.setItem(oh, JSON.stringify(orders.value))
+}
+
+async function _pushBackendHistory() {
+  if (!_hasBackendSession()) return
+  await apiFetch('/history', {
+    method: 'PUT',
+    body: {
+      quiz_history: quizHistory.value,
+      diagnostics_history: diagnostics.value,
+      routines: routines.value,
+      appointments_list: appointments.value,
+      orders: orders.value,
+      quiz_result: quizHistory.value[0] || null,
+      diagnostic_result: diagnostics.value[0] || null,
+      appointment: appointments.value[0] || null,
+    },
+  })
+}
 
 // Returns null when no userId — NO fallback to global key
 function _key(base) {
@@ -73,6 +127,12 @@ export function initHistoryForUser(userId) {
  */
 export async function loadHistoryForUser(userId) {
   _currentUserId = userId || null
+
+  if (_hasBackendSession() && userId) {
+    _load()
+    try { await _syncWithBackend() } catch (e) { console.warn('[HistoryStore] Backend sync failed:', e) }
+    return
+  }
 
   if (!isSupabaseConfigured || !userId) {
     _load()
@@ -370,6 +430,7 @@ export function useHistoryStore() {
         console.warn('[HistoryStore] Failed to save routine:', e)
       }
     }
+    _pushBackendHistory().catch(() => {})
     return entry
   }
 
@@ -386,6 +447,7 @@ export function useHistoryStore() {
     const kr = _key('diagnostic_result')
     if (kh) localStorage.setItem(kh, JSON.stringify(diagnostics.value))
     if (kr) localStorage.setItem(kr, JSON.stringify(entry))
+    _pushBackendHistory().catch(() => {})
     return entry
   }
 
@@ -393,11 +455,13 @@ export function useHistoryStore() {
     try {
       const entry = await routineService.saveRoutine(routine)
       routines.value.unshift(entry)
+      _pushBackendHistory().catch(() => {})
       return entry
     } catch (e) {
       console.warn('[HistoryStore] Error saving routine:', e)
       const entry = { ...routine, id: Date.now(), date: new Date().toISOString() }
       routines.value.unshift(entry)
+      _pushBackendHistory().catch(() => {})
       return entry
     }
   }
@@ -412,6 +476,7 @@ export function useHistoryStore() {
     const ka = _key('appointment')
     if (kh) localStorage.setItem(kh, JSON.stringify(appointments.value))
     if (ka) localStorage.setItem(ka, JSON.stringify(entry))
+    _pushBackendHistory().catch(() => {})
     return entry
   }
 
@@ -420,6 +485,7 @@ export function useHistoryStore() {
       const { orderService } = await import('../services/orderService.js')
       const entry = await orderService.saveOrder(order)
       orders.value.unshift(entry)
+      _pushBackendHistory().catch(() => {})
       return entry
     } catch (e) {
       console.warn('[HistoryStore] Error saving order:', e)
@@ -427,6 +493,7 @@ export function useHistoryStore() {
       orders.value.unshift(entry)
       const k = _key('orders')
       if (k) localStorage.setItem(k, JSON.stringify(orders.value))
+      _pushBackendHistory().catch(() => {})
       return entry
     }
   }
