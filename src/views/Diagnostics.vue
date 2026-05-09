@@ -845,18 +845,16 @@ export default {
       try {
         const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
         if (!sess?.token) throw new Error('Please sign in again to save photos');
-        const saved = await apiFetch('/diagnostics/latest', {
+        const saved = await apiFetch('/diagnostics/photos', {
           method: 'PUT',
           body: {
-            form: this.form,
-            generatedInsight: this.generatedInsight,
             imagePreviews: this.imagePreviews,
           },
         });
         if (saved?.diagnosisId) this.latestDiagnosisId = saved.diagnosisId;
         this.showToast('Photos saved successfully.');
       } catch (e) {
-        this.showToast(e?.message || 'Could not save photos');
+        this.showToast(e?.message || 'Could not save photo');
       } finally {
         this.isSavingPhotos = false;
       }
@@ -941,12 +939,11 @@ export default {
         try {
           const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
           if (sess?.token) {
-            const saved = await apiFetch('/diagnostics/latest', {
+            const saved = await apiFetch('/diagnostics/step1', {
               method: 'PUT',
               body: {
                 form: this.form,
                 generatedInsight: this.generatedInsight,
-                imagePreviews: this.imagePreviews,
               },
             });
             if (saved?.diagnosisId) this.latestDiagnosisId = saved.diagnosisId;
