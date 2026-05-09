@@ -1116,7 +1116,13 @@ export default {
           history?.quiz_result ||
           null
         if (backendQuiz) {
-          savedQuiz = { ...backendQuiz, completed: true }
+          const localQuiz = this._historyStore?.getLatestQuizResult?.() || null
+          const fallbackSelfie = localQuiz?.selfie || null
+          savedQuiz = {
+            ...backendQuiz,
+            selfie: backendQuiz?.selfie || fallbackSelfie || '',
+            completed: true
+          }
           source = 'backend-history'
         } else {
           source = 'backend-empty'

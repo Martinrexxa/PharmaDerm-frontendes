@@ -52,15 +52,28 @@ async function _syncWithBackend() {
 
 async function _pushBackendHistory() {
   if (!_hasBackendSession()) return
+  const sanitizeQuiz = (q) => {
+    if (!q || typeof q !== 'object') return q
+    const next = { ...q }
+    if (typeof next.selfie === 'string' && next.selfie.startsWith('data:image/')) {
+      next.selfie = ''
+    }
+    return next
+  }
+
+  const sanitizedQuizHistory = Array.isArray(quizHistory.value)
+    ? quizHistory.value.map(sanitizeQuiz)
+    : []
+
   await apiFetch('/history', {
     method: 'PUT',
     body: {
-      quiz_history: quizHistory.value,
+      quiz_history: sanitizedQuizHistory,
       diagnostics_history: diagnostics.value,
       routines: routines.value,
       appointments_list: appointments.value,
       orders: orders.value,
-      quiz_result: quizHistory.value[0] || null,
+      quiz_result: sanitizeQuiz(quizHistory.value[0] || null),
       diagnostic_result: diagnostics.value[0] || null,
       appointment: appointments.value[0] || null,
     },
@@ -406,12 +419,7 @@ export function clearHistory() {
 
 export function useHistoryStore() {
   async function saveQuizResult(result) {
-    const sanitizedResult = { ...result }
-    // Avoid sending heavy base64 payloads to backend history storage.
-    if (typeof sanitizedResult.selfie === 'string' && sanitizedResult.selfie.startsWith('data:image/')) {
-      sanitizedResult.selfie = ''
-    }
-    const entry = { ...sanitizedResult, id: Date.now(), date: new Date().toISOString() }
+    const entry = { ...result, id: Date.now(), date: new Date().toISOString() }
     quizHistory.value.unshift(entry)
     const kh = _key('quiz_history')
     const kr = _key('quiz_result')
