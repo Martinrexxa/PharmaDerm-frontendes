@@ -107,16 +107,26 @@ async function getSupabaseSessionWithTimeout(ms = 350) {
 
 router.beforeEach(async (to, from, next) => {
   let isAuthenticated = false;
+  let localSession = null;
 
-  if (isSupabaseConfigured) {
+  try {
+    localSession = JSON.parse(localStorage.getItem("pharmaderm_session") || "null");
+  } catch {
+    localSession = null;
+  }
+
+  if (localSession?.isLoggedIn || localSession?.token) {
+    isAuthenticated = true;
+  }
+
+  if (!isAuthenticated && isSupabaseConfigured) {
     const { session, timedOut } = await getSupabaseSessionWithTimeout();
     isAuthenticated = !!session?.access_token;
     if (timedOut && !to.meta.public && from.path !== "/login") {
       isAuthenticated = true;
     }
-  } else {
-    const s = JSON.parse(localStorage.getItem("pharmaderm_session") || "null");
-    isAuthenticated = !!s?.isLoggedIn;
+  } else if (!isAuthenticated) {
+    isAuthenticated = !!localSession?.isLoggedIn;
   }
 
   if (!to.meta.public && !isAuthenticated) {
