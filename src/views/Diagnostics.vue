@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="diagnostics-page">
     <!-- Gate: no quiz result -->
     <div v-if="!hasQuiz" class="quiz-gate">
@@ -75,13 +75,13 @@
 
         <div class="timeline-grid">
           <div class="timeline-step" :class="{ completed: quizCompleted }">
-            <div class="timeline-icon">{{ quizCompleted ? '✓' : '1' }}</div>
+            <div class="timeline-icon">{{ quizCompleted ? '?' : '1' }}</div>
             <h4>Quiz completed</h4>
             <p>Your initial skin profile was generated from the quiz.</p>
           </div>
 
           <div class="timeline-step" :class="{ completed: detailsCompleted }">
-            <div class="timeline-icon">{{ detailsCompleted ? '✓' : '2' }}</div>
+            <div class="timeline-icon">{{ detailsCompleted ? '?' : '2' }}</div>
             <h4>Diagnostics completed</h4>
             <p>Add more symptoms, priorities and case details.</p>
           </div>
@@ -327,7 +327,7 @@
           <div v-if="imagePreviews.length" class="preview-grid">
             <div v-for="(image, index) in imagePreviews" :key="index" class="preview-item">
               <img :src="image" alt="Uploaded preview" />
-              <button type="button" class="preview-remove" @click="removeImage(index)">×</button>
+              <button type="button" class="preview-remove" @click="removeImage(index)">�</button>
             </div>
           </div>
 
@@ -854,7 +854,7 @@ export default {
         if (saved?.diagnosisId) this.latestDiagnosisId = saved.diagnosisId;
         this.showToast('Photos saved successfully.');
       } catch (e) {
-        this.showToast(e?.message || 'Could not save photo');
+        this.showToast('Could not save photo');
       } finally {
         this.isSavingPhotos = false;
       }
@@ -911,14 +911,15 @@ export default {
 
     async saveDiagnosticCase() {
       // Prevent double-submission
-      if (this.isSavingDiagnostic || this.diagnosticSaved) {
+      if (this.isSavingDiagnostic) {
         return;
       }
 
       this.isSavingDiagnostic = true;
 
       try {
-        // FASE 9 â€” save diagnostic case (separate from booking)
+        let persisted = false;
+        // FASE 9 — save diagnostic case (separate from booking)
         const payload = {
           id: Date.now(),
           title: "Dermatology diagnostic saved",
@@ -982,6 +983,7 @@ export default {
                   console.warn('[Diagnostics] Supabase diagnosis update failed:', updateError.message || updateError);
                 } else {
                   diagnosisId = updateResult.id;
+                  persisted = true;
                 }
               } else {
                 // Insert new case
@@ -1006,6 +1008,7 @@ export default {
                   console.warn('[Diagnostics] Supabase diagnosis insert failed:', insertError.message || insertError);
                 } else {
                   diagnosisId = insertResult.id;
+                  persisted = true;
                 }
               }
 
@@ -1020,7 +1023,12 @@ export default {
               }
             }
           }
-        } catch { /* Supabase save is best-effort */ }
+        } catch (saveError) { console.warn('[Diagnostics] Step 1 save failed:', saveError?.message || saveError); }
+
+        if (!persisted) {
+          this.showToast('Could not save diagnostic');
+          return;
+        }
 
         this.diagnosticSaved = true;
         this.showToast("Diagnostic saved successfully.");
@@ -1231,7 +1239,7 @@ export default {
           }
         } catch (e) {
           console.warn('[Diagnostics] Supabase quiz check failed:', e?.message);
-          source = 'supabase:errorâ†’fallback';
+          source = 'supabase:error→fallback';
         }
       }
 
@@ -1352,7 +1360,7 @@ export default {
         } catch (e) {
           console.warn('[Diagnostics] Supabase diagnosis check failed:', e?.message);
           parsed = this._historyStore?.getLatestDiagnostic() || null;
-          source = 'supabase:errorâ†’fallback';
+          source = 'supabase:error→fallback';
         }
       } else {
         parsed = this._historyStore?.getLatestDiagnostic() || null;
@@ -2225,6 +2233,7 @@ input:focus {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
+
 
 
 
