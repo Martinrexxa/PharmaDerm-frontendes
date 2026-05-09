@@ -1,5 +1,5 @@
 ﻿import { ref, computed } from 'vue'
-import { supabase, isSupabaseConfigured, DATA_MODE, API_BASE_URL } from '../lib/supabaseClient.js'
+import { supabase, isSupabaseConfigured, isBackendMode, DATA_MODE, API_BASE_URL } from '../lib/supabaseClient.js'
 import { userService } from '../services/userService.js'
 import storageService from '../services/storageService.js'
 import { loadHistoryForUser, clearHistory } from './useHistoryStore.js'
@@ -87,7 +87,7 @@ export function useAuthStore() {
     // Clean legacy global private keys every time the app starts
     storageService.cleanupLegacyPrivateStorage()
 
-    if (!isSupabaseConfigured) {
+    if (isBackendMode || !isSupabaseConfigured) {
       try {
         const rawUser = localStorage.getItem('pharmaderm_user')
         const rawSess = localStorage.getItem('pharmaderm_session')
@@ -134,8 +134,8 @@ export function useAuthStore() {
   async function register({ firstName, lastName, email, phone, password, birthDate }) {
     loading.value = true
     try {
-      if (!isSupabaseConfigured) {
-        if (DATA_MODE === 'backend') {
+      if (isBackendMode || !isSupabaseConfigured) {
+        if (isBackendMode) {
           const res = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -190,8 +190,8 @@ export function useAuthStore() {
   async function login(email, password) {
     loading.value = true
     try {
-      if (!isSupabaseConfigured) {
-        if (DATA_MODE === 'backend') {
+      if (isBackendMode || !isSupabaseConfigured) {
+        if (isBackendMode) {
           const res = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -81,7 +81,7 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Swal from "sweetalert2";
-import { DATA_MODE, API_BASE_URL, supabase, isSupabaseConfigured } from "../lib/supabaseClient.js";
+import { API_BASE_URL, isBackendMode, supabase, isSupabaseConfigured } from "../lib/supabaseClient.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -136,7 +136,7 @@ onMounted(async () => {
   errorMsg.value = "";
 
   // In backend mode, the token comes as ?token=
-  if (DATA_MODE === "backend") return;
+  if (isBackendMode) return;
 
   if (!isSupabaseConfigured) {
     errorMsg.value = "This screen requires 'supabase' or 'backend' mode.";
@@ -164,7 +164,7 @@ async function reset() {
   errorMsg.value = "";
 
   // Backend mode
-  if (DATA_MODE === "backend") {
+  if (isBackendMode) {
     const token = String(route.query.token || "").trim();
     if (!token) {
       errorMsg.value = "Recovery token is missing.";

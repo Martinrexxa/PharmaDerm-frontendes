@@ -82,7 +82,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { DATA_MODE, API_BASE_URL, supabase, isSupabaseConfigured } from "../lib/supabaseClient.js";
+import { API_BASE_URL, supabase, isBackendMode, isSupabaseConfigured } from "../lib/supabaseClient.js";
 import Swal from "sweetalert2";
 
 const router = useRouter();
@@ -105,7 +105,7 @@ const enviar = async () => {
 
   loading.value = true;
   try {
-    if (DATA_MODE === "backend") {
+    if (isBackendMode) {
       await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,7 +116,7 @@ const enviar = async () => {
       const { error } = await supabase.auth.resetPasswordForEmail(e, { redirectTo });
       if (error) throw error;
     } else {
-      throw new Error("This feature requires 'backend' or 'supabase' mode.");
+      throw new Error("This feature requires backend or supabase mode.");
     }
 
     await Swal.fire({

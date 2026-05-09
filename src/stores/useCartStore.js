@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import storageService from '../services/storageService.js'
-import { DATA_MODE } from '../lib/supabaseClient.js'
+import { isBackendMode } from '../lib/supabaseClient.js'
 import { apiFetch } from '../services/apiClient.js'
 
 const items = ref([])
@@ -14,7 +14,7 @@ function _loadLocal() {
 }
 
 function _isBackendModeWithSession() {
-  if (DATA_MODE !== 'backend') return false
+  if (!isBackendMode) return false
   try {
     const s = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
     return Boolean(s?.token)
