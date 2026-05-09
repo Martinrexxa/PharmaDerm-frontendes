@@ -466,7 +466,17 @@ async function bookAppointment() {
   try {
     let savedAppointment = aptData
 
-    if (isSupabaseConfigured) {
+    const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
+    if (sess?.token) {
+      const created = await apiFetch('/appointments', {
+        method: 'POST',
+        body: aptData,
+      })
+      if (!created?.appointment) {
+        throw new Error(isEs.value ? 'No se pudo guardar la cita en backend.' : 'Could not save appointment in backend.')
+      }
+      savedAppointment = created.appointment
+    } else if (isSupabaseConfigured) {
       if (!userId) {
         throw new Error(isEs.value ? 'No se encontro un usuario autenticado. Inicia sesion para guardar la cita en la base de datos.' : 'No authenticated user found. Sign in to save the appointment to the database.')
       }
