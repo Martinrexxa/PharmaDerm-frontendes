@@ -430,7 +430,11 @@ export function useHistoryStore() {
         console.warn('[HistoryStore] Failed to save routine:', e)
       }
     }
-    _pushBackendHistory().catch(() => {})
+    try {
+      if (_hasBackendSession()) await _pushBackendHistory()
+    } catch (e) {
+      console.warn('[HistoryStore] Backend quiz sync failed:', e?.message || e)
+    }
     return entry
   }
 
