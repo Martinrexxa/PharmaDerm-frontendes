@@ -433,6 +433,7 @@
 <script>
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
 import { getCurrentUserIdentity } from '../lib/currentUser.js';
+import { apiFetch } from '../services/apiClient.js';
 import { useHistoryStore } from '../stores/useHistoryStore.js';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { getProductsByQuizResult } from '../data/productCatalog.js';
@@ -1107,8 +1108,26 @@ export default {
       let savedQuiz = null;
       let source = 'none';
 
+      // Backend history is the source of truth in backend/hybrid auth mode.
+      try {
+        const s = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
+        if (s?.token) {
+          const history = await apiFetch('/history')
+          const backendQuiz =
+            (Array.isArray(history?.quiz_history) && history.quiz_history[0]) ||
+            history?.quiz_result ||
+            null
+          if (backendQuiz) {
+            savedQuiz = { ...backendQuiz, completed: true }
+            source = 'backend-history'
+          }
+        }
+      } catch (e) {
+        console.warn('[Diagnostics] Backend history quiz load failed:', e?.message || e)
+      }
+
             // Supabase is authoritative when configured
-      if (isSupabaseConfigured && userId) {
+      if (!savedQuiz && isSupabaseConfigured && userId) {
         try {
           // A) Esquema denormalizado (quiz_sessions con completed_at, skin_type, concerns...)
           try {
@@ -1282,7 +1301,25 @@ export default {
       let parsed = null;
       let source = 'none';
 
-      if (isSupabaseConfigured && userId) {
+      // Backend history first (backend/hybrid auth mode)
+      try {
+        const s = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
+        if (s?.token) {
+          const history = await apiFetch('/history')
+          const latestDiagnostic =
+            (Array.isArray(history?.diagnostics_history) && history.diagnostics_history[0]) ||
+            history?.diagnostic_result ||
+            null
+          if (latestDiagnostic) {
+            parsed = latestDiagnostic
+            source = 'backend-history'
+          }
+        }
+      } catch (e) {
+        console.warn('[Diagnostics] Backend history diagnostic load failed:', e?.message || e)
+      }
+
+      if (!parsed && isSupabaseConfigured && userId) {
         try {
           const { data, error } = await withTimeout(supabase
             .from('diagnosis_cases')
