@@ -11,6 +11,7 @@ const session   = ref(null)    // Supabase Auth session (or legacy object)
 const settings  = ref(null)    // user_settings row
 const loading   = ref(false)
 const initialized = ref(false)
+const SHOULD_USE_BACKEND_AUTH = Boolean(API_BASE_URL && !String(API_BASE_URL).includes('localhost'))
 
 // â”€â”€â”€ Internal helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -87,7 +88,7 @@ export function useAuthStore() {
     // Clean legacy global private keys every time the app starts
     storageService.cleanupLegacyPrivateStorage()
 
-    if (isBackendMode || !isSupabaseConfigured) {
+    if (SHOULD_USE_BACKEND_AUTH || isBackendMode || !isSupabaseConfigured) {
       try {
         const rawUser = localStorage.getItem('pharmaderm_user')
         const rawSess = localStorage.getItem('pharmaderm_session')
@@ -134,8 +135,8 @@ export function useAuthStore() {
   async function register({ firstName, lastName, email, phone, password, birthDate }) {
     loading.value = true
     try {
-      if (isBackendMode || !isSupabaseConfigured) {
-        if (isBackendMode) {
+      if (SHOULD_USE_BACKEND_AUTH || isBackendMode || !isSupabaseConfigured) {
+        if (SHOULD_USE_BACKEND_AUTH || isBackendMode) {
           const res = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -190,8 +191,8 @@ export function useAuthStore() {
   async function login(email, password) {
     loading.value = true
     try {
-      if (isBackendMode || !isSupabaseConfigured) {
-        if (isBackendMode) {
+      if (SHOULD_USE_BACKEND_AUTH || isBackendMode || !isSupabaseConfigured) {
+        if (SHOULD_USE_BACKEND_AUTH || isBackendMode) {
           const res = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
