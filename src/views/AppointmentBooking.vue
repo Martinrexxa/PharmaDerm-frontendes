@@ -35,7 +35,7 @@
               :class="{ selected: selectedDoctor?.id === doc.id }"
               @click="selectDoctor(doc)"
             >
-              <img :src="doc.photo_url || 'https://placehold.co/80x80/dbeafe/1e3a8a?text=Dr'" :alt="doc.name" class="doctor-photo" />
+              <img :src="resolveDoctorPhoto(doc)" :alt="doc.name" class="doctor-photo" />
               <div class="doctor-info">
                 <p class="doctor-name">{{ doc.name }}</p>
                 <p class="doctor-specialty">{{ specialtyLabel(doc.specialty) }}</p>
@@ -59,7 +59,7 @@
               :class="{ selected: selectedDoctor?.id === doc.id }"
               @click="selectDoctor(doc)"
             >
-              <img :src="doc.photo_url || 'https://placehold.co/80x80/dbeafe/1e3a8a?text=Dr'" :alt="doc.name" class="doctor-photo" />
+              <img :src="resolveDoctorPhoto(doc)" :alt="doc.name" class="doctor-photo" />
               <div class="doctor-info">
                 <p class="doctor-name">{{ doc.name }}</p>
                 <p class="doctor-specialty">{{ specialtyLabel(doc.specialty) }}</p>
@@ -333,6 +333,29 @@ function appointmentTypeLabel(type) {
   return appointmentTypes.value.find(t => t.key === type)?.label || type || (isEs.value ? 'Consulta general' : 'General consultation')
 }
 
+function resolveDoctorPhoto(doc) {
+  const raw =
+    doc?.photo_url ||
+    doc?.photo ||
+    doc?.avatar_url ||
+    doc?.avatar ||
+    doc?.image_url ||
+    doc?.image ||
+    '';
+
+  const value = String(raw || '').trim();
+  if (!value) return 'https://placehold.co/80x80/dbeafe/1e3a8a?text=Dr';
+  if (/^(https?:)?\/\//i.test(value) || value.startsWith('data:')) return value;
+
+  const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').trim().replace(/\/$/, '');
+  const cleanPath = value.replace(/^\/+/, '');
+  if (supabaseUrl && !cleanPath.startsWith('storage/v1/object/public/')) {
+    return `${supabaseUrl}/storage/v1/object/public/${cleanPath}`;
+  }
+  if (supabaseUrl) return `${supabaseUrl}/${cleanPath}`;
+  return value;
+}
+
 async function loadDoctors() {
   let loaded = []
 
@@ -360,7 +383,7 @@ async function loadDoctors() {
   // 2) Fallback to Supabase tables.
   if (!loaded.length && isSupabaseConfigured) {
     const [docsRes, concernsRes, skinTypesRes] = await withTimeout(Promise.all([
-      supabase.from('dermatologists').select('id,name,specialty,mode,location,availability_note,rating,photo_url,is_active').eq('is_active', true).order('rating', { ascending: false }),
+      supabase.from('dermatologists').select('*').eq('is_active', true).order('rating', { ascending: false }),
       supabase.from('dermatologist_concerns').select('dermatologist_id,concern_code,priority_score'),
       supabase.from('dermatologist_skin_types').select('dermatologist_id,skin_type_code,priority_score')
     ]), 10000, 'Load specialists')
@@ -382,6 +405,7 @@ async function loadDoctors() {
 
       loaded = (docsRes.data || []).map(d => ({
         ...d,
+        photo_url: resolveDoctorPhoto(d),
         concerns: concernsByDoc[d.id]?.list || [],
         concernPriority: concernsByDoc[d.id]?.priority || {},
         skinTypes: skinsByDoc[d.id]?.list || [],

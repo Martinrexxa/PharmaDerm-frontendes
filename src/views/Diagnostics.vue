@@ -75,13 +75,13 @@
 
         <div class="timeline-grid">
           <div class="timeline-step" :class="{ completed: quizCompleted }">
-            <div class="timeline-icon">{{ quizCompleted ? '\\u2713' : '1' }}</div>
+            <div class="timeline-icon"><span v-if="quizCompleted" class="material-symbols-outlined">check</span><span v-else>1</span></div>
             <h4>{{ isEs ? 'Quiz completado' : 'Quiz completed' }}</h4>
             <p>{{ isEs ? 'Tu perfil inicial de piel se genero desde el quiz.' : 'Your initial skin profile was generated from the quiz.' }}</p>
           </div>
 
           <div class="timeline-step" :class="{ completed: detailsCompleted }">
-            <div class="timeline-icon">{{ detailsCompleted ? '\\u2713' : '2' }}</div>
+            <div class="timeline-icon"><span v-if="detailsCompleted" class="material-symbols-outlined">check</span><span v-else>2</span></div>
             <h4>{{ isEs ? 'Diagnostico completado' : 'Diagnostics completed' }}</h4>
             <p>{{ isEs ? 'Agrega mas sintomas, prioridades y detalles del caso.' : 'Add more symptoms, priorities and case details.' }}</p>
           </div>
