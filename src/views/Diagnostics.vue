@@ -1110,17 +1110,16 @@ export default {
 
       // Backend history is the source of truth in backend/hybrid auth mode.
       try {
-        const s = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
-        if (s?.token) {
-          const history = await apiFetch('/history')
-          const backendQuiz =
-            (Array.isArray(history?.quiz_history) && history.quiz_history[0]) ||
-            history?.quiz_result ||
-            null
-          if (backendQuiz) {
-            savedQuiz = { ...backendQuiz, completed: true }
-            source = 'backend-history'
-          }
+        const history = await apiFetch('/history')
+        const backendQuiz =
+          (Array.isArray(history?.quiz_history) && history.quiz_history[0]) ||
+          history?.quiz_result ||
+          null
+        if (backendQuiz) {
+          savedQuiz = { ...backendQuiz, completed: true }
+          source = 'backend-history'
+        } else {
+          source = 'backend-empty'
         }
       } catch (e) {
         console.warn('[Diagnostics] Backend history quiz load failed:', e?.message || e)
@@ -1303,17 +1302,16 @@ export default {
 
       // Backend history first (backend/hybrid auth mode)
       try {
-        const s = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
-        if (s?.token) {
-          const history = await apiFetch('/history')
-          const latestDiagnostic =
-            (Array.isArray(history?.diagnostics_history) && history.diagnostics_history[0]) ||
-            history?.diagnostic_result ||
-            null
-          if (latestDiagnostic) {
-            parsed = latestDiagnostic
-            source = 'backend-history'
-          }
+        const history = await apiFetch('/history')
+        const latestDiagnostic =
+          (Array.isArray(history?.diagnostics_history) && history.diagnostics_history[0]) ||
+          history?.diagnostic_result ||
+          null
+        if (latestDiagnostic) {
+          parsed = latestDiagnostic
+          source = 'backend-history'
+        } else if (source === 'none') {
+          source = 'backend-empty'
         }
       } catch (e) {
         console.warn('[Diagnostics] Backend history diagnostic load failed:', e?.message || e)
