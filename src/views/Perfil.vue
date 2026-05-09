@@ -11,7 +11,7 @@
         <div class="grid lg:grid-cols-[1.15fr_0.85fr] gap-6 px-6 sm:px-10 py-8 sm:py-10 text-white relative z-10">
           <div class="flex flex-col justify-center">
             <span class="text-xs uppercase tracking-[0.25em] opacity-80">
-              Welcome back
+              {{ ui.welcomeBack }}
             </span>
 
             <h2 class="text-3xl sm:text-4xl font-extrabold mt-3 leading-tight">
@@ -19,8 +19,7 @@
             </h2>
 
             <p class="mt-4 text-white/90 text-sm sm:text-base max-w-2xl">
-              Manage your account, review your orders, check your dermatology appointments,
-              and quickly access your personalized routine.
+              {{ ui.manageAccount }}
             </p>
 
             <div class="mt-7 flex flex-wrap gap-3">
@@ -77,22 +76,22 @@
             <div class="grid grid-cols-2 gap-3 mt-6">
               <button type="button" class="pd-soft-btn" @click="router.push('/citas')">
                 <span class="material-symbols-outlined">clinical_notes</span>
-                <span>My appointments</span>
+                <span>{{ ui.myAppointments }}</span>
               </button>
 
               <button type="button" class="pd-soft-btn" @click="router.push('/routine')">
                 <span class="material-symbols-outlined">dermatology</span>
-                <span>My routine</span>
+                <span>{{ ui.myRoutine }}</span>
               </button>
 
               <button type="button" class="pd-soft-btn" @click="router.push('/pedidos')">
                 <span class="material-symbols-outlined">inventory_2</span>
-                <span>Orders</span>
+                <span>{{ ui.orders }}</span>
               </button>
 
               <button type="button" class="pd-soft-btn" @click="toggleEditMode">
                 <span class="material-symbols-outlined">edit</span>
-                <span>{{ editMode ? "Close editing" : "Edit" }}</span>
+                <span>{{ editMode ? ui.closeEditing : ui.edit }}</span>
               </button>
             </div>
           </div>
@@ -155,7 +154,7 @@
       <!-- TABS -->
       <div class="mt-8 flex gap-2 flex-wrap">
         <button
-          v-for="tab in [{key:'cuenta', label:'My account'}, {key:'historial', label:'History'}, {key:'settings', label:'Settings'}]"
+          v-for="tab in [{key:'cuenta', label: ui.myAccountTab}, {key:'historial', label: ui.historyTab}, {key:'settings', label: ui.settingsTab}]"
           :key="tab.key"
           type="button"
           class="pd-tab-btn"
@@ -276,7 +275,7 @@
             <div class="flex items-center justify-between gap-4 mb-5">
               <div>
                 <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Purchases</p>
-                <h3 class="font-bold text-xl mt-1">Orders recientes</h3>
+                <h3 class="font-bold text-xl mt-1">{{ ui.recentOrders }}</h3>
               </div>
 
               <button type="button" class="pd-outline-btn" @click="router.push('/tienda')">
@@ -312,7 +311,7 @@
             <div class="flex items-center justify-between gap-4 mb-5">
               <div>
                 <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Dermatology</p>
-                <h3 class="font-bold text-xl mt-1">My appointments</h3>
+                <h3 class="font-bold text-xl mt-1">{{ ui.myAppointments }}</h3>
               </div>
 
               <button type="button" class="pd-outline-btn" @click="router.push('/citas')">
@@ -349,7 +348,7 @@
           <!-- RUTINA -->
           <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
             <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Skin profile</p>
-            <h3 class="font-bold text-xl mt-1">My routine</h3>
+            <h3 class="font-bold text-xl mt-1">{{ ui.myRoutine }}</h3>
 
             <div v-if="routineSource && latestRoutineSteps.length" class="mt-5 space-y-3">
               <div
@@ -420,17 +419,17 @@
             <div class="grid grid-cols-1 gap-3 mt-5">
               <button type="button" class="pd-shortcut" @click="router.push('/carrito')">
                 <span class="material-symbols-outlined">shopping_cart</span>
-                <span>Go to cart</span>
+                <span>{{ ui.goToCart }}</span>
               </button>
 
               <button type="button" class="pd-shortcut" @click="router.push('/diagnostics')">
                 <span class="material-symbols-outlined">stethoscope</span>
-                <span>Consult a specialist</span>
+                <span>{{ ui.consultSpecialist }}</span>
               </button>
 
               <button type="button" class="pd-shortcut" @click="doLogout">
                 <span class="material-symbols-outlined">logout</span>
-                <span>Sign out</span>
+                <span>{{ ui.signOut }}</span>
               </button>
             </div>
           </article>
@@ -640,21 +639,21 @@
       <section v-if="activeTab === 'settings'" class="mt-6 max-w-lg">
         <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
           <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Preferences</p>
-          <h3 class="font-bold text-xl mt-1 mb-6">Settings</h3>
+          <h3 class="font-bold text-xl mt-1 mb-6">{{ ui.settingsTab }}</h3>
 
           <div class="space-y-5">
             <!-- Idioma -->
             <div class="pd-field">
-              <span>App language</span>
+              <span>{{ ui.appLanguage }}</span>
               <select :value="language" @change="setProfileLanguage($event.target.value)">
-                <option value="es">Spanish</option>
-                <option value="en">English</option>
+                <option value="es">{{ ui.spanish }}</option>
+                <option value="en">{{ ui.english }}</option>
               </select>
             </div>
 
             <!-- Country -->
             <div class="pd-field">
-              <span>Country</span>
+              <span>{{ ui.country }}</span>
               <select :value="country" @change="setProfileCountry($event.target.value)">
                 <option v-for="c in settings.countryList" :key="c.code" :value="c.code">{{ c.name }}</option>
               </select>
@@ -662,7 +661,7 @@
 
             <!-- Moneda -->
             <div class="pd-field">
-              <span>Moneda preferida</span>
+              <span>{{ ui.preferredCurrency }}</span>
               <select :value="currency" @change="setProfileCurrency($event.target.value)">
                 <option v-for="m in settings.currencyList" :key="m.code" :value="m.code">{{ m.symbol }} — {{ m.name }}</option>
               </select>
@@ -696,13 +695,37 @@ import { useI18n } from "../lib/i18n.js";
 const router = useRouter();
 const route  = useRoute();
 const auth = useAuthStore();
-const { t } = useI18n();
+const { t, lang } = useI18n();
 
 const perfilBannerSrc = perfilImg1;
 const settings = useSettingsStore();
 const history = useHistoryStore();
 
 const { language, country, currency } = settings;
+const isEs = computed(() => lang.value === 'es')
+const ui = computed(() => ({
+  welcomeBack: isEs.value ? 'Bienvenido de vuelta' : 'Welcome back',
+  manageAccount: isEs.value
+    ? 'Administra tu cuenta, revisa tus pedidos, consulta tus citas dermatologicas y accede rapido a tu rutina personalizada.'
+    : 'Manage your account, review your orders, check your dermatology appointments, and quickly access your personalized routine.',
+  myAppointments: isEs.value ? 'Mis citas' : 'My appointments',
+  myRoutine: isEs.value ? 'Mi rutina' : 'My routine',
+  orders: isEs.value ? 'Pedidos' : 'Orders',
+  closeEditing: isEs.value ? 'Cerrar edicion' : 'Close editing',
+  edit: isEs.value ? 'Editar' : 'Edit',
+  myAccountTab: isEs.value ? 'Mi cuenta' : 'My account',
+  historyTab: isEs.value ? 'Historial' : 'History',
+  settingsTab: isEs.value ? 'Configuracion' : 'Settings',
+  recentOrders: isEs.value ? 'Pedidos recientes' : 'Recent orders',
+  goToCart: isEs.value ? 'Ir al carrito' : 'Go to cart',
+  consultSpecialist: isEs.value ? 'Consultar especialista' : 'Consult a specialist',
+  signOut: isEs.value ? 'Cerrar sesion' : 'Sign out',
+  appLanguage: isEs.value ? 'Idioma de la app' : 'App language',
+  spanish: 'Espanol',
+  english: 'English',
+  country: isEs.value ? 'Pais' : 'Country',
+  preferredCurrency: isEs.value ? 'Moneda preferida' : 'Preferred currency',
+}))
 
 // Tab activo: 'cuenta' | 'settings' | 'historial'
 const activeTab = computed(() => route.query.tab || 'cuenta');

@@ -6,25 +6,25 @@
           <span class="material-symbols-outlined">arrow_back</span>
         </button>
         <div>
-          <h1>Book Appointment</h1>
+          <h1>{{ ui.pageTitle }}</h1>
           <p class="page-sub" v-if="displayDiagnosisSummary">
-            Based on your diagnosis: <em>{{ displayDiagnosisSummary }}</em>
+            {{ ui.basedOnDiagnosis }}: <em>{{ displayDiagnosisSummary }}</em>
           </p>
         </div>
       </div>
 
       <div v-if="booked" class="confirm-box">
         <span class="material-symbols-outlined confirm-icon">check_circle</span>
-        <h2>Appointment booked</h2>
-        <p>Your appointment with <strong>{{ selectedDoctor?.name }}</strong> has been registered.</p>
+        <h2>{{ ui.bookedTitle }}</h2>
+        <p>{{ ui.bookedWith }} <strong>{{ selectedDoctor?.name }}</strong> {{ ui.bookedRegistered }}</p>
       </div>
 
       <template v-else>
         <section class="booking-section">
           <div class="section-heading-row">
-            <h2><span class="step-num">1</span> {{ doctorSelectionLocked ? 'Selected specialist' : 'Recommended specialists' }}</h2>
+            <h2><span class="step-num">1</span> {{ doctorSelectionLocked ? ui.selectedSpecialist : ui.recommendedSpecialists }}</h2>
             <button v-if="doctorSelectionLocked" type="button" class="btn-change-doctor" @click="showAllDoctors">
-              Change specialist
+              {{ ui.changeSpecialist }}
             </button>
           </div>
           <div class="doctors-grid" v-if="displayedRecommendedDoctors.length">
@@ -42,14 +42,14 @@
                 <p class="doctor-location">{{ doc.location }}</p>
                 <div class="doctor-rating"><span class="stars">{{ starText(doc.rating) }}</span></div>
                 <span class="modality-badge">{{ modalityLabel(doc.mode) }}</span>
-                <span class="recommend-badge">Recommended for your case</span>
+                <span class="recommend-badge">{{ ui.recommendedForCase }}</span>
               </div>
             </div>
           </div>
         </section>
 
         <section class="booking-section" v-if="!doctorSelectionLocked && otherDoctors.length">
-          <h2>Other specialists</h2>
+          <h2>{{ ui.otherSpecialists }}</h2>
           <div class="doctors-grid">
             <div
               v-for="doc in otherDoctors"
@@ -71,7 +71,7 @@
         </section>
 
         <section class="booking-section" v-if="selectedDoctor">
-          <h2><span class="step-num">2</span> Type and format</h2>
+          <h2><span class="step-num">2</span> {{ ui.typeAndFormat }}</h2>
           <div class="options-row">
             <label v-for="t in appointmentTypes" :key="t.key" class="option-card" :class="{ selected: form.type === t.key }">
               <input type="radio" :value="t.key" v-model="form.type" />
@@ -79,43 +79,43 @@
             </label>
           </div>
 
-          <h3 style="margin-top:14px;">Format</h3>
+          <h3 style="margin-top:14px;">{{ ui.format }}</h3>
           <div class="options-row">
             <label class="option-card" :class="{ selected: form.mode === 'presencial', disabled: selectedDoctor.mode === 'virtual' }">
-              <input type="radio" value="presencial" v-model="form.mode" :disabled="selectedDoctor.mode === 'virtual'" />In-person
+              <input type="radio" value="presencial" v-model="form.mode" :disabled="selectedDoctor.mode === 'virtual'" />{{ ui.inPerson }}
             </label>
             <label class="option-card" :class="{ selected: form.mode === 'virtual', disabled: selectedDoctor.mode === 'presencial' }">
-              <input type="radio" value="virtual" v-model="form.mode" :disabled="selectedDoctor.mode === 'presencial'" />Virtual
+              <input type="radio" value="virtual" v-model="form.mode" :disabled="selectedDoctor.mode === 'presencial'" />{{ ui.virtual }}
             </label>
           </div>
         </section>
 
         <section class="booking-section" v-if="selectedDoctor && form.type">
-          <h2><span class="step-num">3</span> Date and time</h2>
+          <h2><span class="step-num">3</span> {{ ui.dateAndTime }}</h2>
           <div class="form-grid">
             <div class="form-field">
-              <label>Date</label>
+              <label>{{ ui.date }}</label>
               <input type="date" v-model="form.date" :min="minDate" />
             </div>
             <div class="form-field">
-              <label>Preferred time</label>
+              <label>{{ ui.preferredTime }}</label>
               <select v-model="form.time">
-                <option value="">Select time</option>
-                <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
+                <option value="">{{ ui.selectTime }}</option>
+                <option v-for="t in timeSlots" :key="t.value" :value="t.value">{{ t.label }}</option>
               </select>
             </div>
           </div>
         </section>
 
         <section class="booking-section" v-if="selectedDoctor && form.type && form.date">
-          <h2><span class="step-num">4</span> Reason</h2>
-          <textarea v-model="form.reason" class="reason-input" rows="4" placeholder="Briefly describe your reason"></textarea>
+          <h2><span class="step-num">4</span> {{ ui.reason }}</h2>
+          <textarea v-model="form.reason" class="reason-input" rows="4" :placeholder="ui.reasonPlaceholder"></textarea>
         </section>
 
         <div v-if="errorMsg" class="form-error">{{ errorMsg }}</div>
 
         <div class="booking-footer" v-if="selectedDoctor">
-          <button class="btn-confirm" :disabled="isSubmitting" @click="bookAppointment">{{ isSubmitting ? 'Booking...' : 'Confirm appointment' }}</button>
+          <button class="btn-confirm" :disabled="isSubmitting" @click="bookAppointment">{{ isSubmitting ? ui.booking : ui.confirmAppointment }}</button>
         </div>
       </template>
     </div>
@@ -130,11 +130,39 @@ import { useHistoryStore } from '../stores/useHistoryStore'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
 import { buildAppointmentConfirmationUrl, sendAppointmentConfirmationEmail } from '../services/emailService.js'
 import { withTimeout } from '../utils/async.js'
+import { useI18n } from '../lib/i18n.js'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const history = useHistoryStore()
+const { lang } = useI18n()
+
+const isEs = computed(() => lang.value === 'es')
+const ui = computed(() => ({
+  pageTitle: isEs.value ? 'Reservar cita' : 'Book Appointment',
+  basedOnDiagnosis: isEs.value ? 'Basado en tu diagnostico' : 'Based on your diagnosis',
+  bookedTitle: isEs.value ? 'Cita reservada' : 'Appointment booked',
+  bookedWith: isEs.value ? 'Tu cita con' : 'Your appointment with',
+  bookedRegistered: isEs.value ? 'ha sido registrada.' : 'has been registered.',
+  selectedSpecialist: isEs.value ? 'Especialista seleccionado' : 'Selected specialist',
+  recommendedSpecialists: isEs.value ? 'Especialistas recomendados' : 'Recommended specialists',
+  changeSpecialist: isEs.value ? 'Cambiar especialista' : 'Change specialist',
+  recommendedForCase: isEs.value ? 'Recomendado para tu caso' : 'Recommended for your case',
+  otherSpecialists: isEs.value ? 'Otros especialistas' : 'Other specialists',
+  typeAndFormat: isEs.value ? 'Tipo y formato' : 'Type and format',
+  format: isEs.value ? 'Formato' : 'Format',
+  inPerson: isEs.value ? 'Presencial' : 'In-person',
+  virtual: 'Virtual',
+  dateAndTime: isEs.value ? 'Fecha y hora' : 'Date and time',
+  date: isEs.value ? 'Fecha' : 'Date',
+  preferredTime: isEs.value ? 'Hora preferida' : 'Preferred time',
+  selectTime: isEs.value ? 'Seleccionar hora' : 'Select time',
+  reason: isEs.value ? 'Motivo' : 'Reason',
+  reasonPlaceholder: isEs.value ? 'Describe brevemente tu motivo' : 'Briefly describe your reason',
+  booking: isEs.value ? 'Reservando...' : 'Booking...',
+  confirmAppointment: isEs.value ? 'Confirmar cita' : 'Confirm appointment',
+}))
 
 const diagnosisSummary = computed(() => String(route.query.diagnosis || '').toLowerCase())
 const concernFromQuery = computed(() => String(route.query.concern || '').toLowerCase())
@@ -207,14 +235,23 @@ const form = ref({
   reason: ''
 })
 
-const appointmentTypes = [
-  { key: 'consulta_general', label: 'General consultation' },
-  { key: 'seguimiento', label: 'Follow-up' },
-  { key: 'urgencia', label: 'Urgent care' },
-  { key: 'estetica', label: 'Aesthetic consultation' }
-]
+const appointmentTypes = computed(() => [
+  { key: 'consulta_general', label: isEs.value ? 'Consulta general' : 'General consultation' },
+  { key: 'seguimiento', label: isEs.value ? 'Seguimiento' : 'Follow-up' },
+  { key: 'urgencia', label: isEs.value ? 'Atencion urgente' : 'Urgent care' },
+  { key: 'estetica', label: isEs.value ? 'Consulta estetica' : 'Aesthetic consultation' }
+])
 
-const timeSlots = ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM']
+const timeSlots = [
+  { value: '08:00:00', label: '8:00 AM' },
+  { value: '09:00:00', label: '9:00 AM' },
+  { value: '10:00:00', label: '10:00 AM' },
+  { value: '11:00:00', label: '11:00 AM' },
+  { value: '14:00:00', label: '2:00 PM' },
+  { value: '15:00:00', label: '3:00 PM' },
+  { value: '16:00:00', label: '4:00 PM' },
+  { value: '17:00:00', label: '5:00 PM' },
+]
 
 const minDate = computed(() => {
   const d = new Date()
@@ -290,7 +327,7 @@ function specialtyLabel(specialty) {
 }
 
 function appointmentTypeLabel(type) {
-  return appointmentTypes.find(t => t.key === type)?.label || type || 'General consultation'
+  return appointmentTypes.value.find(t => t.key === type)?.label || type || (isEs.value ? 'Consulta general' : 'General consultation')
 }
 
 async function loadDoctors() {
@@ -333,8 +370,8 @@ async function loadDoctors() {
 }
 
 async function bookAppointment() {
-  if (!selectedDoctor.value) return (errorMsg.value = 'Select a specialist.')
-  if (!form.value.date) return (errorMsg.value = 'Select a date.')
+  if (!selectedDoctor.value) return (errorMsg.value = isEs.value ? 'Selecciona un especialista.' : 'Select a specialist.')
+  if (!form.value.date) return (errorMsg.value = isEs.value ? 'Selecciona una fecha.' : 'Select a date.')
 
   isSubmitting.value = true
   errorMsg.value = ''
@@ -362,7 +399,7 @@ async function bookAppointment() {
 
     if (isSupabaseConfigured) {
       if (!userId) {
-        throw new Error('No authenticated user found. Sign in to save the appointment to the database.')
+        throw new Error(isEs.value ? 'No se encontro un usuario autenticado. Inicia sesion para guardar la cita en la base de datos.' : 'No authenticated user found. Sign in to save the appointment to the database.')
       }
       const { data: insertedAppointment, error } = await withTimeout(supabase
         .from('appointments')
@@ -407,10 +444,10 @@ async function bookAppointment() {
           appointment_id: savedAppointment.id || aptData.confirmation_code,
           confirmation_code: savedAppointment.confirmation_code || aptData.confirmation_code,
           appointment_date: savedAppointment.scheduled_date || aptData.scheduled_date,
-          appointment_time: savedAppointment.scheduled_time || aptData.scheduled_time || 'Pending confirmation',
+          appointment_time: savedAppointment.scheduled_time || aptData.scheduled_time || (isEs.value ? 'Pendiente de confirmacion' : 'Pending confirmation'),
           appointment_type: appointmentTypeLabel(savedAppointment.appointment_type || aptData.appointment_type),
           appointment_mode: savedAppointment.mode || aptData.mode,
-          appointment_reason: savedAppointment.reason || aptData.reason || 'Dermatology consultation',
+          appointment_reason: savedAppointment.reason || aptData.reason || (isEs.value ? 'Consulta dermatologica' : 'Dermatology consultation'),
           appointment_notes: savedAppointment.notes || aptData.notes || '',
           appointment_urgency: savedAppointment.urgency || aptData.urgency || 'normal',
           appointment_status: savedAppointment.status || aptData.status || 'pending',
@@ -443,7 +480,7 @@ async function bookAppointment() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   } catch (e) {
     console.warn('[AppointmentBooking] Save failed:', e)
-    errorMsg.value = e?.message || 'The appointment could not be saved right now.'
+    errorMsg.value = e?.message || (isEs.value ? 'No se pudo guardar la cita en este momento.' : 'The appointment could not be saved right now.')
   } finally {
     isSubmitting.value = false
   }
