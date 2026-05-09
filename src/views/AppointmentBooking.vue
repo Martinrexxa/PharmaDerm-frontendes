@@ -430,15 +430,6 @@ async function loadDoctors() {
     }
   }
 
-  // 3) Last-resort seed so UI is never blank.
-  if (!loaded.length) {
-    loaded = [
-      { id: 1, name: 'Dra. Ana Martinez', specialty: 'Dermatologia', mode: 'both', location: 'Santo Domingo', rating: 4.9, photo_url: null, concerns: [], concernPriority: {}, skinTypes: [], skinPriority: {} },
-      { id: 2, name: 'Dr. Carlos Reyes', specialty: 'Dermatologia clinica', mode: 'presencial', location: 'Santiago', rating: 4.8, photo_url: null, concerns: [], concernPriority: {}, skinTypes: [], skinPriority: {} },
-      { id: 3, name: 'Dra. Laura Gomez', specialty: 'Dermatologia estetica', mode: 'virtual', location: 'Online', rating: 4.7, photo_url: null, concerns: [], concernPriority: {}, skinTypes: [], skinPriority: {} },
-    ]
-  }
-
   doctors.value = loaded
 
   if (!selectedDoctor.value && recommendedDoctors.value.length) {
