@@ -122,9 +122,7 @@ router.beforeEach(async (to, from, next) => {
   if (!isAuthenticated && isSupabaseConfigured) {
     const { session, timedOut } = await getSupabaseSessionWithTimeout();
     isAuthenticated = !!session?.access_token;
-    if (timedOut && !to.meta.public && from.path !== "/login") {
-      isAuthenticated = true;
-    }
+    if (timedOut && !to.meta.public) isAuthenticated = false;
   } else if (!isAuthenticated) {
     isAuthenticated = !!localSession?.isLoggedIn;
   }

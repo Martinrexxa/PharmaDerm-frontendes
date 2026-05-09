@@ -310,8 +310,8 @@ async function openSearch() {
   searchInputRef.value?.focus()
 }
 
-function doLogout() {
-  auth.logout()
+async function doLogout() {
+  await auth.logout()
   profileOpen.value = false
   router.push('/login')
 }

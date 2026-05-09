@@ -966,8 +966,8 @@ async function saveProfile() {
   }
 }
 
-function doLogout() {
-  auth.logout();
+async function doLogout() {
+  await auth.logout();
   router.push("/login");
 }
 
