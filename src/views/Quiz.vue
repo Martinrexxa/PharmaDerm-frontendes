@@ -440,6 +440,7 @@ import { getProductsByQuizResult } from '../data/productCatalog';
 import { convertPrice } from '../utils/currency';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
 import { getCurrentUserIdentity } from '../lib/currentUser.js';
+import { apiFetch } from '../services/apiClient.js';
 import { sendRoutineByEmail as emailRoutine, emailServiceConfigured } from '../services/emailService.js';
 import TransparentImg from '../components/TransparentImg.vue';
 import { useI18n } from '../lib/i18n.js';
@@ -952,6 +953,14 @@ async function generateAnalysisAndGoResults() {
     routineSteps: builtRoutine.morning,
   }
   await history.saveQuizResult(quizData)
+  try {
+    const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
+    if (sess?.token) {
+      await apiFetch('/quiz/save', { method: 'POST', body: quizData })
+    }
+  } catch (e) {
+    console.warn('[Quiz] Backend quiz save failed:', e?.message || e)
+  }
   // FASE 10 — save to Supabase (non-blocking, best-effort)
   saveQuizToSupabase(quizData)
   step.value = 'results_summary';
