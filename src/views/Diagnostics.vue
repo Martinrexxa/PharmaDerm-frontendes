@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="diagnostics-page">
     <!-- Gate: no quiz result -->
     <div v-if="!hasQuiz" class="quiz-gate">
@@ -59,7 +59,7 @@
           </div>
 
           <p class="hero-card-note">
-            PharmaDerm Diagnostics is a guided skincare tool and does not replace a dermatologist’s diagnosis.
+            PharmaDerm Diagnostics is a guided skincare tool and does not replace a dermatologistâ€™s diagnosis.
           </p>
         </div>
       </div>
@@ -75,13 +75,13 @@
 
         <div class="timeline-grid">
           <div class="timeline-step" :class="{ completed: quizCompleted }">
-            <div class="timeline-icon">{{ quizCompleted ? '✓' : '1' }}</div>
+            <div class="timeline-icon">{{ quizCompleted ? 'âœ“' : '1' }}</div>
             <h4>Quiz completed</h4>
             <p>Your initial skin profile was generated from the quiz.</p>
           </div>
 
           <div class="timeline-step" :class="{ completed: detailsCompleted }">
-            <div class="timeline-icon">{{ detailsCompleted ? '✓' : '2' }}</div>
+            <div class="timeline-icon">{{ detailsCompleted ? 'âœ“' : '2' }}</div>
             <h4>Diagnostics completed</h4>
             <p>Add more symptoms, priorities and case details.</p>
           </div>
@@ -190,7 +190,7 @@
                 <select v-model="form.duration">
                   <option value="">Select an option</option>
                   <option>Just recently</option>
-                  <option>1–2 weeks</option>
+                  <option>1â€“2 weeks</option>
                   <option>1 month</option>
                   <option>Several months</option>
                   <option>More than a year</option>
@@ -432,6 +432,7 @@
 
 <script>
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
+import { getCurrentUserIdentity } from '../lib/currentUser.js';
 import { useHistoryStore } from '../stores/useHistoryStore.js';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { getProductsByQuizResult } from '../data/productCatalog.js';
@@ -826,12 +827,12 @@ export default {
         // Check if user has a diagnosis case
         let diagnosisId = null;
         if (isSupabaseConfigured) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
+          const identity = await getCurrentUserIdentity();
+          if (identity?.id) {
             const { data: existingCase } = await supabase
               .from('diagnosis_cases')
               .select('id')
-              .eq('user_id', user.id)
+              .eq('user_id', identity.id)
               .order('created_at', { ascending: false })
               .limit(1)
               .maybeSingle();
@@ -918,9 +919,9 @@ export default {
       // Pass the saved diagnosis ID so AppointmentBooking can link the appointment
       try {
         if (isSupabaseConfigured) {
-          withTimeout(supabase.auth.getUser(), 5000, 'Load user before booking').then(({ data: { user } }) => {
-            if (user) {
-              withTimeout(supabase.from('diagnosis_cases').select('id').eq('user_id', user.id)
+          withTimeout(getCurrentUserIdentity(), 5000, 'Load user before booking').then((identity) => {
+            if (identity?.id) {
+              withTimeout(supabase.from('diagnosis_cases').select('id').eq('user_id', identity.id)
                 .order('created_at', { ascending: false }).limit(1).maybeSingle()
                 , 8000, 'Load latest diagnostic before booking')
                 .then(({ data }) => {
@@ -955,7 +956,7 @@ export default {
       this.isSavingDiagnostic = true;
 
       try {
-        // FASE 9 — save diagnostic case (separate from booking)
+        // FASE 9 â€” save diagnostic case (separate from booking)
         const payload = {
           id: Date.now(),
           title: "Dermatology diagnostic saved",
@@ -975,13 +976,13 @@ export default {
         // Try Supabase if available
         try {
           if (isSupabaseConfigured) {
-            const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000, 'Load diagnostic user');
-            if (user) {
+            const identity = await withTimeout(getCurrentUserIdentity(), 5000, 'Load diagnostic user');
+            if (identity?.id) {
               // Check if diagnosis case already exists for this user
               const { data: existingCase, error: checkError } = await withTimeout(supabase
                 .from('diagnosis_cases')
                 .select('id')
-                .eq('user_id', user.id)
+                .eq('user_id', identity.id)
                 .maybeSingle(), 8000, 'Check diagnostic case');
 
               let diagnosisId;
@@ -1002,7 +1003,7 @@ export default {
                     status: 'saved',
                     updated_at: new Date().toISOString(),
                   })
-                  .eq('user_id', user.id)
+                  .eq('user_id', identity.id)
                   .select('id')
                   .single(), 8000, 'Update diagnostic case');
                 if (updateError) {
@@ -1236,7 +1237,7 @@ export default {
           }
         } catch (e) {
           console.warn('[Diagnostics] Supabase quiz check failed:', e?.message);
-          source = 'supabase:error→fallback';
+          source = 'supabase:errorâ†’fallback';
         }
       }
 
@@ -1325,7 +1326,7 @@ export default {
         } catch (e) {
           console.warn('[Diagnostics] Supabase diagnosis check failed:', e?.message);
           parsed = this._historyStore?.getLatestDiagnostic() || null;
-          source = 'supabase:error→fallback';
+          source = 'supabase:errorâ†’fallback';
         }
       } else {
         parsed = this._historyStore?.getLatestDiagnostic() || null;
@@ -2176,5 +2177,6 @@ input:focus {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
+
 
 

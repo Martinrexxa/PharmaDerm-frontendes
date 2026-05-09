@@ -439,6 +439,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { getProductsByQuizResult } from '../data/productCatalog';
 import { convertPrice } from '../utils/currency';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
+import { getCurrentUserIdentity } from '../lib/currentUser.js';
 import { sendRoutineByEmail as emailRoutine, emailServiceConfigured } from '../services/emailService.js';
 import TransparentImg from '../components/TransparentImg.vue';
 import { useI18n } from '../lib/i18n.js';
@@ -842,8 +843,8 @@ async function saveQuizToSupabase(quizData) {
   // FASE 10 — save quiz session to Supabase (best-effort)
   if (!isSupabaseConfigured) return
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const user = await getCurrentUserIdentity()
+    if (!user?.id) return
 
     // Preferido: esquema normalizado del backend (`PharmaDerm-Backend/database/schema.sql`)
     // - quiz_sessions: señales del quiz + metadata
@@ -1011,7 +1012,7 @@ async function sendRoutineByEmail() {
   try {
     let email = null
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUserIdentity()
       email = user?.email
     } catch { /* ignore */ }
     if (!email) email = auth.user?.value?.email || null

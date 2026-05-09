@@ -1,5 +1,6 @@
 import storageService from './storageService.js'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
+import { getCurrentUserIdentity } from '../lib/currentUser.js'
 import { withTimeout } from '../utils/async.js'
 
 export const routineService = {
@@ -13,8 +14,8 @@ export const routineService = {
     // Try Supabase first
     if (isSupabaseConfigured) {
       try {
-        const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000, 'Load routine user')
-        if (user) {
+        const identity = await withTimeout(getCurrentUserIdentity(), 5000, 'Load routine user')
+        if (identity?.id) {
           const { data, error } = await withTimeout(supabase
             .from('routines')
             .select(`
@@ -28,7 +29,7 @@ export const routineService = {
                 products (*)
               )
             `)
-            .eq('user_id', user.id)
+            .eq('user_id', identity.id)
             .eq('is_active', true)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -55,8 +56,8 @@ export const routineService = {
     // Try Supabase first
     if (isSupabaseConfigured) {
       try {
-        const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000, 'Load routines user')
-        if (user) {
+        const identity = await withTimeout(getCurrentUserIdentity(), 5000, 'Load routines user')
+        if (identity?.id) {
           const { data, error } = await withTimeout(supabase
             .from('routines')
             .select(`
@@ -66,7 +67,7 @@ export const routineService = {
                 products (*)
               )
             `)
-            .eq('user_id', user.id)
+            .eq('user_id', identity.id)
             .order('created_at', { ascending: false }), 8000, 'Load routines')
 
           if (!error && data) {
@@ -102,13 +103,13 @@ export const routineService = {
     // Try Supabase
     if (isSupabaseConfigured) {
       try {
-        const { data: { user } } = await withTimeout(supabase.auth.getUser(), 5000, 'Save routine user')
-        if (user) {
+        const identity = await withTimeout(getCurrentUserIdentity(), 5000, 'Save routine user')
+        if (identity?.id) {
           // Insert routine
           const { data: routineResult, error: routineError } = await withTimeout(supabase
             .from('routines')
             .insert({
-              user_id: user.id,
+              user_id: identity.id,
               analysis_id: routineData.analysisId || null,
               name: routineData.name || 'My personalized routine',
               primary_concern: routineData.primaryConcern,
