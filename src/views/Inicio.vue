@@ -194,6 +194,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useCartStore } from '../stores/useCartStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { allProducts } from '../data/productCatalog.js'
+import productService from '../services/productService.js'
 import { formatPrice, convertPrice } from '../utils/currency.js'
 import TransparentImg from '../components/TransparentImg.vue'
 import { useI18n } from '../lib/i18n.js'
@@ -241,9 +242,18 @@ watch(slideIndex, () => scheduleImageNext(), { immediate: true })
 
 onUnmounted(() => clearTimeout(imageTimer))
 
+const remoteProducts = ref([])
 const featuredProducts = computed(() =>
-  allProducts.filter(p => p.image).slice(0, 3)
+  (remoteProducts.value.length ? remoteProducts.value : allProducts).filter(p => p.image).slice(0, 3)
 )
+
+onMounted(() => {
+  productService.getAll()
+    .then((rows) => {
+      if (Array.isArray(rows) && rows.length) remoteProducts.value = rows
+    })
+    .catch(() => {})
+})
 
 function displayPrice(priceUSD) {
   const currency = settings.currency?.value ?? 'DOP'

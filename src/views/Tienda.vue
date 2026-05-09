@@ -207,6 +207,7 @@ import {
 import { useRouter, useRoute } from "vue-router";
 import { lrpCatalog } from "../data/lrpCatalog";
 import { ceraveCatalog } from "../data/ceraveCatalog";
+import productService from "../services/productService.js";
 import { useCartStore } from "../stores/useCartStore";
 import { useSettingsStore } from "../stores/useSettingsStore";
 import { priceIn, convertPrice } from "../utils/currency";
@@ -231,10 +232,14 @@ function fmtPrice(dopAmount) {
   return priceIn(dopAmount, 'DOP', userCurrency.value);
 }
 
-const allProducts = computed(() => [
-  ...lrpCatalog.map((p) => ({ ...p, brand: p.brand || "larocheposay" })),
-  ...ceraveCatalog.map((p) => ({ ...p, brand: p.brand || "cerave" })),
-]);
+const remoteProducts = ref([])
+const allProducts = computed(() => {
+  if (remoteProducts.value.length) return remoteProducts.value
+  return [
+    ...lrpCatalog.map((p) => ({ ...p, brand: p.brand || "larocheposay" })),
+    ...ceraveCatalog.map((p) => ({ ...p, brand: p.brand || "cerave" })),
+  ]
+});
 
 const activeBrand = ref("larocheposay");
 const activeBrandLabel = computed(() =>
@@ -497,6 +502,12 @@ function shortenName(name) {
 }
 
 onMounted(() => {
+  productService.getAll()
+    .then((rows) => {
+      if (Array.isArray(rows) && rows.length) remoteProducts.value = rows
+    })
+    .catch(() => {})
+
   brandProducts.value.forEach((p) => {
     if (p.sizes?.length && !selectedSize[p.id]) {
       selectedSize[p.id] = p.defaultSize || p.sizes[0].label;

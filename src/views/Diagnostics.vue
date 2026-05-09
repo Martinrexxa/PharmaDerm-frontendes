@@ -86,8 +86,10 @@
             <p>{{ isEs ? 'Agrega mas sintomas, prioridades y detalles del caso.' : 'Add more symptoms, priorities and case details.' }}</p>
           </div>
 
-          <div class="timeline-step">
-            <div class="timeline-icon" style="cursor:pointer" @click="goToAppointmentBooking">3</div>
+          <div class="timeline-step" :class="{ completed: appointmentCompleted }">
+            <div class="timeline-icon" style="cursor:pointer" @click="goToAppointmentBooking">
+              <span v-if="appointmentCompleted" class="material-symbols-outlined">check</span><span v-else>3</span>
+            </div>
             <h4>{{ t('diagnostics.bookAppt') }}</h4>
             <p>{{ t('diagnostics.chooseSpecialist') }}</p>
           </div>
@@ -528,6 +530,7 @@ export default {
       isSavingDiagnostic: false,
       latestDiagnosisId: null,
       isSavingPhotos: false,
+      appointmentCompleted: false,
     };
   },
 
@@ -771,9 +774,29 @@ export default {
   async mounted() {
     await this.loadQuizSummary();
     await this.loadSavedDiagnosticCase();
+    await this.loadAppointmentProgress();
   },
 
   methods: {
+    async loadAppointmentProgress() {
+      try {
+        const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
+        if (sess?.token) {
+          const payload = await apiFetch('/appointments');
+          const list = Array.isArray(payload?.appointments) ? payload.appointments : [];
+          this.appointmentCompleted = list.length > 0;
+          return;
+        }
+      } catch {
+        // fallback below
+      }
+      try {
+        const apts = this._historyStore?.appointments?.value || [];
+        this.appointmentCompleted = Array.isArray(apts) && apts.length > 0;
+      } catch {
+        this.appointmentCompleted = false;
+      }
+    },
     formatConcern(value) {
       const key = String(value || '').toLowerCase().trim();
       const map = {

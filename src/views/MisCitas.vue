@@ -81,6 +81,7 @@ import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/useAuthStore'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
+import { apiFetch } from '../services/apiClient.js'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -184,16 +185,36 @@ async function loadAppointments({ scrollTop = false } = {}) {
   isLoading.value = true
   fetchError.value = null
   try {
-    if (!isSupabaseConfigured) {
+    if (!userId.value) {
       if (token !== loadToken) return
-      fetchError.value = 'The app is not connected to Supabase. Check your .env configuration.'
+      fetchError.value = 'No authenticated user was found. Please sign in again.'
       appointments.value = []
       return
     }
 
-    if (!userId.value) {
+    // Backend mode first (Render API)
+    try {
+      const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
+      if (sess?.token) {
+        const payload = await apiFetch('/appointments')
+        const backendAppointments = Array.isArray(payload?.appointments) ? payload.appointments : []
+        if (token !== loadToken) return
+        appointments.value = backendAppointments.map((a) => ({
+          ...a,
+          doctor_name: a.doctor_name || 'Specialist',
+          doctor_specialty: specialtyLabel(a.doctor_specialty),
+          doctor_photo: a.doctor_photo || DOCTOR_PLACEHOLDER,
+          mode: a.mode || a.doctor_mode || null,
+        }))
+        return
+      }
+    } catch {
+      // fallback to Supabase
+    }
+
+    if (!isSupabaseConfigured) {
       if (token !== loadToken) return
-      fetchError.value = 'No authenticated user was found. Please sign in again.'
+      fetchError.value = 'The app is not connected to Supabase. Check your .env configuration.'
       appointments.value = []
       return
     }

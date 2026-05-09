@@ -48,6 +48,27 @@ async function _syncWithBackend() {
   if (ah) localStorage.setItem(ah, JSON.stringify(appointments.value))
   if (ap) localStorage.setItem(ap, JSON.stringify(data?.appointment || null))
   if (oh) localStorage.setItem(oh, JSON.stringify(orders.value))
+
+  // Enrich appointments from DB-backed endpoint when available.
+  try {
+    const ap = await apiFetch('/appointments')
+    const list = Array.isArray(ap?.appointments) ? ap.appointments : []
+    if (list.length) {
+      appointments.value = list.map((a) => ({
+        ...a,
+        doctor: a.doctor_name || 'Specialist Dermatologist',
+        doctor_name: a.doctor_name || 'Specialist Dermatologist',
+        doctor_specialty: a.doctor_specialty || 'Dermatology',
+        doctor_photo: a.doctor_photo || null,
+        date: a.scheduled_date || a.created_at || null,
+        time: a.scheduled_time || null,
+      }))
+      const ah2 = _key('appointments_list')
+      if (ah2) localStorage.setItem(ah2, JSON.stringify(appointments.value))
+    }
+  } catch {
+    // Keep /history data if /appointments is not reachable.
+  }
 }
 
 async function _pushBackendHistory() {
