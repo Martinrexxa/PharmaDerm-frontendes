@@ -845,12 +845,24 @@ export default {
       try {
         const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
         if (!sess?.token) throw new Error('Please sign in again to save photos');
-        const saved = await apiFetch('/diagnostics/photos', {
-          method: 'PUT',
-          body: {
-            imagePreviews: this.imagePreviews,
-          },
-        });
+        let saved = null;
+        try {
+          saved = await apiFetch('/diagnostics/photos', {
+            method: 'PUT',
+            body: {
+              imagePreviews: this.imagePreviews,
+            },
+          });
+        } catch {
+          saved = await apiFetch('/diagnostics/latest', {
+            method: 'PUT',
+            body: {
+              form: this.form,
+              generatedInsight: this.generatedInsight,
+              imagePreviews: this.imagePreviews,
+            },
+          });
+        }
         if (saved?.diagnosisId) this.latestDiagnosisId = saved.diagnosisId;
         this.showToast('Photos saved successfully.');
       } catch (e) {
@@ -940,14 +952,28 @@ export default {
         try {
           const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
           if (sess?.token) {
-            const saved = await apiFetch('/diagnostics/step1', {
-              method: 'PUT',
-              body: {
-                form: this.form,
-                generatedInsight: this.generatedInsight,
-              },
-            });
-            if (saved?.diagnosisId) this.latestDiagnosisId = saved.diagnosisId;
+            let saved = null;
+            try {
+              saved = await apiFetch('/diagnostics/step1', {
+                method: 'PUT',
+                body: {
+                  form: this.form,
+                  generatedInsight: this.generatedInsight,
+                },
+              });
+            } catch {
+              saved = await apiFetch('/diagnostics/latest', {
+                method: 'PUT',
+                body: {
+                  form: this.form,
+                  generatedInsight: this.generatedInsight,
+                },
+              });
+            }
+            if (saved?.diagnosisId) {
+              this.latestDiagnosisId = saved.diagnosisId;
+              persisted = true;
+            }
           } else if (isSupabaseConfigured) {
             const identity = await withTimeout(getCurrentUserIdentity(), 5000, 'Load diagnostic user');
             if (identity?.id) {
