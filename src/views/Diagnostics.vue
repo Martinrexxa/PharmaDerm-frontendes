@@ -519,6 +519,7 @@ export default {
       _toastTimer: null,
       diagnosticSaved: false,
       isSavingDiagnostic: false,
+      latestDiagnosisId: null,
     };
   },
 
@@ -823,81 +824,7 @@ export default {
         reader.readAsDataURL(file);
       });
 
-      // Then, upload to Supabase in background
-      try {
-        // Check if user has a diagnosis case
-        let diagnosisId = null;
-        if (isSupabaseConfigured) {
-          const identity = await getCurrentUserIdentity();
-          if (identity?.id) {
-            const { data: existingCase } = await supabase
-              .from('diagnosis_cases')
-              .select('id')
-              .eq('user_id', identity.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (existingCase) {
-              diagnosisId = existingCase.id;
-            }
-          }
-        }
-
-        // Upload each file
-        const uploadPromises = files.map(async (file, index) => {
-          const fileName = `diagnosis-temp-${Date.now()}-${index}.jpg`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from(DIAGNOSIS_PHOTO_BUCKET)
-            .upload(fileName, file, {
-              contentType: 'image/jpeg',
-              upsert: false
-            });
-
-          if (uploadError) {
-            console.warn('[Diagnostics] Photo upload failed:', uploadError.message);
-            return null;
-          }
-
-          const { data: urlData } = supabase.storage
-            .from(DIAGNOSIS_PHOTO_BUCKET)
-            .getPublicUrl(fileName);
-
-          const publicUrl = urlData.publicUrl;
-
-          // If we have diagnosis_id, save to diagnosis_photos immediately
-          if (diagnosisId) {
-            const { error: insertError } = await supabase
-              .from('diagnosis_photos')
-              .insert({
-                diagnosis_id: diagnosisId,
-                url: publicUrl,
-                is_selfie: false,
-                uploaded_at: new Date().toISOString()
-              });
-            if (insertError) {
-              console.warn('[Diagnostics] Photo record insert failed:', insertError.message);
-            }
-          } else {
-            // No diagnosis case yet, save as temp photo
-            this.tempPhotos.push(publicUrl);
-          }
-
-          return publicUrl;
-        });
-
-        const uploadedUrls = await Promise.all(uploadPromises);
-        const validUrls = uploadedUrls.filter(url => url !== null);
-
-        // Replace dataUrls with public URLs if upload succeeded
-        if (validUrls.length > 0) {
-          // Remove the dataUrls and add the URLs
-          this.imagePreviews.splice(-files.length, files.length, ...validUrls);
-        }
-
-      } catch (error) {
-        console.warn('[Diagnostics] Photo upload process failed:', error);
-        // Keep the dataUrls as fallback
-      }
+      // Persist on save step through backend endpoint.
     },
 
     scrollToSection(refName) {
@@ -917,6 +844,7 @@ export default {
       if (this.quizSummary?.skinType) query.skinType = this.quizSummary.skinType
       if (this.form?.urgency) query.urgency = this.form.urgency
       if (this.form?.symptoms?.length) query.symptoms = this.form.symptoms.join(',')
+      if (this.latestDiagnosisId) query.diagnosisId = this.latestDiagnosisId
       // Pass the saved diagnosis ID so AppointmentBooking can link the appointment
       try {
         if (isSupabaseConfigured) {
@@ -974,9 +902,20 @@ export default {
           this._historyStore?.saveDiagnostic(payload);
         } catch { /* ignore */ }
 
-        // Try Supabase if available
+        // Prefer backend persistence in backend/hybrid auth mode.
         try {
-          if (isSupabaseConfigured) {
+          const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
+          if (sess?.token) {
+            const saved = await apiFetch('/diagnostics/latest', {
+              method: 'PUT',
+              body: {
+                form: this.form,
+                generatedInsight: this.generatedInsight,
+                imagePreviews: this.imagePreviews,
+              },
+            });
+            if (saved?.diagnosisId) this.latestDiagnosisId = saved.diagnosisId;
+          } else if (isSupabaseConfigured) {
             const identity = await withTimeout(getCurrentUserIdentity(), 5000, 'Load diagnostic user');
             if (identity?.id) {
               // Check if diagnosis case already exists for this user
@@ -1017,7 +956,7 @@ export default {
                 const { data: insertResult, error: insertError } = await withTimeout(supabase
                   .from('diagnosis_cases')
                   .insert({
-                    user_id: user.id,
+                    user_id: identity.id,
                     description: this.form.description || null,
                     duration: this.form.duration || null,
                     urgency: this.form.urgency || null,
@@ -1306,15 +1245,30 @@ export default {
       let parsed = null;
       let source = 'none';
 
-      // Backend history first (backend/hybrid auth mode)
+      // Backend diagnostics table first (backend/hybrid auth mode)
       try {
-        const history = await apiFetch('/history')
-        const latestDiagnostic =
-          (Array.isArray(history?.diagnostics_history) && history.diagnostics_history[0]) ||
-          history?.diagnostic_result ||
-          null
-        if (latestDiagnostic) {
-          parsed = latestDiagnostic
+        const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
+        if (sess?.token) {
+          const latest = await apiFetch('/diagnostics/latest');
+          if (latest?.case) {
+            this.latestDiagnosisId = latest.case.id;
+            parsed = {
+              form: {
+                description: latest.case.description || '',
+                duration: latest.case.duration || '',
+                urgency: latest.case.urgency || '',
+                symptoms: latest.case.symptoms || [],
+                areas: latest.case.affected_areas || [],
+                priorities: latest.case.priorities || [],
+                routineLevel: latest.case.routine_level || '',
+                previousConsult: latest.case.previous_consult || '',
+              },
+              generatedInsight: latest.case.generated_insight || null,
+              imagePreviews: Array.isArray(latest.photos) ? latest.photos.map(p => p.url) : [],
+            };
+          }
+        }
+        if (parsed) {
           source = 'backend-history'
         } else if (source === 'none') {
           source = 'backend-empty'
