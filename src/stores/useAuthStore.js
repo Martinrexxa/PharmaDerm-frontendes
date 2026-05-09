@@ -94,7 +94,9 @@ export function useAuthStore() {
         const rawSess = localStorage.getItem('pharmaderm_session')
         user.value    = rawUser ? JSON.parse(rawUser) : null
         session.value = rawSess ? JSON.parse(rawSess) : null
-        if (user.value?.email) await loadHistoryForUser(user.value.email)
+        if (user.value?.id || user.value?.email) {
+          await loadHistoryForUser(user.value.id || user.value.email)
+        }
       } catch {
         _clearState()
       }
@@ -231,8 +233,8 @@ export function useAuthStore() {
           localStorage.setItem('pharmaderm_session', JSON.stringify(sess))
 
           // Scope localStorage keys to this user
-          storageService.setCurrentUser(normalizedUser.email)
-          await loadHistoryForUser(normalizedUser.email)
+          storageService.setCurrentUser(normalizedUser.id || normalizedUser.email)
+          await loadHistoryForUser(normalizedUser.id || normalizedUser.email)
           await initCartForUser()
 
           return { success: true }

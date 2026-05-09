@@ -59,7 +59,7 @@
           </div>
 
           <p class="hero-card-note">
-            PharmaDerm Diagnostics is a guided skincare tool and does not replace a dermatologistâ€™s diagnosis.
+            PharmaDerm Diagnostics is a guided skincare tool and does not replace a dermatologist's diagnosis.
           </p>
         </div>
       </div>
@@ -75,13 +75,13 @@
 
         <div class="timeline-grid">
           <div class="timeline-step" :class="{ completed: quizCompleted }">
-            <div class="timeline-icon">{{ quizCompleted ? 'âœ“' : '1' }}</div>
+            <div class="timeline-icon">{{ quizCompleted ? '✓' : '1' }}</div>
             <h4>Quiz completed</h4>
             <p>Your initial skin profile was generated from the quiz.</p>
           </div>
 
           <div class="timeline-step" :class="{ completed: detailsCompleted }">
-            <div class="timeline-icon">{{ detailsCompleted ? 'âœ“' : '2' }}</div>
+            <div class="timeline-icon">{{ detailsCompleted ? '✓' : '2' }}</div>
             <h4>Diagnostics completed</h4>
             <p>Add more symptoms, priorities and case details.</p>
           </div>
@@ -190,7 +190,7 @@
                 <select v-model="form.duration">
                   <option value="">Select an option</option>
                   <option>Just recently</option>
-                  <option>1â€“2 weeks</option>
+                  <option>1-2 weeks</option>
                   <option>1 month</option>
                   <option>Several months</option>
                   <option>More than a year</option>
