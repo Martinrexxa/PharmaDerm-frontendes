@@ -75,13 +75,13 @@
 
         <div class="timeline-grid">
           <div class="timeline-step" :class="{ completed: quizCompleted }">
-            <div class="timeline-icon">{{ quizCompleted ? '?' : '1' }}</div>
+            <div class="timeline-icon">{{ quizCompleted ? '✓' : '1' }}</div>
             <h4>Quiz completed</h4>
             <p>Your initial skin profile was generated from the quiz.</p>
           </div>
 
           <div class="timeline-step" :class="{ completed: detailsCompleted }">
-            <div class="timeline-icon">{{ detailsCompleted ? '?' : '2' }}</div>
+            <div class="timeline-icon">{{ detailsCompleted ? '✓' : '2' }}</div>
             <h4>Diagnostics completed</h4>
             <p>Add more symptoms, priorities and case details.</p>
           </div>
@@ -1410,6 +1410,10 @@ export default {
         if (parsed.imagePreviews) {
           console.log('[Diagnostics] Applying image previews:', parsed.imagePreviews.length, 'images');
           this.imagePreviews = parsed.imagePreviews;
+        }
+        // Fallback: if no step-2 photos were saved yet, show the quiz selfie as reference.
+        if ((!this.imagePreviews || !this.imagePreviews.length) && this.casePhoto) {
+          this.imagePreviews = [this.casePhoto];
         }
         if (parsed.casePhoto) {
           console.log('[Diagnostics] Applying case photo');
