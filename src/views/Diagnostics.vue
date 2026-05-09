@@ -68,22 +68,22 @@
     <section class="section-light">
       <div class="container">
         <div class="section-heading center">
-          <p class="eyebrow section-eyebrow">YOUR PROGRESS</p>
+          <p class="eyebrow section-eyebrow">{{ isEs ? 'TU PROGRESO' : 'YOUR PROGRESS' }}</p>
           <h2>{{ t('diagnostics.progressTitle') }}</h2>
-          <p>Your experience is organized step by step so it feels guided and premium.</p>
+          <p>{{ isEs ? 'Tu experiencia esta organizada paso a paso para sentirse guiada y premium.' : 'Your experience is organized step by step so it feels guided and premium.' }}</p>
         </div>
 
         <div class="timeline-grid">
           <div class="timeline-step" :class="{ completed: quizCompleted }">
             <div class="timeline-icon">{{ quizCompleted ? '✓' : '1' }}</div>
-            <h4>Quiz completed</h4>
-            <p>Your initial skin profile was generated from the quiz.</p>
+            <h4>{{ isEs ? 'Quiz completado' : 'Quiz completed' }}</h4>
+            <p>{{ isEs ? 'Tu perfil inicial de piel se genero desde el quiz.' : 'Your initial skin profile was generated from the quiz.' }}</p>
           </div>
 
           <div class="timeline-step" :class="{ completed: detailsCompleted }">
             <div class="timeline-icon">{{ detailsCompleted ? '✓' : '2' }}</div>
-            <h4>Diagnostics completed</h4>
-            <p>Add more symptoms, priorities and case details.</p>
+            <h4>{{ isEs ? 'Diagnostico completado' : 'Diagnostics completed' }}</h4>
+            <p>{{ isEs ? 'Agrega mas sintomas, prioridades y detalles del caso.' : 'Add more symptoms, priorities and case details.' }}</p>
           </div>
 
           <div class="timeline-step">
@@ -95,7 +95,7 @@
           <div class="timeline-step">
             <div class="timeline-icon" style="cursor:pointer" @click="$router.push('/citas')">4</div>
             <h4>{{ t('footer.myAppointments') }}</h4>
-            <p>Review the history of your booked appointments.</p>
+            <p>{{ isEs ? 'Revisa el historial de tus citas reservadas.' : 'Review the history of your booked appointments.' }}</p>
           </div>
         </div>
       </div>
@@ -454,8 +454,8 @@ const DIAGNOSIS_PHOTO_BUCKET = 'diagnosis-photos';
 export default {
   name: "DiagnosticsView",
   setup() {
-    const { t } = useI18n();
-    return { t };
+    const { t, lang } = useI18n();
+    return { t, lang };
   },
   data() {
     return {
@@ -833,6 +833,9 @@ export default {
       });
 
       // Persist on save step through backend endpoint.
+    },
+    isEs() {
+      return this.lang === 'es';
     },
 
     removeImage(index) {
