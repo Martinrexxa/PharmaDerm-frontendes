@@ -380,15 +380,15 @@ async function loadDoctors() {
     }
   } catch {}
 
-  // 2) Fallback to Supabase tables.
-  if (!loaded.length && isSupabaseConfigured) {
+  // 2) Supabase tables (authoritative source for specialist photos and metadata).
+  if (isSupabaseConfigured) {
     const [docsRes, concernsRes, skinTypesRes] = await withTimeout(Promise.all([
       supabase.from('dermatologists').select('*').eq('is_active', true).order('rating', { ascending: false }),
       supabase.from('dermatologist_concerns').select('dermatologist_id,concern_code,priority_score'),
       supabase.from('dermatologist_skin_types').select('dermatologist_id,skin_type_code,priority_score')
     ]), 10000, 'Load specialists')
 
-    if (!docsRes.error) {
+    if (!docsRes.error && Array.isArray(docsRes.data) && docsRes.data.length) {
       const concernsByDoc = (concernsRes.data || []).reduce((acc, row) => {
         if (!acc[row.dermatologist_id]) acc[row.dermatologist_id] = { list: [], priority: {} }
         acc[row.dermatologist_id].list.push(row.concern_code)
@@ -403,7 +403,7 @@ async function loadDoctors() {
         return acc
       }, {})
 
-      loaded = (docsRes.data || []).map(d => ({
+      const supabaseLoaded = (docsRes.data || []).map(d => ({
         ...d,
         photo_url: resolveDoctorPhoto(d),
         concerns: concernsByDoc[d.id]?.list || [],
@@ -411,6 +411,22 @@ async function loadDoctors() {
         skinTypes: skinsByDoc[d.id]?.list || [],
         skinPriority: skinsByDoc[d.id]?.priority || {}
       }))
+
+      // If backend already provided rows, enrich/override them with Supabase metadata and photos by id.
+      if (loaded.length) {
+        const byId = new Map(supabaseLoaded.map((d) => [String(d.id), d]))
+        loaded = loaded.map((d) => {
+          const match = byId.get(String(d.id))
+          return match ? { ...d, ...match, photo_url: match.photo_url || d.photo_url } : d
+        })
+        // Also append any specialists only present in Supabase.
+        const loadedIds = new Set(loaded.map((d) => String(d.id)))
+        for (const s of supabaseLoaded) {
+          if (!loadedIds.has(String(s.id))) loaded.push(s)
+        }
+      } else {
+        loaded = supabaseLoaded
+      }
     }
   }
 
