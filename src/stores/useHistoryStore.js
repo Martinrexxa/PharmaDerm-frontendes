@@ -52,28 +52,15 @@ async function _syncWithBackend() {
 
 async function _pushBackendHistory() {
   if (!_hasBackendSession()) return
-  const sanitizeQuiz = (q) => {
-    if (!q || typeof q !== 'object') return q
-    const next = { ...q }
-    if (typeof next.selfie === 'string' && next.selfie.startsWith('data:image/')) {
-      next.selfie = ''
-    }
-    return next
-  }
-
-  const sanitizedQuizHistory = Array.isArray(quizHistory.value)
-    ? quizHistory.value.map(sanitizeQuiz)
-    : []
-
   await apiFetch('/history', {
     method: 'PUT',
     body: {
-      quiz_history: sanitizedQuizHistory,
+      quiz_history: quizHistory.value,
       diagnostics_history: diagnostics.value,
       routines: routines.value,
       appointments_list: appointments.value,
       orders: orders.value,
-      quiz_result: sanitizeQuiz(quizHistory.value[0] || null),
+      quiz_result: quizHistory.value[0] || null,
       diagnostic_result: diagnostics.value[0] || null,
       appointment: appointments.value[0] || null,
     },
