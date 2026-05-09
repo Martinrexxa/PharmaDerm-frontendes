@@ -406,7 +406,12 @@ export function clearHistory() {
 
 export function useHistoryStore() {
   async function saveQuizResult(result) {
-    const entry = { ...result, id: Date.now(), date: new Date().toISOString() }
+    const sanitizedResult = { ...result }
+    // Avoid sending heavy base64 payloads to backend history storage.
+    if (typeof sanitizedResult.selfie === 'string' && sanitizedResult.selfie.startsWith('data:image/')) {
+      sanitizedResult.selfie = ''
+    }
+    const entry = { ...sanitizedResult, id: Date.now(), date: new Date().toISOString() }
     quizHistory.value.unshift(entry)
     const kh = _key('quiz_history')
     const kr = _key('quiz_result')
