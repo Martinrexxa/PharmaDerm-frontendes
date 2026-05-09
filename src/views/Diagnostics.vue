@@ -327,7 +327,7 @@
           <div v-if="imagePreviews.length" class="preview-grid">
             <div v-for="(image, index) in imagePreviews" :key="index" class="preview-item">
               <img :src="image" alt="Uploaded preview" />
-              <button type="button" class="preview-remove" @click="removeImage(index)">�</button>
+              <button type="button" class="preview-remove" @click="removeImage(index)">x</button>
             </div>
           </div>
 
@@ -919,7 +919,7 @@ export default {
 
       try {
         let persisted = false;
-        // FASE 9 — save diagnostic case (separate from booking)
+        // FASE 9 - save diagnostic case (separate from booking)
         const payload = {
           id: Date.now(),
           title: "Dermatology diagnostic saved",
@@ -1239,7 +1239,7 @@ export default {
           }
         } catch (e) {
           console.warn('[Diagnostics] Supabase quiz check failed:', e?.message);
-          source = 'supabase:error→fallback';
+          source = 'supabase:error->fallback';
         }
       }
 
@@ -1360,7 +1360,7 @@ export default {
         } catch (e) {
           console.warn('[Diagnostics] Supabase diagnosis check failed:', e?.message);
           parsed = this._historyStore?.getLatestDiagnostic() || null;
-          source = 'supabase:error→fallback';
+          source = 'supabase:error->fallback';
         }
       } else {
         parsed = this._historyStore?.getLatestDiagnostic() || null;
