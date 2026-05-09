@@ -327,7 +327,14 @@
           <div v-if="imagePreviews.length" class="preview-grid">
             <div v-for="(image, index) in imagePreviews" :key="index" class="preview-item">
               <img :src="image" alt="Uploaded preview" />
+              <button type="button" class="preview-remove" @click="removeImage(index)">×</button>
             </div>
+          </div>
+
+          <div class="upload-actions">
+            <button class="primary-btn" @click="saveStep2Photos" :disabled="isSavingPhotos || !imagePreviews.length">
+              {{ isSavingPhotos ? 'Saving photos...' : 'Save photos' }}
+            </button>
           </div>
         </div>
       </div>
@@ -520,6 +527,7 @@ export default {
       diagnosticSaved: false,
       isSavingDiagnostic: false,
       latestDiagnosisId: null,
+      isSavingPhotos: false,
     };
   },
 
@@ -827,6 +835,33 @@ export default {
       // Persist on save step through backend endpoint.
     },
 
+    removeImage(index) {
+      this.imagePreviews.splice(index, 1);
+    },
+
+    async saveStep2Photos() {
+      if (this.isSavingPhotos || !this.imagePreviews.length) return;
+      this.isSavingPhotos = true;
+      try {
+        const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
+        if (!sess?.token) throw new Error('Please sign in again to save photos');
+        const saved = await apiFetch('/diagnostics/latest', {
+          method: 'PUT',
+          body: {
+            form: this.form,
+            generatedInsight: this.generatedInsight,
+            imagePreviews: this.imagePreviews,
+          },
+        });
+        if (saved?.diagnosisId) this.latestDiagnosisId = saved.diagnosisId;
+        this.showToast('Photos saved successfully.');
+      } catch (e) {
+        this.showToast(e?.message || 'Could not save photos');
+      } finally {
+        this.isSavingPhotos = false;
+      }
+    },
+
     scrollToSection(refName) {
       const el = this.$refs[refName];
       if (el && el.scrollIntoView) {
@@ -993,8 +1028,7 @@ export default {
         this.diagnosticSaved = true;
         this.showToast("Diagnostic saved successfully.");
 
-        // Generate personalized routine from diagnosis
-        await this.generateRoutineFromDiagnosis();
+        // Step 1 only saves the diagnostic form.
         await this.$nextTick();
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       } finally {
@@ -1938,6 +1972,7 @@ input:focus {
 }
 
 .preview-item {
+  position: relative;
   border-radius: 20px;
   overflow: hidden;
   aspect-ratio: 1 / 1;
@@ -1949,6 +1984,27 @@ input:focus {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.preview-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.upload-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* DOCTORS */
