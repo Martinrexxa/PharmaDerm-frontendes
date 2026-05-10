@@ -195,6 +195,7 @@ import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import logoIconSrc from '../assets/logo -Photoroom.png'
 import { useI18n } from '../lib/i18n.js'
+import { apiFetch } from '../services/apiClient.js'
 
 const { t } = useI18n()
 const emailVal = ref('')
@@ -203,13 +204,29 @@ const consent = ref(false)
 const formError = ref('')
 const subscribed = ref(false)
 
-function handleSubmit() {
+async function handleSubmit() {
   formError.value = ''
   if (!emailVal.value) {
     formError.value = t('footer.emailRequired')
     return
   }
-  subscribed.value = true
+  try {
+    const result = await apiFetch('/subscribers', {
+      method: 'POST',
+      body: {
+        email: emailVal.value,
+        phone: phoneVal.value || null,
+        consent: consent.value,
+      },
+    })
+    if (result?.ok) {
+      subscribed.value = true
+      return
+    }
+    formError.value = t('footer.emailRequired')
+  } catch {
+    formError.value = 'Could not submit right now. Please try again.'
+  }
 }
 </script>
 
