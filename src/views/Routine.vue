@@ -121,6 +121,7 @@ import TransparentImg from '../components/TransparentImg.vue'
 import routineService from '../services/routineService.js'
 import { getProductsByQuizResult } from '../data/productCatalog.js'
 import { sendRoutineByEmail } from '../services/emailService.js'
+import { apiFetch } from '../services/apiClient.js'
 import { useAuthStore } from '../stores/useAuthStore.js'
 import { useI18n } from '../lib/i18n.js'
 import routineBannerImg from '../assets/fondo/skincare-routine.png'
@@ -391,17 +392,35 @@ async function sendRoutineEmail() {
   const night = nightNames.join(' | ')
   const recommended = recommendedNames.join(' | ')
 
-  const result = await sendRoutineByEmail({
-    to_email: email,
-    to_name: auth.user?.value?.name || 'Customer',
-    skin_type: skinTypeLabel.value || '',
-    diagnosis: concernLabel.value || routineDescription.value || '',
-    morning_routine: morning || 'N/A',
-    night_routine: night || 'N/A',
-    recommended_products: recommended || 'N/A',
-    reply_to: 'soporte@pharmadermrd.com',
-    routine_id: currentRoutine.value?.id || null,
-  }, lang.value || 'es')
+  let result = null
+  try {
+    const backendRes = await apiFetch('/email/routine', {
+      method: 'POST',
+      body: {
+        to_email: email,
+        to_name: auth.user?.value?.name || 'Customer',
+        skin_type: skinTypeLabel.value || '',
+        diagnosis: concernLabel.value || routineDescription.value || '',
+        morning_routine: morning || 'N/A',
+        night_routine: night || 'N/A',
+        recommended_products: recommended || 'N/A',
+        routine_id: currentRoutine.value?.id || Date.now(),
+      }
+    })
+    result = { ok: !!backendRes?.ok }
+  } catch {
+    result = await sendRoutineByEmail({
+      to_email: email,
+      to_name: auth.user?.value?.name || 'Customer',
+      skin_type: skinTypeLabel.value || '',
+      diagnosis: concernLabel.value || routineDescription.value || '',
+      morning_routine: morning || 'N/A',
+      night_routine: night || 'N/A',
+      recommended_products: recommended || 'N/A',
+      reply_to: 'soporte@pharmadermrd.com',
+      routine_id: currentRoutine.value?.id || null,
+    }, lang.value || 'es')
+  }
 
   if (result.ok) {
     showToast('Your routine was sent to your email.')

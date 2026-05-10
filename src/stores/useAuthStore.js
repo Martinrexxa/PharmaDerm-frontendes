@@ -99,7 +99,9 @@ export function useAuthStore() {
         user.value    = rawUser ? JSON.parse(rawUser) : null
         session.value = rawSess ? JSON.parse(rawSess) : null
         if (user.value?.id || user.value?.email) {
+          storageService.setCurrentUser(user.value.id || user.value.email)
           await loadHistoryForUser(user.value.id || user.value.email)
+          await initCartForUser()
         }
       } catch {
         _clearState()

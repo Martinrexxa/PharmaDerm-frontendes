@@ -28,6 +28,8 @@ async function _loadFromBackend() {
   try {
     const data = await apiFetch('/cart')
     const remoteItems = Array.isArray(data?.items) ? data.items : []
+    // Avoid wiping a freshly added local cart with a transient empty backend read.
+    if (remoteItems.length === 0 && Array.isArray(items.value) && items.value.length > 0) return
     items.value = remoteItems
     storageService.set('cart', remoteItems)
   } catch {
