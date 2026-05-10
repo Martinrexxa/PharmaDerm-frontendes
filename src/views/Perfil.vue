@@ -881,49 +881,17 @@ const latestRoutineSteps = computed(() => {
 
 async function loadAddressFromDatabase() {
   try {
-    // Try to load from localStorage first (fastest)
-    const addresses = userService.getAddresses()
+    // Try backend/local cache
+    const addresses = await userService.loadAddressesFromBackend()
     if (addresses && addresses.length > 0) {
       const defaultAddress = addresses[0]
       editableUser.value.address = defaultAddress.address_line_1 || defaultAddress.address || ''
+      editableUser.value.city = defaultAddress.city || ''
       console.log('[Profile] Address loaded from localStorage:', editableUser.value.address)
       return
     }
   } catch (error) {
     console.warn('[Profile] localStorage address load failed:', error)
-  }
-
-  // Fallback: load from Supabase
-  try {
-    const userId = auth.user?.value?.id
-    if (!userId) {
-      console.warn('[Profile] No user ID available')
-      return
-    }
-    
-    // Query addresses table for user's addresses
-    const supabase = (await import('../lib/supabaseClient.js')).supabase
-    const { data, error } = await supabase
-      .from('addresses')
-      .select('*')
-      .eq('user_id', userId)
-      .order('is_default', { ascending: false })
-      .limit(1)
-    
-    if (error) {
-      console.warn('[Profile] Supabase address query error:', error.message)
-      return
-    }
-    
-    if (data && data.length > 0) {
-      const address = data[0]
-      editableUser.value.address = address.address_line_1 || address.address || ''
-      console.log('[Profile] Address loaded from Supabase:', editableUser.value.address)
-    } else {
-      console.log('[Profile] No address found in Supabase for user:', userId)
-    }
-  } catch (error) {
-    console.warn('[Profile] Supabase address load exception:', error)
   }
 }
 

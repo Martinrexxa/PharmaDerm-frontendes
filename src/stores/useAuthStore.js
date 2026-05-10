@@ -312,6 +312,29 @@ export function useAuthStore() {
 
   async function updateProfile(data) {
     if (!user.value) return
+    const hasBackendToken = Boolean(session.value?.token)
+    if (hasBackendToken) {
+      const firstName = data.firstName !== undefined ? data.firstName : (user.value.firstName || '')
+      const lastName = data.lastName !== undefined ? data.lastName : (user.value.lastName || '')
+      const phone = data.phone !== undefined ? data.phone : (user.value.phone || null)
+      const birth_date = data.birth_date !== undefined ? data.birth_date : (user.value.birth_date || null)
+      const response = await apiFetch('/user/profile', {
+        method: 'PUT',
+        body: { firstName, lastName, phone, birth_date },
+      })
+      const updatedUser = response?.user || {}
+      user.value = {
+        ...user.value,
+        ...updatedUser,
+        firstName: updatedUser.firstName ?? firstName,
+        lastName: updatedUser.lastName ?? lastName,
+        name: updatedUser.name ?? `${firstName || ''} ${lastName || ''}`.trim(),
+        phone: updatedUser.phone ?? phone,
+        birth_date: updatedUser.birth_date ?? birth_date,
+      }
+      localStorage.setItem('pharmaderm_user', JSON.stringify(user.value))
+      return user.value
+    }
     if (isSupabaseConfigured) {
       const payload = {}
       if (data.firstName   !== undefined) payload.first_name       = data.firstName

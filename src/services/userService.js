@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
 import storageService from './storageService.js'
+import { apiFetch } from './apiClient.js'
 
 export const userService = {
   // ─── Supabase Auth ────────────────────────────────────────────────
@@ -191,9 +192,38 @@ export const userService = {
     return storageService.get('addresses', [])
   },
 
+  async loadAddressesFromBackend() {
+    try {
+      const data = await apiFetch('/adress')
+      const items = Array.isArray(data?.items) ? data.items : []
+      if (items.length) {
+        storageService.set('addresses', items)
+      }
+      return items
+    } catch {
+      return this.getAddresses()
+    }
+  },
+
   async saveAddress(address, userId) {
     // Save to Supabase first to get the real ID
     let supabaseId = address.id
+
+    // Backend mode first
+    try {
+      const backend = await apiFetch('/adress', {
+        method: 'PUT',
+        body: {
+          label: address.label || 'My address',
+          address_line_1: address.address_line_1 || address.address || '',
+          city: address.city || '',
+          country_code: address.country_code || 'DO',
+        },
+      })
+      if (backend?.item?.id) supabaseId = backend.item.id
+    } catch {
+      // ignore and fallback
+    }
     
     if (isSupabaseConfigured && userId) {
       try {
