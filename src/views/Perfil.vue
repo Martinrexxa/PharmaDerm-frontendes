@@ -688,6 +688,7 @@ import perfilImg1 from '../assets/fondo/perfil.png';
 import { useSettingsStore } from "../stores/useSettingsStore";
 import { useHistoryStore } from "../stores/useHistoryStore";
 import userService from "../services/userService.js";
+import { apiFetch } from "../services/apiClient.js";
 import { priceIn } from "../utils/currency";
 import { getProductsByQuizResult } from "../data/productCatalog.js";
 import { useI18n } from "../lib/i18n.js";
@@ -816,6 +817,23 @@ function closeDetailModal() {
 }
 
 onMounted(async () => {
+  try {
+    const profile = await apiFetch('/user/profile')
+    if (profile && profile.id) {
+      auth.updateUser({
+        id: profile.id,
+        email: profile.email,
+        first_name: profile.firstName || '',
+        last_name: profile.lastName || '',
+        name: profile.name || `${profile.firstName || ''} ${profile.lastName || ''}`.trim(),
+        phone: profile.phone || '',
+        birth_date: profile.birth_date || '',
+      })
+      editableUser.value = _buildEditable(auth.user.value)
+    }
+  } catch {
+    // keep local user snapshot if profile endpoint fails
+  }
   await loadAddressFromDatabase();
 });
 
