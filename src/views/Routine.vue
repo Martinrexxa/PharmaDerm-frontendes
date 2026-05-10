@@ -149,16 +149,23 @@ const isLoadingRoutine = ref(true)
 const hasRoutine = computed(() => !!currentRoutine.value)
 
 const skinTypeLabel = computed(() => {
-  if (!currentRoutine.value) return 'Skin'
-  const map = { seca: 'Dry skin', normal: 'Normal skin', mixta: 'Combination skin', grasa: 'Oily skin' }
-  return map[currentRoutine.value.skinType] || currentRoutine.value.skinType || 'Skin'
+  if (!currentRoutine.value) return lang.value === 'es' ? 'Piel' : 'Skin'
+  const mapEs = { seca: 'Piel seca', normal: 'Piel normal', mixta: 'Piel mixta', grasa: 'Piel grasa' }
+  const mapEn = { seca: 'Dry skin', normal: 'Normal skin', mixta: 'Combination skin', grasa: 'Oily skin' }
+  const map = lang.value === 'es' ? mapEs : mapEn
+  return map[currentRoutine.value.skinType] || currentRoutine.value.skinType || (lang.value === 'es' ? 'Piel' : 'Skin')
 })
 
 const concernLabel = computed(() => {
   if (!currentRoutine.value) return ''
   const map = {
-    luminosidad: 'Radiance', deshidratacion: 'Dehydration', manchas: 'Dark spots',
-    sensibilidad: 'Sensitivity', arrugas: 'Early lines', poros: 'Pores', barrera: 'Skin barrier',
+    luminosidad: lang.value === 'es' ? 'Luminosidad' : 'Radiance',
+    deshidratacion: lang.value === 'es' ? 'Deshidratación' : 'Dehydration',
+    manchas: lang.value === 'es' ? 'Manchas' : 'Dark spots',
+    sensibilidad: lang.value === 'es' ? 'Sensibilidad' : 'Sensitivity',
+    arrugas: lang.value === 'es' ? 'Líneas finas' : 'Early lines',
+    poros: lang.value === 'es' ? 'Poros' : 'Pores',
+    barrera: lang.value === 'es' ? 'Barrera cutánea' : 'Skin barrier',
   }
   return map[currentRoutine.value.primaryConcern] || currentRoutine.value.primaryConcern || ''
 })
@@ -175,9 +182,11 @@ const routineDescription = computed(() => {
     || ''
 
   let trimmed = raw.trim().replace(/\s+/g, ' ')
-  if (!trimmed) return 'Your routine is based on your diagnosis, so it is best to...'
+  if (!trimmed) return lang.value === 'es'
+    ? 'Tu rutina está basada en tu diagnóstico, por lo que lo mejor es...'
+    : 'Your routine is based on your diagnosis, so it is best to...'
 
-  const marker = 'so it is best to'
+  const marker = lang.value === 'es' ? 'por lo que lo mejor es' : 'so it is best to'
   const lower = trimmed.toLowerCase()
   const markerIndex = lower.indexOf(marker)
   if (markerIndex >= 0) {
@@ -187,7 +196,7 @@ const routineDescription = computed(() => {
   }
 
   trimmed = trimmed.replace(/[\.\?!]+$/, '')
-  const suffix = ' so it is best to...'
+  const suffix = lang.value === 'es' ? ' por lo que lo mejor es...' : ' so it is best to...'
   const maxLength = 160 - suffix.length
   if (trimmed.length <= maxLength) {
     return `${trimmed}${suffix}`
@@ -197,7 +206,7 @@ const routineDescription = computed(() => {
 
 const formattedDate = computed(() => {
   if (!currentRoutine.value?.date) return ''
-  return new Date(currentRoutine.value.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  return new Date(currentRoutine.value.date).toLocaleDateString(lang.value === 'es' ? 'es-DO' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 })
 
 function buildRoutineFromQuizData(quiz) {

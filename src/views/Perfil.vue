@@ -700,24 +700,24 @@ const isEs = computed(() => lang.value === 'es')
 const ui = computed(() => ({
   welcomeBack: isEs.value ? 'Bienvenido de vuelta' : 'Welcome back',
   manageAccount: isEs.value
-    ? 'Administra tu cuenta, revisa tus pedidos, consulta tus citas dermatologicas y accede rapido a tu rutina personalizada.'
+    ? 'Administra tu cuenta, revisa tus pedidos, consulta tus citas dermatológicas y accede rápido a tu rutina personalizada.'
     : 'Manage your account, review your orders, check your dermatology appointments, and quickly access your personalized routine.',
   myAppointments: isEs.value ? 'Mis citas' : 'My appointments',
   myRoutine: isEs.value ? 'Mi rutina' : 'My routine',
   orders: isEs.value ? 'Pedidos' : 'Orders',
-  closeEditing: isEs.value ? 'Cerrar edicion' : 'Close editing',
+  closeEditing: isEs.value ? 'Cerrar edición' : 'Close editing',
   edit: isEs.value ? 'Editar' : 'Edit',
   myAccountTab: isEs.value ? 'Mi cuenta' : 'My account',
   historyTab: isEs.value ? 'Historial' : 'History',
-  settingsTab: isEs.value ? 'Configuracion' : 'Settings',
+  settingsTab: isEs.value ? 'Configuración' : 'Settings',
   recentOrders: isEs.value ? 'Pedidos recientes' : 'Recent orders',
   goToCart: isEs.value ? 'Ir al carrito' : 'Go to cart',
   consultSpecialist: isEs.value ? 'Consultar especialista' : 'Consult a specialist',
-  signOut: isEs.value ? 'Cerrar sesion' : 'Sign out',
+  signOut: isEs.value ? 'Cerrar sesión' : 'Sign out',
   appLanguage: isEs.value ? 'Idioma de la app' : 'App language',
-  spanish: 'Espanol',
+  spanish: 'Español',
   english: 'English',
-  country: isEs.value ? 'Pais' : 'Country',
+  country: isEs.value ? 'País' : 'Country',
   preferredCurrency: isEs.value ? 'Moneda preferida' : 'Preferred currency',
 }))
 

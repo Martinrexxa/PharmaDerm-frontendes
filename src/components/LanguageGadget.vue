@@ -44,7 +44,7 @@ const gadgetRef = ref(null)
 
 const options = [
   { code: 'en', label: 'English' },
-  { code: 'es', label: 'Espanol' },
+  { code: 'es', label: 'Español' },
 ]
 
 function selectLanguage(code) {

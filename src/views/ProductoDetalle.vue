@@ -4,7 +4,7 @@
       <section class="pdp-main">
         <div class="gallery">
           <div class="main-image">
-            <img :src="activeImage" :alt="product.name" />
+            <img :src="activeImage" :alt="productName(product)" />
           </div>
 
           <div class="thumbs">
@@ -15,7 +15,7 @@
               :class="{ active: activeImage === img }"
               @click="activeImage = img"
             >
-              <img :src="img" :alt="product.name" />
+              <img :src="img" :alt="productName(product)" />
             </button>
           </div>
         </div>
@@ -27,17 +27,17 @@
           </div>
 
           <p class="brand-line">{{ product.brandLabel }}</p>
-          <h1>{{ product.name }}</h1>
-          <p class="subtitle">{{ product.subtitle }}</p>
+          <h1>{{ productName(product) }}</h1>
+          <p class="subtitle">{{ productSubtitle(product) }}</p>
 
           <div class="selected-price">
             <strong>{{ fmtPrice(convertPrice(discountedUSD(selectedSizeObj.priceUSD ?? product.priceUSD ?? product.priceFrom ?? 0), 'USD', 'DOP')) }}</strong>
-            <span v-if="purchaseMode === 'autoship'" class="discount-badge">-15% Replenish &amp; Save</span>
+            <span v-if="purchaseMode === 'autoship'" class="discount-badge">-15% {{ ui.replenishSave }}</span>
             <span v-if="selectedSizeObj.pricePer">{{ selectedSizeObj.pricePer }}</span>
           </div>
 
           <div class="size-section" v-if="product.sizes?.length">
-            <p class="section-label">Selected size: {{ size }}</p>
+            <p class="section-label">{{ ui.selectedSize }}: {{ size }}</p>
 
             <div class="size-grid">
               <button
@@ -56,12 +56,12 @@
           <div class="offer-box">
             <label class="radio-row">
               <input type="radio" value="one-time" v-model="purchaseMode" />
-              <span>Deliver one-time only</span>
+              <span>{{ ui.deliverOneTime }}</span>
             </label>
 
             <label class="radio-row">
               <input type="radio" value="autoship" v-model="purchaseMode" />
-              <span>Get up to 15% off + a free sample with Replenish & Save</span>
+              <span>{{ ui.replenishOffer }}</span>
             </label>
           </div>
 
@@ -73,12 +73,12 @@
             </div>
 
             <button class="add-bag" @click="addToCart(product)">
-              {{ fmtPrice(convertPrice(discountedUSD(selectedSizeObj.priceUSD ?? product.priceUSD ?? product.priceFrom ?? 0) * qty, 'USD', 'DOP')) }} — ADD TO BAG
+              {{ fmtPrice(convertPrice(discountedUSD(selectedSizeObj.priceUSD ?? product.priceUSD ?? product.priceFrom ?? 0) * qty, 'USD', 'DOP')) }} — {{ ui.addToBag }}
             </button>
           </div>
 
           <div class="buy-now-row">
-            <button class="buy-now" @click="buyNow(product)">BUY NOW</button>
+            <button class="buy-now" @click="buyNow(product)">{{ ui.buyNow }}</button>
           </div>
 
           <div v-if="product.badge" class="badge-box">
@@ -90,15 +90,15 @@
           </div>
 
           <div v-if="pairsBestWith.length" class="pairs-box">
-            <h3>PAIRS BEST WITH</h3>
+            <h3>{{ ui.pairsBestWith }}</h3>
 
             <div class="pair-card" v-for="pair in pairsBestWith" :key="pair.id">
-              <img :src="pair.image" :alt="pair.name" />
+              <img :src="pair.image" :alt="productName(pair)" />
 
               <div class="pair-info">
-                <p>{{ pair.name }}</p>
+                <p>{{ productName(pair) }}</p>
                 <button @click="addToCart(pair)">
-                  ADD TO BAG • {{ fmtPrice(convertPrice(pair.priceFrom ?? pair.priceUSD ?? 0, 'USD', 'DOP')) }}
+                  {{ ui.addToBag }} • {{ fmtPrice(convertPrice(pair.priceFrom ?? pair.priceUSD ?? 0, 'USD', 'DOP')) }}
                 </button>
               </div>
             </div>
@@ -108,29 +108,29 @@
 
       <section class="accordion-area">
         <details open>
-          <summary>DESCRIPTION</summary>
-          <p>{{ product.description }}</p>
+          <summary>{{ ui.description }}</summary>
+          <p>{{ productDescription(product) }}</p>
         </details>
 
         <details open>
-          <summary>BENEFITS</summary>
+          <summary>{{ ui.benefits }}</summary>
           <ul>
             <li v-for="item in product.benefits || []" :key="item">{{ item }}</li>
           </ul>
         </details>
 
         <details open>
-          <summary>RECOMMENDED FOR</summary>
+          <summary>{{ ui.recommendedFor }}</summary>
           <div class="recommend-grid">
             <div>
-              <h4>Skin Concern:</h4>
+              <h4>{{ ui.skinConcern }}</h4>
               <ul>
                 <li v-for="item in product.recommendedFor?.concerns || []" :key="item">{{ item }}</li>
               </ul>
             </div>
 
             <div>
-              <h4>Skin Type:</h4>
+              <h4>{{ ui.skinType }}</h4>
               <ul>
                 <li v-for="item in product.recommendedFor?.skinTypes || []" :key="item">{{ item }}</li>
               </ul>
@@ -139,8 +139,8 @@
         </details>
 
         <details open>
-          <summary>INGREDIENTS</summary>
-          <h4>KEY INGREDIENTS</h4>
+          <summary>{{ ui.ingredients }}</summary>
+          <h4>{{ ui.keyIngredients }}</h4>
 
           <div class="ingredients-list">
             <div
@@ -152,41 +152,41 @@
             </div>
           </div>
 
-          <h4>FULL INGREDIENT LIST</h4>
+          <h4>{{ ui.fullIngredients }}</h4>
           <p class="full-ingredients">{{ product.fullIngredients }}</p>
         </details>
       </section>
 
       <section v-if="product.howToUse" class="how-to">
         <div class="how-image">
-          <img :src="activeImage" :alt="product.name" />
+          <img :src="activeImage" :alt="productName(product)" />
         </div>
 
         <div class="how-info">
           <div class="how-item">
-            <h4>QUANTITY</h4>
+            <h4>{{ ui.quantity }}</h4>
             <p>{{ product.howToUse.quantity }}</p>
           </div>
 
           <div class="how-item">
-            <h4>WHEN</h4>
+            <h4>{{ ui.when }}</h4>
             <p>{{ product.howToUse.when }}</p>
           </div>
 
           <div class="how-item">
-            <h4>WHERE</h4>
+            <h4>{{ ui.where }}</h4>
             <p>{{ product.howToUse.where }}</p>
           </div>
 
           <div class="how-item">
-            <h4>APPLICATION TIP</h4>
+            <h4>{{ ui.applicationTip }}</h4>
             <p>{{ product.howToUse.tip }}</p>
           </div>
         </div>
       </section>
 
       <section v-if="product.productSafety?.length" class="safety-section">
-        <h2>PRODUCT SAFETY</h2>
+        <h2>{{ ui.productSafety }}</h2>
 
         <div class="safety-grid">
           <div
@@ -200,7 +200,7 @@
       </section>
 
       <section v-if="related.length" class="related-section">
-        <h2>COMPLETE YOUR ROUTINE</h2>
+        <h2>{{ ui.completeRoutine }}</h2>
 
         <div class="related-grid">
           <article v-for="item in related" :key="item.id" class="related-card">
@@ -244,10 +244,76 @@ import { getProductBySlug, getProductById, relatedProductsFor } from "../data/pr
 import { useCartStore } from "../stores/useCartStore";
 import { useSettingsStore } from "../stores/useSettingsStore";
 import { priceIn, convertPrice } from "../utils/currency";
+import { useI18n } from "../lib/i18n.js";
 
 const cart = useCartStore();
 const settings = useSettingsStore();
 const userCurrency = settings.currency;
+const { lang } = useI18n()
+
+function localizeField(productLike, baseKey) {
+  const p = productLike || {}
+  if (lang.value === 'es') return p[`${baseKey}Es`] || p[`${baseKey}_es`] || p[baseKey] || ''
+  return p[baseKey] || ''
+}
+
+function productName(productLike) {
+  return localizeField(productLike, 'name')
+}
+
+function productSubtitle(productLike) {
+  return localizeField(productLike, 'subtitle')
+}
+
+function productDescription(productLike) {
+  return localizeField(productLike, 'description')
+}
+
+const ui = computed(() => lang.value === 'es' ? ({
+  replenishSave: 'Reposición y Ahorro',
+  selectedSize: 'Tamaño seleccionado',
+  deliverOneTime: 'Entregar una sola vez',
+  replenishOffer: 'Obtén hasta 15% de descuento + una muestra gratis con Reposición y Ahorro',
+  addToBag: 'AGREGAR AL CARRITO',
+  buyNow: 'COMPRAR AHORA',
+  pairsBestWith: 'COMBINA MEJOR CON',
+  description: 'DESCRIPCIÓN',
+  benefits: 'BENEFICIOS',
+  recommendedFor: 'RECOMENDADO PARA',
+  skinConcern: 'Preocupación de la piel:',
+  skinType: 'Tipo de piel:',
+  ingredients: 'INGREDIENTES',
+  keyIngredients: 'INGREDIENTES CLAVE',
+  fullIngredients: 'LISTA COMPLETA DE INGREDIENTES',
+  quantity: 'CANTIDAD',
+  when: 'CUÁNDO',
+  where: 'DÓNDE',
+  applicationTip: 'TIP DE APLICACIÓN',
+  productSafety: 'SEGURIDAD DEL PRODUCTO',
+  completeRoutine: 'COMPLETA TU RUTINA',
+}) : ({
+  replenishSave: 'Replenish & Save',
+  selectedSize: 'Selected size',
+  deliverOneTime: 'Deliver one-time only',
+  replenishOffer: 'Get up to 15% off + a free sample with Replenish & Save',
+  addToBag: 'ADD TO BAG',
+  buyNow: 'BUY NOW',
+  pairsBestWith: 'PAIRS BEST WITH',
+  description: 'DESCRIPTION',
+  benefits: 'BENEFITS',
+  recommendedFor: 'RECOMMENDED FOR',
+  skinConcern: 'Skin Concern:',
+  skinType: 'Skin Type:',
+  ingredients: 'INGREDIENTS',
+  keyIngredients: 'KEY INGREDIENTS',
+  fullIngredients: 'FULL INGREDIENT LIST',
+  quantity: 'QUANTITY',
+  when: 'WHEN',
+  where: 'WHERE',
+  applicationTip: 'APPLICATION TIP',
+  productSafety: 'PRODUCT SAFETY',
+  completeRoutine: 'COMPLETE YOUR ROUTINE',
+}))
 
 function discountedUSD(usdAmount) {
   const base = Number(usdAmount) || 0;

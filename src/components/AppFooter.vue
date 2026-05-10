@@ -87,6 +87,7 @@
                     type="email"
                     class="footer-input"
                     placeholder="your@email.com"
+                    @blur="onEmailBlur"
                   />
                 </div>
                 <div class="footer-field">
@@ -191,7 +192,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import logoIconSrc from '../assets/logo -Photoroom.png'
 import { useI18n } from '../lib/i18n.js'
@@ -203,6 +204,35 @@ const phoneVal = ref('')
 const consent = ref(false)
 const formError = ref('')
 const subscribed = ref(false)
+const SUB_KEY = 'pharmaderm_footer_subscribed_email'
+
+function markSubscribed(email) {
+  const safe = String(email || '').trim().toLowerCase()
+  if (!safe) return
+  try { localStorage.setItem(SUB_KEY, safe) } catch {}
+}
+
+function getMarkedSubscribedEmail() {
+  try { return String(localStorage.getItem(SUB_KEY) || '').trim().toLowerCase() } catch { return '' }
+}
+
+async function checkSubscribedByEmail(email) {
+  const safe = String(email || '').trim().toLowerCase()
+  if (!safe) return false
+  const marked = getMarkedSubscribedEmail()
+  if (marked && marked === safe) return true
+  try {
+    const data = await apiFetch('/subscribers/status?email=' + encodeURIComponent(safe))
+    return Boolean(data?.subscribed)
+  } catch {
+    return false
+  }
+}
+
+async function onEmailBlur() {
+  const exists = await checkSubscribedByEmail(emailVal.value)
+  if (exists) subscribed.value = true
+}
 
 async function handleSubmit() {
   formError.value = ''
@@ -220,6 +250,7 @@ async function handleSubmit() {
       },
     })
     if (result?.ok) {
+      markSubscribed(emailVal.value)
       subscribed.value = true
       return
     }
@@ -228,6 +259,20 @@ async function handleSubmit() {
     formError.value = 'Could not submit right now. Please try again.'
   }
 }
+
+onMounted(async () => {
+  try {
+    const rawUser = JSON.parse(localStorage.getItem('pharmaderm_user') || 'null')
+    const preferredEmail = String(rawUser?.email || '').trim().toLowerCase()
+    if (preferredEmail) emailVal.value = preferredEmail
+    const probeEmail = preferredEmail || getMarkedSubscribedEmail()
+    if (probeEmail) {
+      subscribed.value = await checkSubscribedByEmail(probeEmail)
+    }
+  } catch {
+    // ignore hydration errors
+  }
+})
 </script>
 
 <style scoped>

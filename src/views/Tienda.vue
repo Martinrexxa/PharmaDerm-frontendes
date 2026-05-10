@@ -137,17 +137,17 @@
               class="product-card"
             >
               <div class="card-image-wrap" @click="openProduct(product.slug)">
-                <img :src="product.image" :alt="product.name" class="card-image" />
+                <img :src="product.image" :alt="productName(product)" class="card-image" />
               </div>
 
               <div class="card-body">
                 <p class="brand-line">{{ product.brandLabel }}</p>
 
                 <h3 class="product-name" @click="openProduct(product.slug)">
-                  {{ product.name }}
+                  {{ productName(product) }}
                 </h3>
 
-                <p class="product-subtitle">{{ product.subtitle }}</p>
+                <p class="product-subtitle">{{ productSubtitle(product) }}</p>
 
                 <div class="rating-row">
                   <span class="stars">★★★★★</span>
@@ -217,8 +217,24 @@ const router = useRouter();
 const route = useRoute();
 const cart = useCartStore();
 const settings = useSettingsStore();
-const { t } = useI18n();
+const { t, lang } = useI18n();
 const userCurrency = settings.currency;
+
+function localizeField(product, baseKey) {
+  if (!product) return ''
+  if (lang.value === 'es') {
+    return product[`${baseKey}Es`] || product[`${baseKey}_es`] || product[baseKey] || ''
+  }
+  return product[baseKey] || ''
+}
+
+function productName(product) {
+  return localizeField(product, 'name')
+}
+
+function productSubtitle(product) {
+  return localizeField(product, 'subtitle')
+}
 
 // Todos los precios ahora están en USD (lrpCatalog y ceraveCatalog) → convertir a DOP
 function priceDOP(product, sizeLabel) {
