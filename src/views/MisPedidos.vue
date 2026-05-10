@@ -1,30 +1,30 @@
-<template>
+﻿<template>
   <div class="orders-page">
     <div class="container">
       <div class="page-header">
         <button class="back-btn" @click="router.push('/perfil')">
           <span class="material-symbols-outlined">arrow_back</span>
         </button>
-        <h1>My Orders</h1>
+        <h1>{{ isEs ? 'Mis pedidos' : 'My Orders' }}</h1>
       </div>
 
       <div v-if="isLoading" class="loading-state">
         <div class="loading-spinner"></div>
-        <p>Loading your orders...</p>
+        <p>{{ isEs ? 'Cargando tus pedidos...' : 'Loading your orders...' }}</p>
       </div>
 
       <div v-else-if="orders.length === 0" class="empty-state">
         <span class="material-symbols-outlined empty-icon">inventory_2</span>
-        <h2>You don't have any orders yet</h2>
-        <p>When you make your first purchase, you'll see it here.</p>
-        <button class="btn-primary" @click="router.push('/tienda')">Go to store</button>
+        <h2>{{ isEs ? 'AÃºn no tienes pedidos' : "You don't have any orders yet" }}</h2>
+        <p>{{ isEs ? 'Cuando hagas tu primera compra, la verÃ¡s aquÃ­.' : "When you make your first purchase, you'll see it here." }}</p>
+        <button class="btn-primary" @click="router.push('/tienda')">{{ isEs ? 'Ir a la tienda' : 'Go to store' }}</button>
       </div>
 
       <div v-else class="orders-list">
         <div class="policy-hint">
           <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">local_shipping</span>
-          Questions about delivery or returns?
-          <RouterLink to="/shipping-returns" class="policy-link">View Shipping &amp; Returns Policy →</RouterLink>
+          {{ isEs ? '¿Preguntas sobre envíos o devoluciones?' : 'Questions about delivery or returns?' }}
+          <RouterLink to="/shipping-returns" class="policy-link">{{ isEs ? 'Ver política de envíos y devoluciones' : 'View Shipping &amp; Returns Policy' }} ?</RouterLink>
         </div>
 
         <article v-for="order in orders" :key="order.id || order.order_number" class="order-card">
@@ -43,17 +43,17 @@
               <img :src="item.image || fallbackOrderImage" :alt="item.name" />
               <div>
                 <p class="item-name">{{ item.name }}</p>
-                <p class="item-meta">{{ item.size }} × {{ item.quantity }}</p>
+                <p class="item-meta">{{ item.size }} Ã— {{ item.quantity }}</p>
               </div>
             </div>
             <p v-if="(order.items || []).length > 3" class="more-items">
-              +{{ (order.items || []).length - 3 }} more item(s)
+              +{{ (order.items || []).length - 3 }} {{ isEs ? 'producto(s) mÃ¡s' : 'more item(s)' }}
             </p>
           </div>
 
           <div class="order-card__footer">
             <div class="order-totals">
-              <span>Payment method: <strong>{{ paymentLabel(order.payment_method) }}</strong></span>
+              <span>{{ isEs ? 'MÃ©todo de pago' : 'Payment method' }}: <strong>{{ paymentLabel(order.payment_method) }}</strong></span>
               <span class="order-total">Total: <strong>{{ fmtPrice(order.total) }}</strong></span>
             </div>
           </div>
@@ -73,11 +73,14 @@ import { formatPrice, convertPrice } from '../utils/currency.js'
 import orderService from '../services/orderService.js'
 import { lrpCatalog } from '../data/lrpCatalog'
 import { ceraveCatalog } from '../data/ceraveCatalog'
+import { useI18n } from '../lib/i18n.js'
 
 const router = useRouter()
 const history = useHistoryStore()
 const auth = useAuthStore()
 const settings = useSettingsStore()
+const { lang } = useI18n()
+const isEs = computed(() => lang.value === 'es')
 
 const orders = ref([])
 const isLoading = ref(true)
@@ -93,15 +96,19 @@ function fmtPrice(dop) {
 
 function formatDate(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  return new Date(iso).toLocaleDateString(isEs.value ? 'es-DO' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 function statusLabel(status) {
   const map = {
-    confirmed: 'Confirmed', pending: 'Pending', processing: 'Processing',
-    shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled',
+    confirmed: isEs.value ? 'Confirmado' : 'Confirmed',
+    pending: isEs.value ? 'Pendiente' : 'Pending',
+    processing: isEs.value ? 'Procesando' : 'Processing',
+    shipped: isEs.value ? 'Enviado' : 'Shipped',
+    delivered: isEs.value ? 'Entregado' : 'Delivered',
+    cancelled: isEs.value ? 'Cancelado' : 'Cancelled',
   }
-  return map[status] || status || 'Confirmed'
+  return map[status] || status || (isEs.value ? 'Confirmado' : 'Confirmed')
 }
 
 function statusClass(status) {
@@ -113,8 +120,12 @@ function statusClass(status) {
 }
 
 function paymentLabel(method) {
-  const map = { card: 'Card', transfer: 'Bank transfer', cash: 'Cash' }
-  return map[method] || method || 'N/A'
+  const map = {
+    card: isEs.value ? 'Tarjeta' : 'Card',
+    transfer: isEs.value ? 'Transferencia bancaria' : 'Bank transfer',
+    cash: isEs.value ? 'Efectivo' : 'Cash',
+  }
+  return map[method] || method || (isEs.value ? 'N/D' : 'N/A')
 }
 
 function normalizeText(value) {
@@ -286,3 +297,5 @@ onBeforeUnmount(() => {
 .policy-link { color: #16a6e2; font-weight: 600; text-decoration: none; }
 .policy-link:hover { text-decoration: underline; }
 </style>
+
+

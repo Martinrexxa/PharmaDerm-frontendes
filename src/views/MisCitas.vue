@@ -5,32 +5,32 @@
         <button class="back-btn" @click="router.push('/perfil')">
           <span class="material-symbols-outlined">arrow_back</span>
         </button>
-        <h1>My Appointments</h1>
+        <h1>{{ isEs ? 'Mis citas' : 'My Appointments' }}</h1>
         <button class="btn-new-apt" @click="goToBooking">
           <span class="material-symbols-outlined">add</span>
-          New appointment
+          {{ isEs ? 'Nueva cita' : 'New appointment' }}
         </button>
       </div>
 
       <div v-if="isLoading" class="loading-state">
         <div class="loading-spinner"></div>
-        <p>Loading your appointments...</p>
+        <p>{{ isEs ? 'Cargando tus citas...' : 'Loading your appointments...' }}</p>
       </div>
 
       <div v-else-if="fetchError" class="empty-state">
         <span class="material-symbols-outlined empty-icon">warning</span>
-        <h2>Could not load your appointments</h2>
+        <h2>{{ isEs ? 'No se pudieron cargar tus citas' : 'Could not load your appointments' }}</h2>
         <p>{{ fetchError }}</p>
-        <button class="btn-primary" @click="loadAppointments">Retry</button>
+        <button class="btn-primary" @click="loadAppointments">{{ isEs ? 'Reintentar' : 'Retry' }}</button>
       </div>
 
       <div v-else-if="appointments.length === 0" class="empty-state">
         <span class="material-symbols-outlined empty-icon">clinical_notes</span>
-        <h2>You have no scheduled appointments</h2>
-        <p>Book an appointment with a dermatology specialist.</p>
-        <button class="btn-primary" @click="goToBooking">Book appointment</button>
+        <h2>{{ isEs ? 'No tienes citas programadas' : 'You have no scheduled appointments' }}</h2>
+        <p>{{ isEs ? 'Reserva una cita con un especialista en dermatología.' : 'Book an appointment with a dermatology specialist.' }}</p>
+        <button class="btn-primary" @click="goToBooking">{{ isEs ? 'Reservar cita' : 'Book appointment' }}</button>
         <button class="btn-secondary" style="margin-top:0.75rem" @click="router.push('/diagnostics')">
-          Go to diagnostics
+          {{ isEs ? 'Ir a diagnóstico' : 'Go to diagnostics' }}
         </button>
       </div>
 
@@ -48,7 +48,7 @@
             <p class="apt-specialty">{{ specialtyLabel(apt.doctor_specialty || apt.specialty) }}</p>
             <div class="apt-meta-row">
               <span class="apt-meta"><span class="material-symbols-outlined">calendar_month</span>{{ formatDate(apt.scheduled_date) }}</span>
-              <span class="apt-meta"><span class="material-symbols-outlined">schedule</span>{{ apt.scheduled_time || 'To be confirmed' }}</span>
+              <span class="apt-meta"><span class="material-symbols-outlined">schedule</span>{{ apt.scheduled_time || (isEs ? 'Por confirmar' : 'To be confirmed') }}</span>
             </div>
             <div class="apt-meta-row">
               <span class="apt-meta"><span class="material-symbols-outlined">{{ (apt.mode || '').toLowerCase() === 'virtual' ? 'videocam' : 'location_on' }}</span>{{ modalityLabel(apt.mode) }}</span>
@@ -58,10 +58,10 @@
               <em>{{ concernLabel(apt.reason) }}</em>
             </p>
             <p v-if="apt.notes" class="apt-notes">
-              Notes: {{ concernLabel(apt.notes) }}
+              {{ isEs ? 'Notas' : 'Notes' }}: {{ concernLabel(apt.notes) }}
             </p>
             <p v-if="apt.confirmation_code" class="apt-code">
-              Code: <strong>{{ apt.confirmation_code }}</strong>
+              {{ isEs ? 'Código' : 'Code' }}: <strong>{{ apt.confirmation_code }}</strong>
             </p>
           </div>
 
@@ -82,9 +82,12 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/useAuthStore'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
 import { apiFetch } from '../services/apiClient.js'
+import { useI18n } from '../lib/i18n.js'
 
 const router = useRouter()
 const auth = useAuthStore()
+const { lang } = useI18n()
+const isEs = computed(() => lang.value === 'es')
 const userId = computed(() => auth.user?.value?.id || null)
 
 const appointments = ref([])
@@ -103,16 +106,19 @@ watch(userId, async (newUserId) => {
 }, { immediate: true })
 
 function formatDate(iso) {
-  if (!iso) return 'To be confirmed'
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  if (!iso) return isEs.value ? 'Por confirmar' : 'To be confirmed'
+  return new Date(iso).toLocaleDateString(isEs.value ? 'es-DO' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 function aptStatusLabel(status) {
   const map = {
-    pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed',
-    cancelled: 'Cancelled', rescheduled: 'Rescheduled',
+    pending: isEs.value ? 'Pendiente' : 'Pending',
+    confirmed: isEs.value ? 'Confirmada' : 'Confirmed',
+    completed: isEs.value ? 'Completada' : 'Completed',
+    cancelled: isEs.value ? 'Cancelada' : 'Cancelled',
+    rescheduled: isEs.value ? 'Reagendada' : 'Rescheduled',
   }
-  return map[status] || status || 'Pending'
+  return map[status] || status || (isEs.value ? 'Pendiente' : 'Pending')
 }
 
 function aptStatusClass(status) {
@@ -126,9 +132,9 @@ function aptStatusClass(status) {
 function modalityLabel(mode) {
   const m = String(mode || '').toLowerCase()
   if (m === 'virtual') return 'Virtual'
-  if (m === 'presencial') return 'In-person'
-  if (m === 'both' || m === 'ambos') return 'Virtual and In-person'
-  return 'To be confirmed'
+  if (m === 'presencial') return isEs.value ? 'Presencial' : 'In-person'
+  if (m === 'both' || m === 'ambos') return isEs.value ? 'Virtual y presencial' : 'Virtual and In-person'
+  return isEs.value ? 'Por confirmar' : 'To be confirmed'
 }
 
 function appointmentTypeLabel(type) {

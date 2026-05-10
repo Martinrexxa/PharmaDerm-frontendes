@@ -14,8 +14,8 @@
               {{ ui.welcomeBack }}
             </span>
 
-            <h2 class="text-3xl sm:text-4xl font-extrabold mt-3 leading-tight">
-              Hi, {{ auth.displayName.value }}
+              <h2 class="text-3xl sm:text-4xl font-extrabold mt-3 leading-tight">
+              {{ isEs ? 'Hola' : 'Hi' }}, {{ auth.displayName.value }}
             </h2>
 
             <p class="mt-4 text-white/90 text-sm sm:text-base max-w-2xl">
@@ -57,18 +57,18 @@
 
               <div class="min-w-0 flex-1">
                 <p class="text-xs uppercase tracking-[0.2em] pd-muted font-bold">
-                  Main Account
+                  {{ isEs ? 'Cuenta principal' : 'Main Account' }}
                 </p>
                 <h3 class="text-xl font-extrabold mt-1 text-slate-900">
                   {{ auth.displayName.value }}
                 </h3>
                 <p class="text-sm text-slate-500 break-all mt-1">
-                  {{ currentUser?.email || "No email registered" }}
+                  {{ currentUser?.email || (isEs ? 'Sin correo registrado' : 'No email registered') }}
                 </p>
 
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <span class="pd-chip-inline">Active profile</span>
-                  <span class="pd-chip-inline">Skin Care Member</span>
+                  <span class="pd-chip-inline">{{ isEs ? 'Perfil activo' : 'Active profile' }}</span>
+                  <span class="pd-chip-inline">{{ isEs ? 'Miembro Skin Care' : 'Skin Care Member' }}</span>
                 </div>
               </div>
             </div>
@@ -104,7 +104,7 @@
           <article class="pd-card pd-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Orders</p>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'Pedidos' : 'Orders' }}</p>
                 <h3 class="text-2xl font-extrabold mt-2">{{ history.orders.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
@@ -116,7 +116,7 @@
           <article class="pd-card pd-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Appointments</p>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'Citas' : 'Appointments' }}</p>
                 <h3 class="text-2xl font-extrabold mt-2">{{ history.appointments.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
@@ -128,7 +128,7 @@
           <article class="pd-card pd-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Routines</p>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'Rutinas' : 'Routines' }}</p>
                 <h3 class="text-2xl font-extrabold mt-2">{{ history.routines.value.length || history.quizHistory.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
@@ -140,7 +140,7 @@
           <article class="pd-card pd-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Diagnostics</p>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'Diagnósticos' : 'Diagnostics' }}</p>
                 <h3 class="text-2xl font-extrabold mt-2">{{ history.diagnostics.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
@@ -171,14 +171,14 @@
           <article class="pd-card pd-border rounded-2xl p-6 shadow-sm">
             <div class="flex items-center justify-between gap-4 mb-5 flex-wrap">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Profile</p>
-                <h3 class="font-bold text-xl mt-1">My details</h3>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'Perfil' : 'Profile' }}</p>
+                <h3 class="font-bold text-xl mt-1">{{ isEs ? 'Mis datos' : 'My details' }}</h3>
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label class="pd-field">
-                <span>Full name</span>
+                <span>{{ isEs ? 'Nombre completo' : 'Full name' }}</span>
                 <input
                   v-model="editableUser.name"
                   type="text"
@@ -198,7 +198,7 @@
               </label>
 
               <label class="pd-field">
-                <span>Phone</span>
+                <span>{{ isEs ? 'Teléfono' : 'Phone' }}</span>
                 <input
                   v-model="editableUser.phone"
                   type="text"
@@ -208,7 +208,7 @@
               </label>
 
               <label class="pd-field">
-                <span>Date of birth</span>
+                <span>{{ isEs ? 'Fecha de nacimiento' : 'Date of birth' }}</span>
                 <input
                   v-model="editableUser.birth_date"
                   type="date"
@@ -220,7 +220,7 @@
 
             <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               <label class="pd-field">
-                <span>Address</span>
+                <span>{{ isEs ? 'Dirección' : 'Address' }}</span>
                 <input
                   v-model="editableUser.address"
                   type="text"
@@ -230,7 +230,7 @@
               </label>
 
               <label class="pd-field">
-                <span>City</span>
+                <span>{{ isEs ? 'Ciudad' : 'City' }}</span>
                 <input
                   v-model="editableUser.city"
                   type="text"
@@ -249,16 +249,16 @@
 
             <div v-if="editMode" class="flex flex-wrap gap-3 mt-5">
               <label class="pd-secondary-btn cursor-pointer inline-flex items-center justify-center">
-                Change photo
+                {{ isEs ? 'Cambiar foto' : 'Change photo' }}
                 <input type="file" accept="image/*" class="hidden" @change="handleAvatarUpload" />
               </label>
 
               <button type="button" class="pd-primary-btn" :disabled="isSaving" @click="saveProfile">
-                {{ isSaving ? 'Saving...' : t('profile.saveChanges') }}
+                {{ isSaving ? (isEs ? 'Guardando...' : 'Saving...') : t('profile.saveChanges') }}
               </button>
 
               <button type="button" class="pd-secondary-btn" @click="resetEditableUser">
-                Reset
+                {{ isEs ? 'Restablecer' : 'Reset' }}
               </button>
             </div>
           </article>

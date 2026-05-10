@@ -14,11 +14,12 @@
       <div class="diagnostics-hero-bg-overlay"></div>
       <div class="container diagnostics-hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">SKIN DIAGNOSTICS</p>
-          <h1>Refine your skin profile before booking care</h1>
+          <p class="eyebrow">{{ isEs ? 'DIAGNÓSTICO DE PIEL' : 'SKIN DIAGNOSTICS' }}</p>
+          <h1>{{ isEs ? 'Refina tu perfil de piel antes de reservar atención' : 'Refine your skin profile before booking care' }}</h1>
           <p class="hero-text">
-            Your quiz already created an initial skin profile. Now you can add more symptoms,
-            upload reference photos, review your analysis and book the right dermatologist.
+            {{ isEs
+              ? 'Tu quiz ya creó un perfil inicial de piel. Ahora puedes agregar más síntomas, subir fotos de referencia, revisar tu análisis y reservar el dermatólogo indicado.'
+              : 'Your quiz already created an initial skin profile. Now you can add more symptoms, upload reference photos, review your analysis and book the right dermatologist.' }}
           </p>
 
           <div class="hero-actions">
@@ -34,10 +35,10 @@
         <div class="hero-card">
           <div class="status-row">
             <span class="result-badge">{{ caseStatus }}</span>
-            <span class="progress-pill">{{ completionProgress }}% complete</span>
+            <span class="progress-pill">{{ completionProgress }}% {{ isEs ? 'completado' : 'complete' }}</span>
           </div>
 
-          <h3>Case Snapshot</h3>
+          <h3>{{ isEs ? 'Resumen del caso' : 'Case Snapshot' }}</h3>
 
           <div class="summary-list">
             <div class="summary-item">
@@ -59,7 +60,9 @@
           </div>
 
           <p class="hero-card-note">
-            PharmaDerm Diagnostics is a guided skincare tool and does not replace a dermatologist's diagnosis.
+            {{ isEs
+              ? 'PharmaDerm Diagnostics es una herramienta guiada y no reemplaza el diagnóstico de un dermatólogo.'
+              : "PharmaDerm Diagnostics is a guided skincare tool and does not replace a dermatologist's diagnosis." }}
           </p>
         </div>
       </div>
@@ -106,19 +109,19 @@
     <section class="section-white">
       <div class="container">
         <div class="section-heading center">
-          <p class="eyebrow section-eyebrow">QUIZ OVERVIEW</p>
+          <p class="eyebrow section-eyebrow">{{ isEs ? 'RESUMEN DEL QUIZ' : 'QUIZ OVERVIEW' }}</p>
           <h2>{{ t('diagnostics.initialProfile') }}</h2>
-          <p>These values were brought in from your quiz and are now the base for diagnostics.</p>
+          <p>{{ isEs ? 'Estos valores se trajeron desde tu quiz y ahora son la base del diagnóstico.' : 'These values were brought in from your quiz and are now the base for diagnostics.' }}</p>
         </div>
 
         <div class="quiz-summary-grid">
           <div class="summary-card">
-            <h4>Skin Type</h4>
+            <h4>{{ isEs ? 'Tipo de piel' : 'Skin Type' }}</h4>
             <p>{{ formattedSkinType }}</p>
           </div>
 
           <div class="summary-card">
-            <h4>Sensitivity</h4>
+            <h4>{{ isEs ? 'Sensibilidad' : 'Sensitivity' }}</h4>
             <p>{{ formattedSensitivity }}</p>
           </div>
 
@@ -128,19 +131,19 @@
           </div>
 
           <div class="summary-card">
-            <h4>Routine Focus</h4>
-            <p>{{ quizSummary.routineFocus || 'Barrier support and personalized care' }}</p>
+            <h4>{{ isEs ? 'Enfoque de rutina' : 'Routine Focus' }}</h4>
+            <p>{{ quizSummary.routineFocus || (isEs ? 'Soporte de barrera y cuidado personalizado' : 'Barrier support and personalized care') }}</p>
           </div>
         </div>
 
         <div class="case-overview-grid">
           <div v-if="casePhoto" class="selfie-card">
-            <h3>Quiz Reference Selfie</h3>
-            <img :src="casePhoto" alt="Quiz selfie" class="case-photo-preview" />
+            <h3>{{ isEs ? 'Selfie de referencia del quiz' : 'Quiz Reference Selfie' }}</h3>
+            <img :src="casePhoto" :alt="isEs ? 'Selfie del quiz' : 'Quiz selfie'" class="case-photo-preview" />
           </div>
 
           <div class="metrics-card">
-            <h3>Quiz Analysis Metrics</h3>
+            <h3>{{ isEs ? 'Métricas del análisis del quiz' : 'Quiz Analysis Metrics' }}</h3>
 
             <div v-if="quizMetrics.length" class="metric-list">
               <div
@@ -162,7 +165,7 @@
             </div>
 
             <p v-else class="muted-text">
-              Quiz metrics will appear here once they are generated and saved from the quiz.
+              {{ isEs ? 'Las métricas del quiz aparecerán aquí cuando se generen y guarden.' : 'Quiz metrics will appear here once they are generated and saved from the quiz.' }}
             </p>
           </div>
         </div>
@@ -172,25 +175,25 @@
     <section class="section-light" ref="detailsSection">
       <div class="container">
         <div class="section-heading">
-          <p class="eyebrow section-eyebrow">STEP 1</p>
-          <h2>Tell us more about your skin today</h2>
-          <p>Add details the quiz did not fully capture so your case feels more complete.</p>
+          <p class="eyebrow section-eyebrow">{{ isEs ? 'PASO 1' : 'STEP 1' }}</p>
+          <h2>{{ isEs ? 'Cuéntanos más sobre tu piel hoy' : 'Tell us more about your skin today' }}</h2>
+          <p>{{ isEs ? 'Agrega detalles que el quiz no capturó por completo para que tu caso sea más completo.' : 'Add details the quiz did not fully capture so your case feels more complete.' }}</p>
         </div>
 
         <div class="details-layout">
           <div class="form-card">
-            <label class="field-label">Describe what you are experiencing</label>
+            <label class="field-label">{{ isEs ? 'Describe lo que estás experimentando' : 'Describe what you are experiencing' }}</label>
             <textarea
               v-model="form.description"
               rows="6"
-              placeholder="Example: I have small bumps on my cheeks, visible pores around the nose, some redness and occasional tightness after cleansing."
+              :placeholder="isEs ? 'Ejemplo: Tengo pequeños granitos en las mejillas, poros visibles en la nariz, algo de enrojecimiento y tirantez ocasional después de limpiar.' : 'Example: I have small bumps on my cheeks, visible pores around the nose, some redness and occasional tightness after cleansing.'"
             ></textarea>
 
             <div class="form-grid two">
               <div>
-                <label class="field-label">How long has this been happening?</label>
+                <label class="field-label">{{ isEs ? '¿Desde cuándo te pasa esto?' : 'How long has this been happening?' }}</label>
                 <select v-model="form.duration">
-                  <option value="">Select an option</option>
+                  <option value="">{{ isEs ? 'Selecciona una opción' : 'Select an option' }}</option>
                   <option>Just recently</option>
                   <option>1-2 weeks</option>
                   <option>1 month</option>
@@ -200,9 +203,9 @@
               </div>
 
               <div>
-                <label class="field-label">How urgent does it feel?</label>
+                <label class="field-label">{{ isEs ? '¿Qué tan urgente se siente?' : 'How urgent does it feel?' }}</label>
                 <select v-model="form.urgency">
-                  <option value="">Select urgency</option>
+                  <option value="">{{ isEs ? 'Selecciona urgencia' : 'Select urgency' }}</option>
                   <option>Low</option>
                   <option>Medium</option>
                   <option>High</option>
@@ -210,7 +213,7 @@
               </div>
             </div>
 
-            <label class="field-label">Symptoms</label>
+            <label class="field-label">{{ isEs ? 'Síntomas' : 'Symptoms' }}</label>
             <div class="chips-grid">
               <button
                 v-for="symptom in symptomsOptions"
@@ -224,7 +227,7 @@
               </button>
             </div>
 
-            <label class="field-label">Affected areas</label>
+            <label class="field-label">{{ isEs ? 'Áreas afectadas' : 'Affected areas' }}</label>
             <div class="chips-grid">
               <button
                 v-for="area in areaOptions"
@@ -238,7 +241,7 @@
               </button>
             </div>
 
-            <label class="field-label">Top priorities</label>
+            <label class="field-label">{{ isEs ? 'Prioridades principales' : 'Top priorities' }}</label>
             <div class="chips-grid">
               <button
                 v-for="priority in priorityOptions"
@@ -254,9 +257,9 @@
 
             <div class="form-grid two">
               <div>
-                <label class="field-label">Current routine complexity</label>
+                <label class="field-label">{{ isEs ? 'Complejidad de tu rutina actual' : 'Current routine complexity' }}</label>
                 <select v-model="form.routineLevel">
-                  <option value="">Select an option</option>
+                  <option value="">{{ isEs ? 'Selecciona una opción' : 'Select an option' }}</option>
                   <option>Very simple</option>
                   <option>Basic</option>
                   <option>Moderate</option>
@@ -265,9 +268,9 @@
               </div>
 
               <div>
-                <label class="field-label">Have you seen a dermatologist before?</label>
+                <label class="field-label">{{ isEs ? '¿Has visto a un dermatólogo antes?' : 'Have you seen a dermatologist before?' }}</label>
                 <select v-model="form.previousConsult">
-                  <option value="">Select an option</option>
+                  <option value="">{{ isEs ? 'Selecciona una opción' : 'Select an option' }}</option>
                   <option>No</option>
                   <option>Yes, recently</option>
                   <option>Yes, a while ago</option>
@@ -277,9 +280,9 @@
           </div>
 
           <div class="insight-card">
-            <h3>Smart Diagnostic Insight</h3>
+            <h3>{{ isEs ? 'Insight diagnóstico inteligente' : 'Smart Diagnostic Insight' }}</h3>
             <p class="insight-copy">
-              Based on your quiz result and added information, your current case appears to be:
+              {{ isEs ? 'Según tu resultado del quiz y la información agregada, tu caso actual parece ser:' : 'Based on your quiz result and added information, your current case appears to be:' }}
             </p>
 
             <div class="insight-box">
@@ -289,21 +292,21 @@
 
             <div class="mini-points">
               <div>
-                <span>Suggested next step</span>
+                <span>{{ isEs ? 'Siguiente paso sugerido' : 'Suggested next step' }}</span>
                 <strong>{{ generatedInsight.nextStep }}</strong>
               </div>
               <div>
-                <span>Best appointment type</span>
+                <span>{{ isEs ? 'Mejor tipo de cita' : 'Best appointment type' }}</span>
                 <strong>{{ suggestedAppointmentType }}</strong>
               </div>
               <div>
-                <span>Care priority</span>
+                <span>{{ isEs ? 'Prioridad de atención' : 'Care priority' }}</span>
                 <strong>{{ generatedInsight.priority }}</strong>
               </div>
             </div>
 
             <button class="primary-btn full" @click="saveDiagnosticCase" :disabled="isSavingDiagnostic || diagnosticSaved">
-              {{ isSavingDiagnostic ? 'Saving...' : diagnosticSaved ? 'Diagnostic Saved' : 'Save my diagnostic case' }}
+              {{ isSavingDiagnostic ? (isEs ? 'Guardando...' : 'Saving...') : diagnosticSaved ? (isEs ? 'Diagnóstico guardado' : 'Diagnostic Saved') : (isEs ? 'Guardar mi caso diagnóstico' : 'Save my diagnostic case') }}
             </button>
           </div>
         </div>
@@ -313,29 +316,29 @@
     <section class="section-white">
       <div class="container">
         <div class="section-heading">
-          <p class="eyebrow section-eyebrow">STEP 2</p>
-          <h2>Add more reference photos</h2>
-          <p>These images help provide more visual context before the appointment.</p>
+          <p class="eyebrow section-eyebrow">{{ isEs ? 'PASO 2' : 'STEP 2' }}</p>
+          <h2>{{ isEs ? 'Agrega más fotos de referencia' : 'Add more reference photos' }}</h2>
+          <p>{{ isEs ? 'Estas imágenes ayudan a dar más contexto visual antes de la cita.' : 'These images help provide more visual context before the appointment.' }}</p>
         </div>
 
         <div class="upload-card">
           <label class="upload-zone">
             <input type="file" accept="image/*" multiple @change="handleImages" hidden />
             <span class="material-symbols-outlined upload-icon">add_photo_alternate</span>
-            <strong>Upload additional skin photos</strong>
-            <small>Front view, side view, or close-up of the affected area</small>
+            <strong>{{ isEs ? 'Sube fotos adicionales de la piel' : 'Upload additional skin photos' }}</strong>
+            <small>{{ isEs ? 'Vista frontal, lateral o acercamiento del área afectada' : 'Front view, side view, or close-up of the affected area' }}</small>
           </label>
 
           <div v-if="imagePreviews.length" class="preview-grid">
             <div v-for="(image, index) in imagePreviews" :key="index" class="preview-item">
-              <img :src="image" alt="Uploaded preview" />
+              <img :src="image" :alt="isEs ? 'Vista previa subida' : 'Uploaded preview'" />
               <button type="button" class="preview-remove" @click="removeImage(index)">x</button>
             </div>
           </div>
 
           <div class="upload-actions">
             <button class="primary-btn" @click="saveStep2Photos" :disabled="isSavingPhotos || !imagePreviews.length">
-              {{ isSavingPhotos ? 'Saving photos...' : 'Save photos' }}
+              {{ isSavingPhotos ? (isEs ? 'Guardando fotos...' : 'Saving photos...') : (isEs ? 'Guardar fotos' : 'Save photos') }}
             </button>
           </div>
         </div>
@@ -345,14 +348,14 @@
     <section class="section-light">
       <div class="container">
         <div class="section-heading center">
-          <p class="eyebrow section-eyebrow">TEMPORARY CARE DIRECTION</p>
-          <h2>Your pre-consultation routine focus</h2>
-          <p>This is a transitional recommendation based on the quiz and your current diagnostic details.</p>
+          <p class="eyebrow section-eyebrow">{{ isEs ? 'DIRECCIÓN TEMPORAL DE CUIDADO' : 'TEMPORARY CARE DIRECTION' }}</p>
+          <h2>{{ isEs ? 'Tu enfoque de rutina previo a consulta' : 'Your pre-consultation routine focus' }}</h2>
+          <p>{{ isEs ? 'Esta es una recomendación transicional basada en el quiz y tus detalles diagnósticos actuales.' : 'This is a transitional recommendation based on the quiz and your current diagnostic details.' }}</p>
         </div>
 
         <div class="routine-grid">
           <div class="routine-card">
-            <h3>Morning Routine</h3>
+            <h3>{{ isEs ? 'Rutina de mañana' : 'Morning Routine' }}</h3>
             <ul>
               <li v-for="(item, index) in recommendedRoutine.morning" :key="'m' + index">
                 {{ item }}
@@ -361,7 +364,7 @@
           </div>
 
           <div class="routine-card">
-            <h3>Night Routine</h3>
+            <h3>{{ isEs ? 'Rutina de noche' : 'Night Routine' }}</h3>
             <ul>
               <li v-for="(item, index) in recommendedRoutine.night" :key="'n' + index">
                 {{ item }}
@@ -370,7 +373,7 @@
           </div>
 
           <div class="routine-card">
-            <h3>Prioritize</h3>
+            <h3>{{ isEs ? 'Prioriza' : 'Prioritize' }}</h3>
             <ul>
               <li v-for="(item, index) in recommendedRoutine.prioritize" :key="'p' + index">
                 {{ item }}
@@ -379,7 +382,7 @@
           </div>
 
           <div class="routine-card">
-            <h3>Avoid For Now</h3>
+            <h3>{{ isEs ? 'Evita por ahora' : 'Avoid For Now' }}</h3>
             <ul>
               <li v-for="(item, index) in recommendedRoutine.avoid" :key="'a' + index">
                 {{ item }}
@@ -392,10 +395,10 @@
 
     <section class="section-white">
       <div class="container" style="text-align:center;padding:3rem 1rem;">
-        <p class="eyebrow section-eyebrow">NEXT STEP</p>
-        <h2 style="margin-bottom:0.75rem">Ready to book your consultation?</h2>
+        <p class="eyebrow section-eyebrow">{{ isEs ? 'SIGUIENTE PASO' : 'NEXT STEP' }}</p>
+        <h2 style="margin-bottom:0.75rem">{{ isEs ? '¿Listo para reservar tu consulta?' : 'Ready to book your consultation?' }}</h2>
         <p style="color:#64748b;margin-bottom:1.5rem">
-          Save your diagnostic and then choose a specialist for your appointment.
+          {{ isEs ? 'Guarda tu diagnóstico y luego elige un especialista para tu cita.' : 'Save your diagnostic and then choose a specialist for your appointment.' }}
         </p>
         <button class="primary-btn" @click="goToAppointmentBooking">
           {{ t('diagnostics.bookWithSpecialist') }}
@@ -406,11 +409,11 @@
     <section class="section-white disclaimer-section">
       <div class="container">
         <div class="disclaimer-box">
-          <h3>Important notice</h3>
+          <h3>{{ isEs ? 'Aviso importante' : 'Important notice' }}</h3>
           <p>
-            PharmaDerm Diagnostics offers guided skincare insights based on quiz responses,
-            image references and user-reported symptoms. It does not replace diagnosis,
-            treatment or medical advice from a licensed dermatologist.
+            {{ isEs
+              ? 'PharmaDerm Diagnostics ofrece orientación guiada basada en respuestas del quiz, imágenes de referencia y síntomas reportados por el usuario. No reemplaza diagnóstico, tratamiento ni consejo médico de un dermatólogo autorizado.'
+              : 'PharmaDerm Diagnostics offers guided skincare insights based on quiz responses, image references and user-reported symptoms. It does not replace diagnosis, treatment or medical advice from a licensed dermatologist.' }}
           </p>
         </div>
       </div>
@@ -419,10 +422,10 @@
     <section class="final-cta">
       <div class="container final-cta-inner">
         <div>
-          <p class="eyebrow light">PHARMADERM CARE</p>
-          <h2>Care designed around your skin profile</h2>
+          <p class="eyebrow light">{{ isEs ? 'CUIDADO PHARMADERM' : 'PHARMADERM CARE' }}</p>
+          <h2>{{ isEs ? 'Cuidado diseñado alrededor de tu perfil de piel' : 'Care designed around your skin profile' }}</h2>
           <p>
-            Build your case, connect with specialists and refine your skincare experience.
+            {{ isEs ? 'Construye tu caso, conéctate con especialistas y mejora tu experiencia de cuidado.' : 'Build your case, connect with specialists and refine your skincare experience.' }}
           </p>
         </div>
 
@@ -492,37 +495,37 @@ export default {
         previousConsult: "",
       },
       symptomsOptions: [
-        "Redness",
-        "Itching",
-        "Dry patches",
-        "Flaking",
-        "Acne",
-        "Burning sensation",
-        "Oiliness",
-        "Tightness",
-        "Texture",
-        "Dark spots"
+        "Enrojecimiento",
+        "Picazón",
+        "Parches secos",
+        "Descamación",
+        "Acné",
+        "Sensación de ardor",
+        "Grasa",
+        "Tirantez",
+        "Textura",
+        "Manchas"
       ],
       areaOptions: [
-        "Forehead",
-        "Cheeks",
-        "Nose",
-        "Chin",
-        "Jawline",
-        "Around eyes",
-        "Neck",
-        "Back",
-        "Chest"
+        "Frente",
+        "Mejillas",
+        "Nariz",
+        "Mentón",
+        "Mandíbula",
+        "Alrededor de los ojos",
+        "Cuello",
+        "Espalda",
+        "Pecho"
       ],
       priorityOptions: [
-        "Acne control",
-        "Barrier repair",
-        "Hydration",
-        "Texture smoothing",
-        "Dark spots",
-        "Sensitivity",
-        "Pore appearance",
-        "Redness relief"
+        "Control de acné",
+        "Reparación de barrera",
+        "Hidratación",
+        "Suavizar textura",
+        "Manchas",
+        "Sensibilidad",
+        "Apariencia de poros",
+        "Alivio de rojez"
       ],
       toastMsg: '',
       _toastTimer: null,
@@ -540,6 +543,9 @@ export default {
   },
 
   computed: {
+    isEs() {
+      return this.lang === 'es'
+    },
     hasQuiz() {
       // quizSummary.completed is set by loadQuizSummary (Supabase or localStorage)
       if (this.quizSummary?.completed) return true
@@ -552,23 +558,23 @@ export default {
 
     formattedSkinType() {
       const map = {
-        seca: "Dry skin",
-        normal: "Normal skin",
-        mixta: "Combination skin",
-        grasa: "Oily skin"
+        seca: this.isEs ? "Piel seca" : "Dry skin",
+        normal: this.isEs ? "Piel normal" : "Normal skin",
+        mixta: this.isEs ? "Piel mixta" : "Combination skin",
+        grasa: this.isEs ? "Piel grasa" : "Oily skin"
       };
-      return map[this.quizSummary.skinType] || this.quizSummary.skinType || "Not available";
+      return map[this.quizSummary.skinType] || this.quizSummary.skinType || (this.isEs ? "No disponible" : "Not available");
     },
 
     formattedSensitivity() {
       const raw = (this.quizSummary.sensitivity || "").toLowerCase();
       const map = {
-        "ninguna sensibilidad": "No sensitivity",
-        "baja sensibilidad": "Low sensitivity",
-        "sensibilidad media": "Medium sensitivity",
-        "sensibilidad alta": "High sensitivity"
+        "ninguna sensibilidad": this.isEs ? "Sin sensibilidad" : "No sensitivity",
+        "baja sensibilidad": this.isEs ? "Sensibilidad baja" : "Low sensitivity",
+        "sensibilidad media": this.isEs ? "Sensibilidad media" : "Medium sensitivity",
+        "sensibilidad alta": this.isEs ? "Sensibilidad alta" : "High sensitivity"
       };
-      return map[raw] || this.quizSummary.sensitivity || "Not available";
+      return map[raw] || this.quizSummary.sensitivity || (this.isEs ? "No disponible" : "Not available");
     },
 
     quizMetrics() {
@@ -587,7 +593,7 @@ export default {
       const code = this.mainConcernCode;
       if (code) return this.formatConcern(code);
       if (this.form.priorities.length) return this.form.priorities[0];
-      return "Not specified";
+      return this.isEs ? "No especificado" : "Not specified";
     },
 
     detailsCompleted() {
@@ -609,10 +615,10 @@ export default {
     },
 
     caseStatus() {
-      if (this.diagnosticSaved) return "Diagnostic saved";
-      if (this.detailsCompleted) return "Under review";
+      if (this.diagnosticSaved) return this.isEs ? "Diagnóstico guardado" : "Diagnostic saved";
+      if (this.detailsCompleted) return this.isEs ? "En revisión" : "Under review";
       if (this.quizCompleted) return "Quiz importado";
-      return "Nuevo caso";
+      return this.isEs ? "Nuevo caso" : "New case";
     },
 
     suggestedAppointmentType() {
@@ -621,7 +627,7 @@ export default {
         this.form.symptoms.includes("Burning sensation") ||
         this.form.symptoms.includes("Flaking");
 
-      return needsInPerson ? "In person consultation" : "Virtual consultation";
+      return needsInPerson ? (this.isEs ? "Consulta presencial" : "In person consultation") : (this.isEs ? "Consulta virtual" : "Virtual consultation");
     },
 
     generatedInsight() {
@@ -818,7 +824,7 @@ export default {
         acne: 'Acne',
         rojez: 'Redness',
       };
-      return map[key] || value || 'Not specified';
+      return map[key] || value || (this.isEs ? 'No especificado' : 'Not specified');
     },
 
     toggleSymptom(value) {
@@ -863,10 +869,6 @@ export default {
 
       // Persist on save step through backend endpoint.
     },
-    isEs() {
-      return this.lang === 'es';
-    },
-
     removeImage(index) {
       this.imagePreviews.splice(index, 1);
     },
