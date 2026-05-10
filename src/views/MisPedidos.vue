@@ -15,8 +15,8 @@
 
       <div v-else-if="orders.length === 0" class="empty-state">
         <span class="material-symbols-outlined empty-icon">inventory_2</span>
-        <h2>{{ isEs ? 'AÃºn no tienes pedidos' : "You don't have any orders yet" }}</h2>
-        <p>{{ isEs ? 'Cuando hagas tu primera compra, la verÃ¡s aquÃ­.' : "When you make your first purchase, you'll see it here." }}</p>
+        <h2>{{ isEs ? 'Aún no tienes pedidos' : "You don't have any orders yet" }}</h2>
+        <p>{{ isEs ? 'Cuando hagas tu primera compra, la verás aquí.' : "When you make your first purchase, you'll see it here." }}</p>
         <button class="btn-primary" @click="router.push('/tienda')">{{ isEs ? 'Ir a la tienda' : 'Go to store' }}</button>
       </div>
 
@@ -24,7 +24,7 @@
         <div class="policy-hint">
           <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">local_shipping</span>
           {{ isEs ? '¿Preguntas sobre envíos o devoluciones?' : 'Questions about delivery or returns?' }}
-          <RouterLink to="/shipping-returns" class="policy-link">{{ isEs ? 'Ver política de envíos y devoluciones' : 'View Shipping &amp; Returns Policy' }} ?</RouterLink>
+          <RouterLink to="/shipping-returns" class="policy-link">{{ isEs ? 'Ver política de envíos y devoluciones' : 'View Shipping &amp; Returns Policy' }} →</RouterLink>
         </div>
 
         <article v-for="order in orders" :key="order.id || order.order_number" class="order-card">
@@ -43,17 +43,17 @@
               <img :src="item.image || fallbackOrderImage" :alt="item.name" />
               <div>
                 <p class="item-name">{{ item.name }}</p>
-                <p class="item-meta">{{ item.size }} Ã— {{ item.quantity }}</p>
+                <p class="item-meta">{{ item.size }} × {{ item.quantity }}</p>
               </div>
             </div>
             <p v-if="(order.items || []).length > 3" class="more-items">
-              +{{ (order.items || []).length - 3 }} {{ isEs ? 'producto(s) mÃ¡s' : 'more item(s)' }}
+              +{{ (order.items || []).length - 3 }} {{ isEs ? 'producto(s) más' : 'more item(s)' }}
             </p>
           </div>
 
           <div class="order-card__footer">
             <div class="order-totals">
-              <span>{{ isEs ? 'MÃ©todo de pago' : 'Payment method' }}: <strong>{{ paymentLabel(order.payment_method) }}</strong></span>
+              <span>{{ isEs ? 'Método de pago' : 'Payment method' }}: <strong>{{ paymentLabel(order.payment_method) }}</strong></span>
               <span class="order-total">Total: <strong>{{ fmtPrice(order.total) }}</strong></span>
             </div>
           </div>
