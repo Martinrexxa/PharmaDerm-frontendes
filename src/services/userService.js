@@ -194,7 +194,7 @@ export const userService = {
 
   async loadAddressesFromBackend() {
     try {
-      const data = await apiFetch('/adress')
+      const data = await apiFetch('/adresses')
       const items = Array.isArray(data?.items) ? data.items : []
       if (items.length) {
         storageService.set('addresses', items)
@@ -211,7 +211,7 @@ export const userService = {
 
     // Backend mode first
     try {
-      const backend = await apiFetch('/adress', {
+      const backend = await apiFetch('/adresses', {
         method: 'PUT',
         body: {
           label: address.label || 'My address',
