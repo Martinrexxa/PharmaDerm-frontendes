@@ -4,6 +4,7 @@ import { userService } from '../services/userService.js'
 import storageService from '../services/storageService.js'
 import { loadHistoryForUser, clearHistory } from './useHistoryStore.js'
 import { initCartForUser, clearCartForUser } from './useCartStore.js'
+import { apiFetch } from '../services/apiClient.js'
 
 // â”€â”€â”€ Singleton state (shared across all imports) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const user      = ref(null)    // public.users profile row
@@ -99,9 +100,21 @@ export function useAuthStore() {
         user.value    = rawUser ? JSON.parse(rawUser) : null
         session.value = rawSess ? JSON.parse(rawSess) : null
         if (user.value?.id || user.value?.email) {
-          storageService.setCurrentUser(user.value.id || user.value.email)
-          await loadHistoryForUser(user.value.id || user.value.email)
+          const uid = user.value.id || user.value.email
+          storageService.setCurrentUser(uid)
+          await loadHistoryForUser(uid)
           await initCartForUser()
+          try {
+            const backendSettings = await apiFetch('/user/settings')
+            settings.value = backendSettings
+            _applySettings({
+              language: backendSettings?.language,
+              country_code: backendSettings?.country,
+              currency: backendSettings?.currency,
+            })
+          } catch {
+            // keep local settings if backend settings are not available
+          }
         }
       } catch {
         _clearState()
@@ -321,6 +334,26 @@ export function useAuthStore() {
   // â”€â”€ updateSettings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function updateSettings(data) {
+    const hasBackendToken = Boolean(session.value?.token)
+    if (hasBackendToken) {
+      const payload = {
+        language: data?.language ?? settings.value?.language ?? storageService.get('settings', {})?.language ?? 'es',
+        country: data?.country ?? settings.value?.country ?? storageService.get('settings', {})?.country ?? 'DO',
+        currency: data?.currency ?? settings.value?.currency ?? storageService.get('settings', {})?.currency ?? 'DOP',
+      }
+      try {
+        const updated = await apiFetch('/user/settings', { method: 'PUT', body: payload })
+        settings.value = updated
+        _applySettings({
+          language: updated?.language,
+          country_code: updated?.country,
+          currency: updated?.currency,
+        })
+        return settings.value
+      } catch {
+        // fallback to local below
+      }
+    }
     if (isSupabaseConfigured && user.value) {
       const updated = await userService.updateUserSettings(user.value.id, data)
       settings.value = updated

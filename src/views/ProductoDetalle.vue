@@ -312,8 +312,6 @@ const addToCart = (item) => {
     priceRD: Math.round(convertPrice(usd, 'USD', 'DOP')),
     mode,
   });
-
-  router.push("/carrito");
 };
 
 const buyNow = (item) => {

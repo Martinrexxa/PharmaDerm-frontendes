@@ -251,6 +251,7 @@ import { useHistoryStore } from '../stores/useHistoryStore'
 import { estimateOrderDelivery, sendOrderConfirmationEmail } from '../services/emailService.js'
 import orderService from '../services/orderService.js'
 import userService from '../services/userService.js'
+import { apiFetch } from '../services/apiClient.js'
 import { useI18n } from '../lib/i18n.js'
 import { formatPrice, convertPrice } from '../utils/currency.js'
 import { getShippingCost } from '../utils/delivery.js'
@@ -475,8 +476,13 @@ async function placeOrder() {
 
   const userId = user.value?.id
   if (userId) {
-    withTimeout(orderService.saveOrderToSupabase(orderData, userId), 4000, 'Save order to Supabase')
-      .catch((error) => console.warn('[Checkout] Supabase save failed:', error))
+    try {
+      await withTimeout(apiFetch('/orders', { method: 'POST', body: orderData }), 6000, 'Save order to backend')
+    } catch (error) {
+      console.warn('[Checkout] Backend order save failed:', error)
+      withTimeout(orderService.saveOrderToSupabase(orderData, userId), 4000, 'Save order to Supabase')
+        .catch((supabaseError) => console.warn('[Checkout] Supabase save failed:', supabaseError))
+    }
   }
 
   clearCart()
@@ -486,35 +492,55 @@ async function placeOrder() {
     .join('\n')
   const estimatedDelivery = estimateOrderDelivery(orderData)
 
-  withTimeout(sendOrderConfirmationEmail({
-    to_email: orderData.customer_email,
-    to_name: orderData.customer_name,
-    order_id: orderData.id,
-    order_number: orderData.order_number,
-    order_total: fmtCurrency(orderData.total),
-    order_status: orderData.status,
-    payment_method: orderData.payment_method,
-    payment_details: resolvePaymentDetails(),
-    delivery_method: orderData.delivery_method,
-    estimated_delivery: estimatedDelivery,
-    products: productsSummary,
-    shipping_address: [orderData.address, orderData.city, orderData.country_code].filter(Boolean).join(', '),
-    support_email: 'soporte@pharmadermrd.com',
-    reply_to: 'soporte@pharmadermrd.com',
-  }, lang.value), 4000, 'Order confirmation email')
-    .then((emailResult) => {
-      if (emailResult.ok) {
-        emailStatusMsg.value = 'Order confirmed. We sent the confirmation to your email.'
-      } else if (emailResult.simulated) {
-        emailStatusMsg.value = emailResult.message || 'Order saved successfully, but the confirmation email is not configured.'
-      } else {
-        emailStatusMsg.value = emailResult.message || 'Order saved successfully, but we could not send the confirmation email.'
-      }
-    })
-    .catch((error) => {
-      console.warn('[Checkout] Order email failed:', error)
-      emailStatusMsg.value = 'Order saved successfully, but we could not send the confirmation email.'
-    })
+  withTimeout((async () => {
+    try {
+      const backendEmail = await apiFetch('/email/order', {
+        method: 'POST',
+        body: {
+          to_email: orderData.customer_email,
+          to_name: orderData.customer_name,
+          order_number: orderData.order_number,
+          order_total: fmtCurrency(orderData.total),
+          payment_method: orderData.payment_method,
+          delivery_method: orderData.delivery_method,
+          estimated_delivery: estimatedDelivery,
+          products: productsSummary,
+          shipping_address: [orderData.address, orderData.city, orderData.country_code].filter(Boolean).join(', '),
+        }
+      })
+      return { ok: !!backendEmail?.ok }
+    } catch {
+      return sendOrderConfirmationEmail({
+        to_email: orderData.customer_email,
+        to_name: orderData.customer_name,
+        order_id: orderData.id,
+        order_number: orderData.order_number,
+        order_total: fmtCurrency(orderData.total),
+        order_status: orderData.status,
+        payment_method: orderData.payment_method,
+        payment_details: resolvePaymentDetails(),
+        delivery_method: orderData.delivery_method,
+        estimated_delivery: estimatedDelivery,
+        products: productsSummary,
+        shipping_address: [orderData.address, orderData.city, orderData.country_code].filter(Boolean).join(', '),
+        support_email: 'soporte@pharmadermrd.com',
+        reply_to: 'soporte@pharmadermrd.com',
+      }, lang.value)
+    }
+  })(), 8000, 'Order confirmation email')
+  .then((emailResult) => {
+    if (emailResult.ok) {
+      emailStatusMsg.value = 'Order confirmed. We sent the confirmation to your email.'
+    } else if (emailResult.simulated) {
+      emailStatusMsg.value = emailResult.message || 'Order saved successfully, but the confirmation email is not configured.'
+    } else {
+      emailStatusMsg.value = emailResult.message || 'Order saved successfully, but we could not send the confirmation email.'
+    }
+  })
+  .catch((error) => {
+    console.warn('[Checkout] Order email failed:', error)
+    emailStatusMsg.value = 'Order saved successfully, but we could not send the confirmation email.'
+  })
 
   paymentStep.value = 'success'
   await delay(900)
