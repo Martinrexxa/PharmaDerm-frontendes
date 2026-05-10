@@ -24,7 +24,7 @@
         <div class="policy-hint">
           <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">local_shipping</span>
           {{ isEs ? '¿Preguntas sobre envíos o devoluciones?' : 'Questions about delivery or returns?' }}
-          <RouterLink to="/shipping-returns" class="policy-link">{{ isEs ? 'Ver política de envíos y devoluciones' : 'View Shipping &amp; Returns Policy' }} →</RouterLink>
+          <RouterLink to="/shipping-returns" class="policy-link">{{ isEs ? 'Ver política de envíos y devoluciones' : 'View Shipping & Returns Policy' }} →</RouterLink>
         </div>
 
         <article v-for="order in orders" :key="order.id || order.order_number" class="order-card">

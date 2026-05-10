@@ -495,37 +495,37 @@ export default {
         previousConsult: "",
       },
       symptomsOptions: [
-        "Enrojecimiento",
-        "Picazón",
-        "Parches secos",
-        "Descamación",
-        "Acné",
-        "Sensación de ardor",
-        "Grasa",
-        "Tirantez",
-        "Textura",
-        "Manchas"
+        "Redness",
+        "Itching",
+        "Dry patches",
+        "Flaking",
+        "Acne",
+        "Burning sensation",
+        "Oiliness",
+        "Tightness",
+        "Texture",
+        "Dark spots"
       ],
       areaOptions: [
-        "Frente",
-        "Mejillas",
-        "Nariz",
-        "Mentón",
-        "Mandíbula",
-        "Alrededor de los ojos",
-        "Cuello",
-        "Espalda",
-        "Pecho"
+        "Forehead",
+        "Cheeks",
+        "Nose",
+        "Chin",
+        "Jawline",
+        "Around eyes",
+        "Neck",
+        "Back",
+        "Chest"
       ],
       priorityOptions: [
-        "Control de acné",
-        "Reparación de barrera",
-        "Hidratación",
-        "Suavizar textura",
-        "Manchas",
-        "Sensibilidad",
-        "Apariencia de poros",
-        "Alivio de rojez"
+        "Acne control",
+        "Barrier repair",
+        "Hydration",
+        "Texture smoothing",
+        "Dark spots",
+        "Sensitivity",
+        "Pore appearance",
+        "Redness relief"
       ],
       toastMsg: '',
       _toastTimer: null,
@@ -617,7 +617,7 @@ export default {
     caseStatus() {
       if (this.diagnosticSaved) return this.isEs ? "Diagnóstico guardado" : "Diagnostic saved";
       if (this.detailsCompleted) return this.isEs ? "En revisión" : "Under review";
-      if (this.quizCompleted) return "Quiz importado";
+      if (this.quizCompleted) return this.isEs ? "Quiz importado" : "Quiz imported";
       return this.isEs ? "Nuevo caso" : "New case";
     },
 
