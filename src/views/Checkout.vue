@@ -244,6 +244,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/useCartStore'
+import { initCartForUser } from '../stores/useCartStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { useHistoryStore } from '../stores/useHistoryStore'
@@ -532,6 +533,7 @@ async function placeOrder() {
 }
 
 onMounted(() => {
+  initCartForUser().catch(() => {})
   nextTick(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }))
   if (user.value) {
     form.value.name = user.value.name || `${user.value.firstName || ''} ${user.value.lastName || ''}`.trim()

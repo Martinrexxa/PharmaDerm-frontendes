@@ -440,10 +440,10 @@ import { getProductsByQuizResult } from '../data/productCatalog';
 import { convertPrice } from '../utils/currency';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js';
 import { getCurrentUserIdentity } from '../lib/currentUser.js';
-import { apiFetch } from '../services/apiClient.js';
 import { sendRoutineByEmail as emailRoutine, emailServiceConfigured } from '../services/emailService.js';
 import TransparentImg from '../components/TransparentImg.vue';
 import { useI18n } from '../lib/i18n.js';
+import { apiFetch } from '../services/apiClient.js';
 import { withTimeout } from '../utils/async.js';
 
 const router = useRouter();
@@ -1013,11 +1013,6 @@ watch(step, async (nextStep) => {
 }, { immediate: true })
 
 async function sendRoutineByEmail() {
-  // FASE 10 — send routine via EmailJS (static import)
-  if (!emailServiceConfigured) {
-    showToast('The email service is not configured yet.')
-    return
-  }
   try {
     let email = null
     try {
@@ -1036,7 +1031,29 @@ async function sendRoutineByEmail() {
       .filter((v, i, arr) => arr.indexOf(v) === i)
       .join(', ')
 
-    const result = await withTimeout(emailRoutine({
+    let result = null
+    try {
+      result = await withTimeout(apiFetch('/email/routine', {
+        method: 'POST',
+        body: {
+          to_email: email,
+          to_name: userName,
+          skin_type: answers.skinType || suggestedSkinType.value,
+          diagnosis: concernTitle(analysis.value.primaryConcern) || '',
+          morning_routine: morning,
+          night_routine: night,
+          recommended_products: recommended,
+          routine_id: Date.now(),
+        }
+      }), 12000, 'Routine email backend')
+      result = { ok: !!result?.ok }
+    } catch {
+      // Fallback to EmailJS
+      if (!emailServiceConfigured) {
+        showToast('The email service is not configured yet.')
+        return
+      }
+      result = await withTimeout(emailRoutine({
       to_email: email,
       to_name: userName,
       skin_type: answers.skinType || suggestedSkinType.value,
@@ -1046,7 +1063,8 @@ async function sendRoutineByEmail() {
       recommended_products: recommended,
       reply_to: 'soporte@pharmadermrd.com',
       routine_id: Date.now(),
-    }, 'es'), 12000, 'Routine email')
+      }, 'es'), 12000, 'Routine email')
+    }
     showToast(
       result.ok
         ? 'Routine sent to your email.'

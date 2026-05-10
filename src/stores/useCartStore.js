@@ -47,6 +47,20 @@ _loadLocal()
 
 export async function initCartForUser() {
   _loadLocal()
+  // If user-scoped cart is empty but a legacy/global cart exists, migrate it.
+  try {
+    if ((!items.value || !items.value.length)) {
+      const globalRaw = localStorage.getItem('pharmaderm_cart')
+      const globalItems = globalRaw ? JSON.parse(globalRaw) : []
+      if (Array.isArray(globalItems) && globalItems.length) {
+        items.value = globalItems
+        _save()
+        localStorage.removeItem('pharmaderm_cart')
+      }
+    }
+  } catch {
+    // ignore migration errors
+  }
   await _loadFromBackend()
 }
 

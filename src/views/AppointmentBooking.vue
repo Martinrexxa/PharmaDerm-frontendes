@@ -505,6 +505,7 @@ async function bookAppointment() {
     }
 
     history.saveAppointment?.({ ...savedAppointment, doctor_name: selectedDoctor.value.name })
+    window.dispatchEvent(new CustomEvent('pd:appointments-updated'))
     const confirmationUrl = buildAppointmentConfirmationUrl(savedAppointment)
 
     const currentUser = auth.user?.value || {}
@@ -517,7 +518,38 @@ async function bookAppointment() {
 
     try {
       if (userEmail) {
-        withTimeout(sendAppointmentConfirmationEmail({
+        let sentViaBackend = false
+        try {
+          const backendMail = await apiFetch('/email/appointment', {
+            method: 'POST',
+            body: {
+              to_email: userEmail,
+              to_name: userName,
+              appointment_id: savedAppointment.id || aptData.confirmation_code,
+              confirmation_code: savedAppointment.confirmation_code || aptData.confirmation_code,
+              appointment_date: savedAppointment.scheduled_date || aptData.scheduled_date,
+              appointment_time: savedAppointment.scheduled_time || aptData.scheduled_time || (isEs.value ? 'Pendiente de confirmacion' : 'Pending confirmation'),
+              appointment_type: appointmentTypeLabel(savedAppointment.appointment_type || aptData.appointment_type),
+              appointment_mode: savedAppointment.mode || aptData.mode,
+              appointment_reason: savedAppointment.reason || aptData.reason || (isEs.value ? 'Consulta dermatologica' : 'Dermatology consultation'),
+              appointment_notes: savedAppointment.notes || aptData.notes || '',
+              appointment_urgency: savedAppointment.urgency || aptData.urgency || 'normal',
+              appointment_status: savedAppointment.status || aptData.status || 'pending',
+              dermatologist_id: savedAppointment.dermatologist_id || aptData.dermatologist_id,
+              doctor_name: selectedDoctor.value?.name || '',
+              doctor_specialty: specialtyLabel(selectedDoctor.value?.specialty) || '',
+              doctor_location: selectedDoctor.value?.location || '',
+              analysis_id: savedAppointment.analysis_id || aptData.analysis_id || '',
+              confirmation_url: confirmationUrl,
+            },
+          })
+          sentViaBackend = !!backendMail?.ok
+        } catch {
+          sentViaBackend = false
+        }
+
+        if (!sentViaBackend) {
+          withTimeout(sendAppointmentConfirmationEmail({
           to_email: userEmail,
           to_name: userName,
           appointment_id: savedAppointment.id || aptData.confirmation_code,
@@ -547,6 +579,7 @@ async function bookAppointment() {
           .catch((emailError) => {
             console.warn('[AppointmentBooking] Appointment email failed:', emailError?.message || emailError)
           })
+        }
       } else {
         console.warn('[AppointmentBooking] No appointment email was sent because the user has no email.')
       }

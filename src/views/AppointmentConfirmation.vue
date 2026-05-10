@@ -49,7 +49,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
+import { supabase, isSupabaseConfigured, API_BASE_URL } from '../lib/supabaseClient.js'
 import { withTimeout } from '../utils/async.js'
 import logoIconSrc from '../assets/logo -Photoroom.png'
 
@@ -152,6 +152,22 @@ async function confirmAppointment() {
   if (!appointmentId.value || !code.value) {
     state.value = 'invalid'
     return
+  }
+
+  // Backend public confirmation flow first.
+  try {
+    if (API_BASE_URL && !String(API_BASE_URL).includes('localhost')) {
+      const res = await fetch(`${API_BASE_URL}/appointments/confirm?appointment_id=${encodeURIComponent(appointmentId.value)}&code=${encodeURIComponent(code.value)}`)
+      const payload = await res.json().catch(() => ({}))
+      const st = payload?.status
+      if (st === 'success') { appointment.value = payload.appointment || null; state.value = 'success'; return }
+      if (st === 'already') { appointment.value = payload.appointment || null; state.value = 'already'; return }
+      if (st === 'not_found') { state.value = 'notFound'; return }
+      if (st === 'locked') { appointment.value = payload.appointment || null; state.value = 'locked'; return }
+      if (st === 'invalid') { state.value = 'invalid'; return }
+    }
+  } catch {
+    // fallback to Supabase flow
   }
 
   if (!isSupabaseConfigured) {

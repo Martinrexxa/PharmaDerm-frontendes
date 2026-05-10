@@ -775,6 +775,12 @@ export default {
     await this.loadQuizSummary();
     await this.loadSavedDiagnosticCase();
     await this.loadAppointmentProgress();
+    window.addEventListener('focus', this.loadAppointmentProgress);
+    window.addEventListener('pd:appointments-updated', this.loadAppointmentProgress);
+  },
+  beforeUnmount() {
+    window.removeEventListener('focus', this.loadAppointmentProgress);
+    window.removeEventListener('pd:appointments-updated', this.loadAppointmentProgress);
   },
 
   methods: {
