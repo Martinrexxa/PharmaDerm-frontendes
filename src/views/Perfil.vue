@@ -174,13 +174,6 @@
                 <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">Profile</p>
                 <h3 class="font-bold text-xl mt-1">My details</h3>
               </div>
-
-              <button
-                type="button"
-                class="pd-outline-btn"
-                @click="toggleEditMode"
-              >
-              </button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -772,6 +765,12 @@ const maxBirthDate = computed(() => {
 
 function _buildEditable(u) {
   const src = u || {}
+  const rawBirth = src.birth_date || src.birthDate || ''
+  const birthDate = rawBirth
+    ? String(rawBirth).includes('T')
+      ? String(rawBirth).split('T')[0]
+      : String(rawBirth).slice(0, 10)
+    : ''
   let address = src.address || ''
   let city = src.city || ''
   if (!address) {
@@ -788,7 +787,7 @@ function _buildEditable(u) {
     name: `${src.first_name || ''} ${src.last_name || ''}`.trim() || src.name || '',
     email: src.email || '',
     phone: src.phone || '',
-    birth_date: src.birth_date || '',
+    birth_date: birthDate,
     address,
     city,
     avatar: src.avatar || '',
