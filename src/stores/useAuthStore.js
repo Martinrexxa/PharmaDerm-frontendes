@@ -167,6 +167,9 @@ export function useAuthStore() {
               Email: email,
               Telefono: phone,
               Contrasena: password,
+              birth_date: birthDate || null,
+              BirthDate: birthDate || null,
+              FechaNacimiento: birthDate || null,
             }),
           })
 

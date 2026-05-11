@@ -781,6 +781,7 @@ export default {
     await this.loadQuizSummary();
     await this.loadSavedDiagnosticCase();
     await this.loadAppointmentProgress();
+    this.applyPostAppointmentResetIfNeeded();
     window.addEventListener('focus', this.loadAppointmentProgress);
     window.addEventListener('pd:appointments-updated', this.loadAppointmentProgress);
   },
@@ -790,6 +791,31 @@ export default {
   },
 
   methods: {
+    resetDiagnosticOptionsForm() {
+      this.form = {
+        description: "",
+        duration: "",
+        urgency: "",
+        symptoms: [],
+        areas: [],
+        priorities: [],
+        routineLevel: "",
+        previousConsult: "",
+      };
+      this.imagePreviews = [];
+      this.tempPhotos = [];
+      this.diagnosticSaved = false;
+      this.latestDiagnosisId = null;
+    },
+    applyPostAppointmentResetIfNeeded() {
+      const userId = this._authStore?.user?.value?.id || this._authStore?.user?.value?.email || null;
+      if (!userId) return;
+      const key = `pharmaderm_diag_reset_pending_${userId}`;
+      const pending = localStorage.getItem(key) === '1';
+      if (!pending || !this.appointmentCompleted) return;
+      this.resetDiagnosticOptionsForm();
+      localStorage.removeItem(key);
+    },
     async loadAppointmentProgress() {
       try {
         const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');

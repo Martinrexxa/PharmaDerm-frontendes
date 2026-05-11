@@ -238,6 +238,12 @@ const form = ref({
   reason: ''
 })
 
+function markDiagnosticsResetPending() {
+  const userId = auth.user?.value?.id || auth.user?.value?.email || null
+  if (!userId) return
+  localStorage.setItem(`pharmaderm_diag_reset_pending_${userId}`, '1')
+}
+
 const appointmentTypes = computed(() => [
   { key: 'consulta_general', label: isEs.value ? 'Consulta general' : 'General consultation' },
   { key: 'seguimiento', label: isEs.value ? 'Seguimiento' : 'Follow-up' },
@@ -506,6 +512,7 @@ async function bookAppointment() {
 
     history.saveAppointment?.({ ...savedAppointment, doctor_name: selectedDoctor.value.name })
     window.dispatchEvent(new CustomEvent('pd:appointments-updated'))
+    markDiagnosticsResetPending()
     const confirmationUrl = buildAppointmentConfirmationUrl(savedAppointment)
 
     const currentUser = auth.user?.value || {}
