@@ -75,7 +75,7 @@
               <div class="form-grid">
                 <div class="form-field full">
                   <label>Full Name <span class="req">*</span></label>
-                  <input v-model="form.name" type="text" placeholder="Your full name" />
+                  <input v-model="form.name" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="Your full name" @beforeinput="blockNonLetterInput" @input="form.name = sanitizeLetters(form.name)" />
                 </div>
                 <div class="form-field">
                   <label>Email Address <span class="req">*</span></label>
@@ -83,7 +83,7 @@
                 </div>
                 <div class="form-field">
                   <label>Subject</label>
-                  <input v-model="form.subject" type="text" placeholder="Order, appointment, product…" />
+                  <input v-model="form.subject" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="Order, appointment, product…" @beforeinput="blockNonLetterInput" @input="form.subject = sanitizeLetters(form.subject)" />
                 </div>
                 <div class="form-field full">
                   <label>Message <span class="req">*</span></label>
@@ -116,8 +116,20 @@ const form = ref({ name: '', email: '', subject: '', message: '' })
 const submitted = ref(false)
 const formError = ref('')
 
+function sanitizeLetters(value) {
+  return String(value || '').replace(/[^\p{L}\s'-]/gu, '')
+}
+
+function blockNonLetterInput(event) {
+  const text = String(event?.data || '')
+  if (!text) return
+  if (/[^\p{L}\s'-]/u.test(text)) event.preventDefault()
+}
+
 async function submit() {
   formError.value = ''
+  form.value.name = sanitizeLetters(form.value.name)
+  form.value.subject = sanitizeLetters(form.value.subject)
   if (!form.value.name.trim() || !form.value.email.trim() || !form.value.message.trim()) {
     formError.value = 'Please fill in all required fields.'
     return

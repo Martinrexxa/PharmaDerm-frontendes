@@ -64,7 +64,7 @@
           <div class="form-grid">
             <div class="form-field full">
               <label>Full name</label>
-              <input v-model="form.name" type="text" placeholder="Your name" />
+              <input v-model="form.name" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="Your name" @beforeinput="blockNonLetterInput" @input="form.name = sanitizeLetters(form.name)" />
             </div>
             <div class="form-field">
               <label>Email address</label>
@@ -91,7 +91,7 @@
             </div>
             <div class="form-field">
               <label>City</label>
-              <input v-model="form.city" type="text" placeholder="City" />
+              <input v-model="form.city" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="City" @beforeinput="blockNonLetterInput" @input="form.city = sanitizeLetters(form.city)" />
             </div>
             <div class="form-field">
               <label>Country</label>
@@ -130,7 +130,7 @@
               </div>
               <div class="form-field full">
                 <label>Cardholder name</label>
-                <input v-model="card.holder" type="text" placeholder="As it appears on the card" />
+                <input v-model="card.holder" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="As it appears on the card" @beforeinput="blockNonLetterInput" @input="card.holder = sanitizeLetters(card.holder)" />
               </div>
               <div class="form-field">
                 <label>Expiry</label>
@@ -309,6 +309,18 @@ const shipping = computed(() => getShippingCost(subtotal.value, form.value.city)
 const itbis = computed(() => Math.round(subtotal.value * 0.18))
 const total = computed(() => subtotal.value + shipping.value + itbis.value)
 
+function sanitizeLetters(value) {
+  return String(value || '').replace(/[^\p{L}\s'-]/gu, '')
+}
+
+function blockNonLetterInput(event) {
+  const text = String(event?.data || '')
+  if (!text) return
+  if (/[^\p{L}\s'-]/u.test(text)) {
+    event.preventDefault()
+  }
+}
+
 function fmtCurrency(amount) {
   const cur = settings.currency?.value || 'DOP'
   return formatPrice(convertPrice(amount, 'DOP', cur), cur)
@@ -366,6 +378,7 @@ const MIN_EXPIRY_MONTH = 5  // mayo
 const MIN_EXPIRY_YEAR  = 2026
 
 function validateCard() {
+  card.holder = sanitizeLetters(card.holder)
   const digits = card.number.replace(/\s/g, '')
   if (digits.length !== 16) return 'Card number must have 16 digits.'
   if (!card.holder.trim()) return 'Enter the cardholder name.'
@@ -406,6 +419,8 @@ function validateContact() {
 }
 
 function validate() {
+  form.value.name = sanitizeLetters(form.value.name)
+  form.value.city = sanitizeLetters(form.value.city)
   if (!form.value.name.trim()) return 'Enter your full name.'
   if (!form.value.email.trim() || !form.value.email.includes('@')) return 'Enter a valid email address.'
   if (!form.value.address.trim()) return 'Enter your delivery address.'
@@ -564,7 +579,7 @@ onMounted(() => {
   initCartForUser().catch(() => {})
   nextTick(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }))
   if (user.value) {
-    form.value.name = user.value.name || `${user.value.firstName || ''} ${user.value.lastName || ''}`.trim()
+    form.value.name = sanitizeLetters(user.value.name || `${user.value.firstName || ''} ${user.value.lastName || ''}`.trim())
     form.value.email = user.value.email || ''
     form.value.phone = user.value.phone || ''
     form.value.address = user.value.address || ''
@@ -574,7 +589,7 @@ onMounted(() => {
     if (saved && saved.length > 0) {
       const addr = saved[0]
       if (!form.value.address) form.value.address = addr.address_line_1 || addr.address || ''
-      if (!form.value.city && addr.city) form.value.city = addr.city
+      if (!form.value.city && addr.city) form.value.city = sanitizeLetters(addr.city)
     }
   } catch { /* ignore */ }
 })

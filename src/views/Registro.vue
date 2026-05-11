@@ -69,6 +69,9 @@
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 p-4 text-base font-normal leading-normal"
               placeholder="Your first name"
               type="text"
+              pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*"
+              @beforeinput="blockNonLetterInput"
+              @input="nombre = sanitizeLetters(nombre)"
             />
           </label>
 
@@ -82,6 +85,9 @@
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 p-4 text-base font-normal leading-normal"
               placeholder="Your last name"
               type="text"
+              pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*"
+              @beforeinput="blockNonLetterInput"
+              @input="apellido = sanitizeLetters(apellido)"
             />
           </label>
 
@@ -236,9 +242,23 @@ const maxBirthDate = computed(() => {
 
 const go = (path) => router.push(path)
 
+function sanitizeLetters(value) {
+  return String(value || '').replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/g, '')
+}
+
+function blockNonLetterInput(event) {
+  const text = String(event?.data || '')
+  if (!text) return
+  if (/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/.test(text)) {
+    event.preventDefault()
+  }
+}
+
 async function registrar() {
   errorMsg.value  = ''
   successMsg.value = ''
+  nombre.value = sanitizeLetters(nombre.value)
+  apellido.value = sanitizeLetters(apellido.value)
 
   if (!nombre.value.trim() || !apellido.value.trim() || !email.value.trim() ||
       !telefono.value.trim() || !birthDate.value || !password.value || !confirmPassword.value) {

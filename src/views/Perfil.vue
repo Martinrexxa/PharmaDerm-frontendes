@@ -182,6 +182,9 @@
                 <input
                   v-model="editableUser.name"
                   type="text"
+                  pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*"
+                  @beforeinput="blockNonLetterInput"
+                  @input="editableUser.name = sanitizeLetters(editableUser.name)"
                   :disabled="!editMode"
                   placeholder="Your name"
                 />
@@ -238,6 +241,9 @@
                 <input
                   v-model="editableUser.city"
                   type="text"
+                  pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*"
+                  @beforeinput="blockNonLetterInput"
+                  @input="editableUser.city = sanitizeLetters(editableUser.city)"
                   :disabled="!editMode"
                   placeholder="City"
                 />
@@ -767,6 +773,16 @@ const maxBirthDate = computed(() => {
   return d.toISOString().split('T')[0]
 })
 
+function sanitizeLetters(value) {
+  return String(value || '').replace(/[^\p{L}\s'-]/gu, '')
+}
+
+function blockNonLetterInput(event) {
+  const text = String(event?.data || '')
+  if (!text) return
+  if (/[^\p{L}\s'-]/u.test(text)) event.preventDefault()
+}
+
 function _buildEditable(u) {
   const src = u || {}
   const rawBirth = src.birth_date || src.birthDate || ''
@@ -792,6 +808,7 @@ function _buildEditable(u) {
     email: src.email || '',
     phone: src.phone || '',
     birth_date: birthDate,
+    addressId: src.addressId || null,
     address,
     city,
     avatar: src.avatar || '',
@@ -906,6 +923,7 @@ async function loadAddressFromDatabase() {
     const addresses = await userService.loadAddressesFromBackend()
     if (addresses && addresses.length > 0) {
       const defaultAddress = addresses[0]
+      editableUser.value.addressId = defaultAddress.id || null
       editableUser.value.address = defaultAddress.address_line_1 || defaultAddress.address || ''
       editableUser.value.city = defaultAddress.city || ''
       console.log('[Profile] Address loaded from localStorage:', editableUser.value.address)
@@ -940,6 +958,8 @@ async function saveProfile() {
   isSaving.value = true;
 
   try {
+    editableUser.value.name = sanitizeLetters(editableUser.value.name)
+    editableUser.value.city = sanitizeLetters(editableUser.value.city)
     editableUser.value.phone = String(editableUser.value.phone || '').replace(/\D/g, '').slice(0, 10)
     const nameParts = (editableUser.value.name || '').trim().split(/\s+/)
     const firstName = nameParts[0] || ''
@@ -957,13 +977,15 @@ async function saveProfile() {
     if (addressText) {
       try {
         const userId = auth.user?.value?.id || null
-        await userService.saveAddress({
+        const savedAddress = await userService.saveAddress({
+          id: editableUser.value.addressId || undefined,
           address: addressText,
           city: cityText,
           label: 'My address',
           address_line_1: addressText,
           is_default: true,
         }, userId)
+        if (savedAddress?.id) editableUser.value.addressId = savedAddress.id
       } catch (addrErr) {
         console.warn('[Profile] Address save failed:', addrErr)
       }
@@ -1381,3 +1403,4 @@ function formatPrice(n) {
   line-height: 1.7;
 }
 </style>
+
