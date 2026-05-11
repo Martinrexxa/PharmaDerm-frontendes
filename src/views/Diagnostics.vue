@@ -534,6 +534,7 @@ export default {
       latestDiagnosisId: null,
       isSavingPhotos: false,
       appointmentCompleted: false,
+      diagnosticCompletedInDb: false,
     };
   },
 
@@ -597,7 +598,7 @@ export default {
     },
 
     detailsCompleted() {
-      return !!(
+      return this.diagnosticCompletedInDb || !!(
         this.form.description &&
         this.form.duration &&
         this.form.urgency &&
@@ -780,6 +781,7 @@ export default {
   async mounted() {
     await this.loadQuizSummary();
     await this.loadAppointmentProgress();
+    await this.loadDiagnosticProgress();
     if (this.appointmentCompleted) {
       this.resetDiagnosticOptionsForm();
     } else {
@@ -819,6 +821,55 @@ export default {
       if (!pending || !this.appointmentCompleted) return;
       this.resetDiagnosticOptionsForm();
       localStorage.removeItem(key);
+    },
+    async loadDiagnosticProgress() {
+      this.diagnosticCompletedInDb = false;
+      try {
+        const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
+        if (sess?.token) {
+          const latest = await apiFetch('/diagnostics/latest');
+          const hasForm = !!latest?.form && !!(
+            latest.form.description ||
+            latest.form.duration ||
+            latest.form.urgency ||
+            (Array.isArray(latest.form.symptoms) && latest.form.symptoms.length) ||
+            (Array.isArray(latest.form.areas) && latest.form.areas.length)
+          );
+          const hasPhotos = Array.isArray(latest?.photos) && latest.photos.length > 0;
+          this.diagnosticCompletedInDb = hasForm || hasPhotos;
+          return;
+        }
+      } catch {
+        // fallback below
+      }
+      try {
+        if (isSupabaseConfigured) {
+          const userId = this._authStore?.user?.value?.id || null;
+          if (!userId) return;
+          const { data } = await withTimeout(
+            supabase
+              .from('diagnosis_cases')
+              .select('id, description, duration, urgency, symptoms, affected_areas')
+              .eq('user_id', userId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+            8000,
+            'Load diagnostic progress'
+          );
+          if (!data) return;
+          const hasForm = !!(
+            data.description ||
+            data.duration ||
+            data.urgency ||
+            (Array.isArray(data.symptoms) && data.symptoms.length) ||
+            (Array.isArray(data.affected_areas) && data.affected_areas.length)
+          );
+          this.diagnosticCompletedInDb = hasForm;
+        }
+      } catch {
+        this.diagnosticCompletedInDb = false;
+      }
     },
     async loadAppointmentProgress() {
       try {
