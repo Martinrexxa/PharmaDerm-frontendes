@@ -110,7 +110,15 @@
 
         <section class="booking-section" v-if="selectedDoctor && form.type && form.date">
           <h2><span class="step-num">4</span> {{ ui.reason }}</h2>
-          <textarea v-model="form.reason" class="reason-input" rows="4" :placeholder="ui.reasonPlaceholder"></textarea>
+          <textarea
+            v-model="form.reason"
+            class="reason-input"
+            rows="4"
+            maxlength="150"
+            :placeholder="ui.reasonPlaceholder"
+            @beforeinput="blockSpecialCharsInput"
+            @input="form.reason = sanitizeLimitedText(form.reason, 150)"
+          ></textarea>
         </section>
 
         <div v-if="errorMsg" class="form-error">{{ errorMsg }}</div>
@@ -237,6 +245,18 @@ const form = ref({
   time: '',
   reason: ''
 })
+
+function sanitizeLimitedText(value, limit = 150) {
+  return String(value || '')
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .slice(0, limit)
+}
+
+function blockSpecialCharsInput(event) {
+  const text = String(event?.data || '')
+  if (!text) return
+  if (/[^\p{L}\p{N}\s]/u.test(text)) event.preventDefault()
+}
 
 function markDiagnosticsResetPending() {
   const userId = auth.user?.value?.id || auth.user?.value?.email || null
@@ -447,6 +467,7 @@ async function loadDoctors() {
 async function bookAppointment() {
   if (!selectedDoctor.value) return (errorMsg.value = isEs.value ? 'Selecciona un especialista.' : 'Select a specialist.')
   if (!form.value.date) return (errorMsg.value = isEs.value ? 'Selecciona una fecha.' : 'Select a date.')
+  form.value.reason = sanitizeLimitedText(form.value.reason, 150)
 
   isSubmitting.value = true
   errorMsg.value = ''
@@ -610,6 +631,7 @@ onMounted(async () => {
   if (!form.value.reason) {
     form.value.reason = displayDiagnosisSummary.value
   }
+  form.value.reason = sanitizeLimitedText(form.value.reason, 150)
   try {
     await loadDoctors()
   } catch (e) {

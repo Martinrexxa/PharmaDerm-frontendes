@@ -186,6 +186,9 @@
             <textarea
               v-model="form.description"
               rows="6"
+              maxlength="150"
+              @beforeinput="blockSpecialCharsInput"
+              @input="form.description = sanitizeLimitedText(form.description, 150)"
               :placeholder="isEs ? 'Ejemplo: Tengo pequeños granitos en las mejillas, poros visibles en la nariz, algo de enrojecimiento y tirantez ocasional después de limpiar.' : 'Example: I have small bumps on my cheeks, visible pores around the nose, some redness and occasional tightness after cleansing.'"
             ></textarea>
 
@@ -798,6 +801,16 @@ export default {
   },
 
   methods: {
+    sanitizeLimitedText(value, limit = 150) {
+      return String(value || '')
+        .replace(/[^\p{L}\p{N}\s]/gu, '')
+        .slice(0, limit);
+    },
+    blockSpecialCharsInput(event) {
+      const text = String(event?.data || '');
+      if (!text) return;
+      if (/[^\p{L}\p{N}\s]/u.test(text)) event.preventDefault();
+    },
     resetDiagnosticOptionsForm() {
       this.form = {
         description: "",
@@ -1066,6 +1079,7 @@ export default {
       this.isSavingDiagnostic = true;
 
       try {
+        this.form.description = this.sanitizeLimitedText(this.form.description, 150);
         let persisted = false;
         // FASE 9 - save diagnostic case (separate from booking)
         const payload = {
