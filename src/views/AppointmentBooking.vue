@@ -466,7 +466,7 @@ async function bookAppointment() {
     urgency: form.value.type === 'urgencia' ? 'high' : 'normal',
     status: 'pending',
     confirmation_code: confirmationCode,
-    analysis_id: route.query.analysis_id || route.query.analysisId || null
+    analysis_id: route.query.analysis_id || route.query.analysisId || route.query.diagnosisId || null
   }
 
   try {

@@ -535,6 +535,7 @@ export default {
       isSavingPhotos: false,
       appointmentCompleted: false,
       diagnosticCompletedInDb: false,
+      diagnosisLinkedToAppointment: false,
     };
   },
 
@@ -782,7 +783,7 @@ export default {
     await this.loadQuizSummary();
     await this.loadAppointmentProgress();
     await this.loadDiagnosticProgress();
-    if (this.appointmentCompleted) {
+    if (this.diagnosisLinkedToAppointment) {
       this.resetDiagnosticOptionsForm();
     } else {
       await this.loadSavedDiagnosticCase();
@@ -818,16 +819,19 @@ export default {
       if (!userId) return;
       const key = `pharmaderm_diag_reset_pending_${userId}`;
       const pending = localStorage.getItem(key) === '1';
-      if (!pending || !this.appointmentCompleted) return;
+      if (!pending || !this.diagnosisLinkedToAppointment) return;
       this.resetDiagnosticOptionsForm();
       localStorage.removeItem(key);
     },
     async loadDiagnosticProgress() {
       this.diagnosticCompletedInDb = false;
+      this.diagnosisLinkedToAppointment = false;
       try {
         const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
         if (sess?.token) {
           const latest = await apiFetch('/diagnostics/latest');
+          const linkedAppointmentId = latest?.case?.appointment_id ?? latest?.case?.appointmentId ?? null;
+          this.diagnosisLinkedToAppointment = !!linkedAppointmentId;
           const form = latest?.form || latest?.case?.form || latest?.case || null;
           const photos = Array.isArray(latest?.photos)
             ? latest.photos
@@ -1436,7 +1440,7 @@ export default {
     },
 
     async loadSavedDiagnosticCase() {
-      if (this.appointmentCompleted) {
+      if (this.diagnosisLinkedToAppointment) {
         this.resetDiagnosticOptionsForm();
         return;
       }
