@@ -88,6 +88,10 @@ import Swal from "sweetalert2";
 const router = useRouter();
 const email = ref("");
 const loading = ref(false);
+const shouldUseBackendFirst = Boolean(
+  API_BASE_URL &&
+  !String(API_BASE_URL).includes("localhost")
+);
 
 const go = (path) => router.push(path);
 
@@ -105,12 +109,16 @@ const enviar = async () => {
 
   loading.value = true;
   try {
-    if (isBackendMode) {
-      await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    if (shouldUseBackendFirst || isBackendMode) {
+      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ Email: e }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Could not send the recovery email.");
+      }
     } else if (isSupabaseConfigured) {
       const redirectTo = `${window.location.origin}/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(e, { redirectTo });
