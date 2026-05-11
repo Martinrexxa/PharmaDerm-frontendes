@@ -201,7 +201,11 @@
                 <span>{{ isEs ? 'Teléfono' : 'Phone' }}</span>
                 <input
                   v-model="editableUser.phone"
-                  type="text"
+                  type="tel"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  maxlength="10"
+                  @input="editableUser.phone = String(editableUser.phone || '').replace(/\D/g, '').slice(0, 10)"
                   :disabled="!editMode"
                   placeholder="(809) 000-0000"
                 />
@@ -936,6 +940,7 @@ async function saveProfile() {
   isSaving.value = true;
 
   try {
+    editableUser.value.phone = String(editableUser.value.phone || '').replace(/\D/g, '').slice(0, 10)
     const nameParts = (editableUser.value.name || '').trim().split(/\s+/)
     const firstName = nameParts[0] || ''
     const lastName  = nameParts.slice(1).join(' ') || ''

@@ -72,11 +72,11 @@
             </div>
             <div class="form-field">
               <label>Phone</label>
-              <input v-model="form.phone" type="tel" placeholder="8091234567" maxlength="10" @input="form.phone = form.phone.replace(/\D/g, '').slice(0, 10)" />
+              <input v-model="form.phone" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="8091234567" maxlength="10" @input="form.phone = form.phone.replace(/\D/g, '').slice(0, 10)" />
             </div>
             <div class="form-field">
               <label>ID Number</label>
-              <input v-model="form.cedula" type="text" placeholder="00112345678" maxlength="11" @input="form.cedula = form.cedula.replace(/\D/g, '').slice(0, 11)" />
+              <input v-model="form.cedula" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="00112345678" maxlength="11" @input="form.cedula = form.cedula.replace(/\D/g, '').slice(0, 11)" />
             </div>
           </div>
         </section>
@@ -126,7 +126,7 @@
             <div class="form-grid">
               <div class="form-field full">
                 <label>Card number</label>
-                <input v-model="card.number" type="text" placeholder="1234 5678 9012 3456" maxlength="19" @input="formatCardNumber" />
+                <input v-model="card.number" type="text" inputmode="numeric" pattern="[0-9 ]*" placeholder="1234 5678 9012 3456" maxlength="19" @input="formatCardNumber" />
               </div>
               <div class="form-field full">
                 <label>Cardholder name</label>
@@ -138,7 +138,7 @@
               </div>
               <div class="form-field">
                 <label>CVV</label>
-                <input v-model="card.cvv" type="password" placeholder="•••" maxlength="3" @input="card.cvv = card.cvv.replace(/\D/g, '').slice(0, 3)" />
+                <input v-model="card.cvv" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="•••" maxlength="3" @input="card.cvv = card.cvv.replace(/\D/g, '').slice(0, 3)" />
               </div>
             </div>
           </div>
@@ -163,9 +163,11 @@
                 <input
                   v-model="form.referenceNumber"
                   type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Confirmation number"
                   maxlength="8"
-                  @input="form.referenceNumber = form.referenceNumber.slice(0, 8)"
+                  @input="form.referenceNumber = form.referenceNumber.replace(/\D/g, '').slice(0, 8)"
                 />
               </div>
               <div class="form-field">

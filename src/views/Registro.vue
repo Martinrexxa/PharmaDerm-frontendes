@@ -108,6 +108,10 @@
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 p-4 text-base font-normal leading-normal"
               placeholder="Ej: 8091234567"
               type="tel"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="10"
+              @input="telefono = telefono.replace(/\D/g, '').slice(0, 10)"
             />
           </label>
 
