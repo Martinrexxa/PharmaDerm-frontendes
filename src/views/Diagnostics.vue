@@ -610,8 +610,8 @@ export default {
     completionProgress() {
       let progress = this.quizCompleted ? 30 : 0;
       if (this.detailsCompleted) progress += 40;
-      if (this.imagePreviews.length) progress += 15;
-      if (this.diagnosticSaved) progress += 15;
+      // Photos are optional extras, they do not affect progress.
+      if (this.diagnosticSaved || this.diagnosticCompletedInDb) progress += 15;
       return progress;
     },
 
