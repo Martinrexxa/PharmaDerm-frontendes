@@ -465,6 +465,7 @@ async function placeOrder() {
     currency: cur,
     items: cartItems.value.map(i => ({
       id: i.id || null,
+      product_id: i.product_id || i.id || null,
       slug: i.slug || null,
       name: i.name,
       product_name: i.name,

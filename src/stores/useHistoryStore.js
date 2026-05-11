@@ -396,6 +396,8 @@ async function _syncWithSupabase(userId) {
             subtotal: o.subtotal, shipping: o.shipping, tax: o.tax, total: o.total,
             status: o.status, date: o.created_at,
             items: (o.order_items || []).map(oi => ({
+              id: oi.id,
+              product_id: oi.product_id || null,
               name: oi.product_name,
               image: oi.product_image || null,
               size: oi.size_label,

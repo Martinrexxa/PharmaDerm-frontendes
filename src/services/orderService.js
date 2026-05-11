@@ -81,6 +81,7 @@ export const orderService = {
       if (orderData.items && orderData.items.length > 0 && orderInsert) {
         const itemsPayload = orderData.items.map(item => ({
           order_id: orderInsert.id,
+          product_id: item.product_id || item.id || null,
           product_name: item.name || item.product_name || 'Product',
           product_sku: item.sku || item.product_sku || null,
           product_image: item.image || null,
@@ -159,6 +160,7 @@ export const orderService = {
         ...order,
         items: (order.order_items || []).map(item => ({
           id: item.id,
+          product_id: item.product_id || null,
           name: item.product_name || 'Producto',
           image: item.product_image || null,
           size: item.size_label || '',
