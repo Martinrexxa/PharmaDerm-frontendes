@@ -828,15 +828,27 @@ export default {
         const sess = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null');
         if (sess?.token) {
           const latest = await apiFetch('/diagnostics/latest');
-          const hasForm = !!latest?.form && !!(
-            latest.form.description ||
-            latest.form.duration ||
-            latest.form.urgency ||
-            (Array.isArray(latest.form.symptoms) && latest.form.symptoms.length) ||
-            (Array.isArray(latest.form.areas) && latest.form.areas.length)
+          const form = latest?.form || latest?.case?.form || latest?.case || null;
+          const photos = Array.isArray(latest?.photos)
+            ? latest.photos
+            : Array.isArray(latest?.imagePreviews)
+              ? latest.imagePreviews
+              : [];
+          const hasForm = !!form && !!(
+            form.description ||
+            form.duration ||
+            form.urgency ||
+            (Array.isArray(form.symptoms) && form.symptoms.length) ||
+            (Array.isArray(form.areas) && form.areas.length) ||
+            (Array.isArray(form.affected_areas) && form.affected_areas.length) ||
+            (Array.isArray(form.priorities) && form.priorities.length)
           );
-          const hasPhotos = Array.isArray(latest?.photos) && latest.photos.length > 0;
+          const hasPhotos = photos.length > 0;
           this.diagnosticCompletedInDb = hasForm || hasPhotos;
+          if (!this.diagnosticCompletedInDb) {
+            const localLatest = this._historyStore?.getLatestDiagnostic?.() || null;
+            this.diagnosticCompletedInDb = !!localLatest;
+          }
           return;
         }
       } catch {
@@ -863,12 +875,17 @@ export default {
             data.duration ||
             data.urgency ||
             (Array.isArray(data.symptoms) && data.symptoms.length) ||
-            (Array.isArray(data.affected_areas) && data.affected_areas.length)
+            (Array.isArray(data.affected_areas) && data.affected_areas.length) ||
+            (Array.isArray(data.priorities) && data.priorities.length)
           );
           this.diagnosticCompletedInDb = hasForm;
         }
       } catch {
         this.diagnosticCompletedInDb = false;
+      }
+      if (!this.diagnosticCompletedInDb) {
+        const localLatest = this._historyStore?.getLatestDiagnostic?.() || null;
+        this.diagnosticCompletedInDb = !!localLatest;
       }
     },
     async loadAppointmentProgress() {
