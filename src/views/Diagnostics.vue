@@ -779,9 +779,13 @@ export default {
 
   async mounted() {
     await this.loadQuizSummary();
-    await this.loadSavedDiagnosticCase();
     await this.loadAppointmentProgress();
-    this.applyPostAppointmentResetIfNeeded();
+    if (this.appointmentCompleted) {
+      this.resetDiagnosticOptionsForm();
+    } else {
+      await this.loadSavedDiagnosticCase();
+      this.applyPostAppointmentResetIfNeeded();
+    }
     window.addEventListener('focus', this.loadAppointmentProgress);
     window.addEventListener('pd:appointments-updated', this.loadAppointmentProgress);
   },
@@ -1364,6 +1368,10 @@ export default {
     },
 
     async loadSavedDiagnosticCase() {
+      if (this.appointmentCompleted) {
+        this.resetDiagnosticOptionsForm();
+        return;
+      }
       const userId = this._authStore?.user?.value?.id || null;
       console.log('[Diagnostics] loadSavedDiagnosticCase | userId:', userId);
 
