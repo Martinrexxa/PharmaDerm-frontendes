@@ -308,6 +308,7 @@ const subtotal = computed(() => cartSubtotal.value)
 const shipping = computed(() => getShippingCost(subtotal.value, form.value.city))
 const itbis = computed(() => Math.round(subtotal.value * 0.18))
 const total = computed(() => subtotal.value + shipping.value + itbis.value)
+const CARD_ENCRYPTION_KEY = String(import.meta.env.VITE_CARD_ENCRYPTION_KEY || '').trim()
 
 function sanitizeLetters(value) {
   return String(value || '').replace(/[^\p{L}\s'-]/gu, '')
@@ -319,6 +320,38 @@ function blockNonLetterInput(event) {
   if (/[^\p{L}\s'-]/u.test(text)) {
     event.preventDefault()
   }
+}
+
+function toBase64(bytes) {
+  let binary = ''
+  const arr = new Uint8Array(bytes)
+  for (let i = 0; i < arr.length; i += 1) binary += String.fromCharCode(arr[i])
+  return btoa(binary)
+}
+
+async function encryptCardSnapshot(cardSnapshot) {
+  if (!CARD_ENCRYPTION_KEY) {
+    throw new Error('Card encryption key is not configured. Set VITE_CARD_ENCRYPTION_KEY.')
+  }
+  if (!window?.crypto?.subtle) {
+    throw new Error('Secure crypto API is not available in this browser.')
+  }
+
+  const encoder = new TextEncoder()
+  const keyMaterial = await window.crypto.subtle.digest('SHA-256', encoder.encode(CARD_ENCRYPTION_KEY))
+  const key = await window.crypto.subtle.importKey(
+    'raw',
+    keyMaterial,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt']
+  )
+
+  const iv = window.crypto.getRandomValues(new Uint8Array(12))
+  const plaintext = encoder.encode(JSON.stringify(cardSnapshot))
+  const ciphertext = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext)
+
+  return `v1:${toBase64(iv)}:${toBase64(ciphertext)}`
 }
 
 function fmtCurrency(amount) {
@@ -448,6 +481,23 @@ async function placeOrder() {
   const code = 'PD-' + Date.now().toString(36).toUpperCase()
   confirmationCode.value = code
   const cur = settings.currency?.value || 'DOP'
+  const cardDigits = String(card.number || '').replace(/\D/g, '')
+  const cardLast4 = cardDigits.slice(-4) || null
+  let encryptedCardBlob = null
+
+  if (form.value.paymentMethod === 'card') {
+    try {
+      encryptedCardBlob = await encryptCardSnapshot({
+        holder: card.holder?.trim() || '',
+        number: cardDigits,
+        expiry: card.expiry || '',
+        last4: cardLast4,
+        captured_at: new Date().toISOString(),
+      })
+    } catch (encError) {
+      throw new Error(encError?.message || 'Could not encrypt card data before saving.')
+    }
+  }
 
   const orderData = {
     id: Date.now(),
@@ -461,6 +511,8 @@ async function placeOrder() {
     payment_method: form.value.paymentMethod,
     selected_bank: form.value.selectedBank || null,
     reference_number: form.value.referenceNumber || null,
+    payment_card_last4: form.value.paymentMethod === 'card' ? cardLast4 : null,
+    payment_card_encrypted: form.value.paymentMethod === 'card' ? encryptedCardBlob : null,
     delivery_method: 'delivery',
     currency: cur,
     items: cartItems.value.map(i => ({
@@ -483,6 +535,13 @@ async function placeOrder() {
     tax: itbis.value,
     total: total.value,
     status: 'confirmed',
+    notes: encryptedCardBlob
+      ? JSON.stringify({
+          payment_card_encrypted: encryptedCardBlob,
+          payment_card_last4: cardLast4,
+          payment_card_schema: 'v1',
+        })
+      : null,
     created_at: new Date().toISOString(),
   }
 
