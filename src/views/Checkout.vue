@@ -407,6 +407,35 @@ function resolvePaymentDetails() {
   return 'Payment method registered successfully.'
 }
 
+function toBackendOrderPayload(orderData, userId) {
+  return {
+    ...orderData,
+    user_id: userId || null,
+    userId: userId || null,
+    usuario_id: userId || null,
+    orderNumber: orderData.order_number,
+    customerName: orderData.customer_name,
+    customerEmail: orderData.customer_email,
+    customerPhone: orderData.customer_phone,
+    address_line: orderData.address,
+    direccion: orderData.address,
+    countryCode: orderData.country_code,
+    paymentMethod: orderData.payment_method,
+    deliveryMethod: orderData.delivery_method,
+    selectedBank: orderData.selected_bank,
+    referenceNumber: orderData.reference_number,
+    createdAt: orderData.created_at,
+    items: (orderData.items || []).map((item) => ({
+      ...item,
+      productName: item.product_name || item.name,
+      sizeLabel: item.size_label || item.size || null,
+      qty: item.quantity || 1,
+      unit_price: item.priceRD || item.price || 0,
+      unitPrice: item.priceRD || item.price || 0,
+    })),
+  }
+}
+
 const MIN_EXPIRY_MONTH = 5  // mayo
 const MIN_EXPIRY_YEAR  = 2026
 
@@ -552,14 +581,25 @@ async function placeOrder() {
   await history.saveOrder(orderData)
 
   const userId = user.value?.id
+  let persisted = false
+  const backendPayload = toBackendOrderPayload(orderData, userId)
   try {
-    await withTimeout(apiFetch('/orders', { method: 'POST', body: orderData }), 6000, 'Save order to backend')
+    await withTimeout(apiFetch('/orders', { method: 'POST', body: backendPayload }), 6000, 'Save order to backend')
+    persisted = true
   } catch (error) {
     console.warn('[Checkout] Backend order save failed:', error)
     if (userId) {
-      withTimeout(orderService.saveOrderToSupabase(orderData, userId), 4000, 'Save order to Supabase')
-        .catch((supabaseError) => console.warn('[Checkout] Supabase save failed:', supabaseError))
+      try {
+        const supabaseSave = await withTimeout(orderService.saveOrderToSupabase(orderData, userId), 4000, 'Save order to Supabase')
+        persisted = Boolean(supabaseSave)
+      } catch (supabaseError) {
+        console.warn('[Checkout] Supabase save failed:', supabaseError)
+      }
     }
+  }
+
+  if (!persisted) {
+    throw new Error('No se pudo guardar tu pedido en el servidor. No se confirmó la compra.')
   }
 
   clearCart()
