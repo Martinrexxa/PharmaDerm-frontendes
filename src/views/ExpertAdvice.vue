@@ -53,7 +53,7 @@
             </div>
             <h3>{{ article.title }}</h3>
             <p class="article-excerpt">{{ article.excerpt }}</p>
-            <button class="read-more-btn">Read full guide â†’</button>
+            <button class="read-more-btn">Read full guide -></button>
           </article>
         </div>
       </div>
@@ -120,7 +120,7 @@
               <h2>{{ activeArticle.title }}</h2>
               <span class="modal-read">{{ activeArticle.readTime }}</span>
             </div>
-            <button class="modal-close" @click="closeArticle" aria-label="Close">âœ•</button>
+            <button class="modal-close" @click="closeArticle" aria-label="Close">x</button>
           </div>
 
           <!-- Body -->
@@ -337,7 +337,7 @@ const ingredients = [
 
 .container { width: min(1280px, 92%); margin: 0 auto; }
 
-/* â”€â”€ Hero â”€â”€ */
+/* -- Hero -- */
 .expert-hero { background: linear-gradient(135deg,#004e92,#5dbcd2); padding: 5rem 0 4rem; text-align: center; color: white; }
 .expert-hero h1 { font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 800; margin: 0.5rem 0 1rem; line-height: 1.1; }
 .hero-sub { font-size: 1.1rem; max-width: 600px; margin: 0 auto 2rem; opacity: 0.9; line-height: 1.7; }
@@ -347,7 +347,7 @@ const ingredients = [
 .eyebrow { font-size: 0.75rem; letter-spacing: 0.22em; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; margin: 0 0 0.8rem; }
 .eyebrow.blue { color: #004e92; }
 
-/* â”€â”€ Featured â”€â”€ */
+/* -- Featured -- */
 .featured-section { padding: 3.5rem 0; }
 .featured-card { display: grid; grid-template-columns: 80px 1fr; gap: 2rem; align-items: start; background: white; border: 1px solid #e2e8f0; border-radius: 24px; padding: 2rem; box-shadow: 0 8px 24px rgba(0,0,0,.04); }
 .featured-visual { width: 80px; height: 80px; border-radius: 20px; display: grid; place-items: center; flex-shrink: 0; }
@@ -355,7 +355,7 @@ const ingredients = [
 .featured-card h2 { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin: 0 0 0.75rem; }
 .featured-card p { color: #475569; line-height: 1.75; margin: 0; }
 
-/* â”€â”€ Articles â”€â”€ */
+/* -- Articles -- */
 .articles-section { padding: 3rem 0 4rem; }
 .section-heading { margin-bottom: 2rem; }
 .section-heading.center { text-align: center; max-width: 700px; margin: 0 auto 2.5rem; }
@@ -375,7 +375,7 @@ const ingredients = [
 .article-excerpt { font-size: 0.84rem; color: #64748b; line-height: 1.6; margin: 0 1.25rem 0.75rem; flex: 1; }
 .read-more-btn { margin: 0 1.25rem 1.25rem; align-self: flex-start; background: none; border: none; color: #004e92; font-weight: 700; font-size: 0.82rem; cursor: pointer; padding: 0; }
 
-/* â”€â”€ Skin types â”€â”€ */
+/* -- Skin types -- */
 .skin-types-section { padding: 4rem 0; background: white; }
 .skin-types-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
 .skin-type-card { border: 1px solid #e2e8f0; border-radius: 20px; padding: 1.5rem; }
@@ -385,7 +385,7 @@ const ingredients = [
 .skin-type-card ul { padding-left: 1rem; margin: 0; }
 .skin-type-card li { font-size: 0.82rem; color: #475569; margin-bottom: 0.35rem; }
 
-/* â”€â”€ Ingredients â”€â”€ */
+/* -- Ingredients -- */
 .ingredients-section { padding: 4rem 0; }
 .ingredients-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
 .ingredient-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; }
@@ -393,7 +393,7 @@ const ingredients = [
 .ing-benefit { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #5dbcd2; text-transform: uppercase; background: #eef9fc; padding: 0.2rem 0.5rem; border-radius: 999px; margin-bottom: 0.6rem; }
 .ingredient-card p { font-size: 0.85rem; color: #64748b; line-height: 1.6; margin: 0; }
 
-/* â”€â”€ CTA â”€â”€ */
+/* -- CTA -- */
 .expert-cta { padding: 5rem 0; background: linear-gradient(135deg,#004e92,#5dbcd2); text-align: center; color: white; }
 .expert-cta h2 { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; margin: 0 0 1rem; }
 .expert-cta p { font-size: 1.1rem; opacity: 0.9; margin: 0 0 2rem; }
@@ -403,7 +403,7 @@ const ingredients = [
 .btn-ghost { background: transparent; color: white; border: 2px solid rgba(255,255,255,0.6); padding: 1rem 2rem; font-weight: 800; cursor: pointer; border-radius: 999px; font-size: 1rem; }
 .btn-ghost:hover { background: rgba(255,255,255,0.1); }
 
-/* â”€â”€ Modal â”€â”€ */
+/* -- Modal -- */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999;
   display: flex; align-items: flex-end; justify-content: center;
@@ -451,7 +451,7 @@ const ingredients = [
 .btn-ghost-outline { background: transparent; color: #004e92; border: 2px solid #004e92; padding: 0.85rem 1.5rem; font-weight: 700; cursor: pointer; border-radius: 999px; font-size: 0.92rem; }
 .btn-ghost-outline:hover { background: #eef5fd; }
 
-/* â”€â”€ Responsive â”€â”€ */
+/* -- Responsive -- */
 @media (max-width: 1100px) {
   .articles-grid, .skin-types-grid, .ingredients-grid { grid-template-columns: repeat(2, 1fr); }
 }

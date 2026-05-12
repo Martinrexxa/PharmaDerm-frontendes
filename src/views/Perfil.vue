@@ -140,7 +140,7 @@
           <article class="pd-card pd-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'DiagnÃ³sticos' : 'Diagnostics' }}</p>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'Diagnosticos' : 'Diagnostics' }}</p>
                 <h3 class="text-2xl font-extrabold mt-2">{{ history.diagnostics.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
@@ -182,7 +182,7 @@
                 <input
                   v-model="editableUser.name" maxlength="60"
                   type="text"
-                  pattern="[A-Za-zÃ€-Ã–Ã˜-Ã¶Ã¸-Ã¿\s'-]*"
+                  pattern="[A-Za-z\\s'-]*"
                   @beforeinput="blockNonLetterInput"
                   @input="editableUser.name = sanitizeLetters(editableUser.name)"
                   :disabled="!editMode"
@@ -201,7 +201,7 @@
               </label>
 
               <label class="pd-field">
-                <span>{{ isEs ? 'TelÃ©fono' : 'Phone' }}</span>
+                <span>{{ isEs ? 'Telefono' : 'Phone' }}</span>
                 <input
                   v-model="editableUser.phone"
                   type="tel"
@@ -227,7 +227,7 @@
 
             <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               <label class="pd-field">
-                <span>{{ isEs ? 'DirecciÃ³n' : 'Address' }}</span>
+                <span>{{ isEs ? 'Direccion' : 'Address' }}</span>
                 <input
                   v-model="editableUser.address" maxlength="100"
                   type="text"
@@ -241,7 +241,7 @@
                 <input
                   v-model="editableUser.city" maxlength="100"
                   type="text"
-                  pattern="[A-Za-zÃ€-Ã–Ã˜-Ã¶Ã¸-Ã¿\s'-]*"
+                  pattern="[A-Za-z\\s'-]*"
                   @beforeinput="blockNonLetterInput"
                   @input="editableUser.city = sanitizeLetters(editableUser.city)"
                   :disabled="!editMode"
@@ -330,7 +330,7 @@
               >
                 <div>
                   <h4 class="font-semibold">{{ appointmentTypeLabel(apt.appointment_type || apt.service) }}</h4>
-                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `Â· ${apt.scheduled_time}` : '' }}</p>
+                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `· ${apt.scheduled_time}` : '' }}</p>
                 </div>
 
                 <div class="text-right">
@@ -448,7 +448,7 @@
             <div v-for="q in history.quizHistory.value" :key="q.id" class="pd-list-row">
               <div>
                 <h4 class="font-semibold">Skin analysis</h4>
-                <p class="text-sm pd-muted">{{ fmtDate(q.date) }} Â· {{ q.skinType || 'Unknown type' }}</p>
+                <p class="text-sm pd-muted">{{ fmtDate(q.date) }} · {{ q.skinType || 'Unknown type' }}</p>
               </div>
               <div class="flex gap-2 flex-wrap">
                 <button class="pd-outline-btn text-sm" @click="openDetailModal(q, 'quiz')">View Details</button>
@@ -468,7 +468,7 @@
             <div v-for="d in history.diagnostics.value" :key="d.id" class="pd-list-row">
               <div>
                 <h4 class="font-semibold">{{ d.title || 'Diagnostic' }}</h4>
-                <p class="text-sm pd-muted">{{ fmtDate(d.date) }} Â· <span class="capitalize">{{ d.status || 'saved' }}</span></p>
+                <p class="text-sm pd-muted">{{ fmtDate(d.date) }} · <span class="capitalize">{{ d.status || 'saved' }}</span></p>
               </div>
               <button class="pd-outline-btn text-sm" @click="openDetailModal(d, 'diagnostic')">View Details</button>
             </div>
@@ -485,7 +485,7 @@
             <div v-for="apt in history.appointments.value" :key="apt.id" class="pd-list-row">
               <div>
                   <h4 class="font-semibold">{{ appointmentTypeLabel(apt.appointment_type || apt.service) }}</h4>
-                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `Â· ${apt.scheduled_time}` : '' }}</p>
+                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `· ${apt.scheduled_time}` : '' }}</p>
               </div>
               <div class="text-right">
                 <p class="text-sm font-semibold">{{ modalityLabel(apt.mode) }}</p>
@@ -666,7 +666,7 @@
             <div class="pd-field">
               <span>{{ ui.preferredCurrency }}</span>
               <select :value="currency" @change="setProfileCurrency($event.target.value)">
-                <option v-for="m in settings.currencyList" :key="m.code" :value="m.code">{{ m.symbol }} â€” {{ m.name }}</option>
+                <option v-for="m in settings.currencyList" :key="m.code" :value="m.code">{{ m.symbol }} - {{ m.name }}</option>
               </select>
             </div>
 
@@ -710,24 +710,24 @@ const isEs = computed(() => lang.value === 'es')
 const ui = computed(() => ({
   welcomeBack: isEs.value ? 'Bienvenido de vuelta' : 'Welcome back',
   manageAccount: isEs.value
-    ? 'Administra tu cuenta, revisa tus pedidos, consulta tus citas dermatolÃ³gicas y accede rÃ¡pido a tu rutina personalizada.'
+    ? 'Administra tu cuenta, revisa tus pedidos, consulta tus citas dermatologicas y accede rapido a tu rutina personalizada.'
     : 'Manage your account, review your orders, check your dermatology appointments, and quickly access your personalized routine.',
   myAppointments: isEs.value ? 'Mis citas' : 'My appointments',
   myRoutine: isEs.value ? 'Mi rutina' : 'My routine',
   orders: isEs.value ? 'Pedidos' : 'Orders',
-  closeEditing: isEs.value ? 'Cerrar ediciÃ³n' : 'Close editing',
+  closeEditing: isEs.value ? 'Cerrar edicion' : 'Close editing',
   edit: isEs.value ? 'Editar' : 'Edit',
   myAccountTab: isEs.value ? 'Mi cuenta' : 'My account',
   historyTab: isEs.value ? 'Historial' : 'History',
-  settingsTab: isEs.value ? 'ConfiguraciÃ³n' : 'Settings',
+  settingsTab: isEs.value ? 'Configuracion' : 'Settings',
   recentOrders: isEs.value ? 'Pedidos recientes' : 'Recent orders',
   goToCart: isEs.value ? 'Ir al carrito' : 'Go to cart',
   consultSpecialist: isEs.value ? 'Consultar especialista' : 'Consult a specialist',
-  signOut: isEs.value ? 'Cerrar sesiÃ³n' : 'Sign out',
+  signOut: isEs.value ? 'Cerrar sesion' : 'Sign out',
   appLanguage: isEs.value ? 'Idioma de la app' : 'App language',
-  spanish: 'EspaÃ±ol',
+  spanish: 'Espanol',
   english: 'English',
-  country: isEs.value ? 'PaÃ­s' : 'Country',
+  country: isEs.value ? 'Pais' : 'Country',
   preferredCurrency: isEs.value ? 'Moneda preferida' : 'Preferred currency',
 }))
 

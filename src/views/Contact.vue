@@ -33,7 +33,7 @@
               <span class="material-symbols-outlined info-icon">schedule</span>
               <div>
                 <h3>Business Hours</h3>
-                <p>Monday to Saturday<br />9:00 AM Ã¢â‚¬â€œ 6:00 PM</p>
+                <p>Monday to Saturday<br />9:00 AM - 6:00 PM</p>
               </div>
             </div>
 
@@ -75,7 +75,7 @@
               <div class="form-grid">
                 <div class="form-field full">
                   <label>Full Name <span class="req">*</span></label>
-                  <input v-model="form.name" type="text" maxlength="60" pattern="[A-Za-zÃƒâ‚¬-Ãƒâ€“ÃƒËœ-ÃƒÂ¶ÃƒÂ¸-ÃƒÂ¿\s'-]*" placeholder="Your full name" @beforeinput="blockNonLetterInput" @input="form.name = sanitizeLetters(form.name).slice(0, 60)" />
+                  <input v-model="form.name" type="text" maxlength="60" pattern="[A-Za-z\\s'-]*" placeholder="Your full name" @beforeinput="blockNonLetterInput" @input="form.name = sanitizeLetters(form.name).slice(0, 60)" />
                 </div>
                 <div class="form-field">
                   <label>Email Address <span class="req">*</span></label>
@@ -83,7 +83,7 @@
                 </div>
                 <div class="form-field">
                   <label>Subject</label>
-                  <input v-model="form.subject" type="text" maxlength="100" pattern="[A-Za-zÃƒâ‚¬-Ãƒâ€“ÃƒËœ-ÃƒÂ¶ÃƒÂ¸-ÃƒÂ¿\s'-]*" placeholder="Order, appointment, productÃ¢â‚¬Â¦" @beforeinput="blockNonLetterInput" @input="form.subject = sanitizeLetters(form.subject).slice(0, 100)" />
+                  <input v-model="form.subject" type="text" maxlength="100" pattern="[A-Za-z\\s'-]*" placeholder="Order, appointment, product..." @beforeinput="blockNonLetterInput" @input="form.subject = sanitizeLetters(form.subject).slice(0, 100)" />
                 </div>
                 <div class="form-field full">
                   <label>Message <span class="req">*</span></label>

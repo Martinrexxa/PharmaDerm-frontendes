@@ -80,7 +80,7 @@
           </label>
         </div>
 
-        <!-- OlvidÃ© -->
+        <!-- Olvidé -->
         <div class="w-full text-right mt-2">
           <button
             type="button"

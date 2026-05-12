@@ -3,7 +3,7 @@
     <!-- Promo bar -->
     <div class="top-promos">
       <span>{{ promoLead }}</span>
-      <span aria-hidden="true">Ã¢â‚¬Â¢</span>
+      <span aria-hidden="true">•</span>
       <button type="button" class="promo-shop-link" @click.stop="go('/tienda')">SHOP NOW</button>
     </div>
 
@@ -102,7 +102,7 @@
                     <p class="cart-item-meta">{{ item.size }}</p>
                     <div class="cart-item-row">
                       <div class="qty-control">
-                        <button @click="changeQty(i, -1)">Ã¢Ë†â€™</button>
+                        <button @click="changeQty(i, -1)">−</button>
                         <span>{{ item.quantity || 1 }}</span>
                         <button @click="changeQty(i, 1)">+</button>
                       </div>
@@ -249,7 +249,7 @@ const promoText = computed(() => {
   return t('nav.freeShipping').replace('RD$3,000', threshold)
 })
 
-const promoLead = computed(() => promoText.value.split('Ã¢â‚¬Â¢')[0]?.trim() || promoText.value)
+const promoLead = computed(() => promoText.value.split('•')[0]?.trim() || promoText.value)
 
 function fmtPrice(dopAmount) {
   return priceIn(Number(dopAmount) || 0, 'DOP', userCurrency.value)
