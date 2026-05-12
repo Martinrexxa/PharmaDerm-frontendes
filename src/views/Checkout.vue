@@ -64,11 +64,11 @@
           <div class="form-grid">
             <div class="form-field full">
               <label>Full name</label>
-              <input v-model="form.name" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="Your name" @beforeinput="blockNonLetterInput" @input="form.name = sanitizeLetters(form.name)" />
+              <input v-model="form.name" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="Your name" maxlength="60" @beforeinput="blockNonLetterInput" @input="form.name = sanitizeLetters(form.name).slice(0, 60)" />
             </div>
             <div class="form-field">
               <label>Email address</label>
-              <input v-model="form.email" type="email" placeholder="email@example.com" />
+              <input v-model="form.email" type="email" placeholder="email@example.com" maxlength="120" />
             </div>
             <div class="form-field">
               <label>Phone</label>
@@ -87,11 +87,11 @@
           <div class="form-grid">
             <div class="form-field full">
               <label>Street address</label>
-              <input v-model="form.address" type="text" placeholder="Street, number, neighborhood" />
+              <input v-model="form.address" type="text" placeholder="Street, number, neighborhood" maxlength="140" @beforeinput="blockInvalidAddressInput" @input="form.address = sanitizeAddress(form.address).slice(0, 140)" />
             </div>
             <div class="form-field">
               <label>City</label>
-              <input v-model="form.city" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="City" @beforeinput="blockNonLetterInput" @input="form.city = sanitizeLetters(form.city)" />
+              <input v-model="form.city" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="City" maxlength="60" @beforeinput="blockNonLetterInput" @input="form.city = sanitizeLetters(form.city).slice(0, 60)" />
             </div>
             <div class="form-field">
               <label>Country</label>
@@ -130,7 +130,7 @@
               </div>
               <div class="form-field full">
                 <label>Cardholder name</label>
-                <input v-model="card.holder" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="As it appears on the card" @beforeinput="blockNonLetterInput" @input="card.holder = sanitizeLetters(card.holder)" />
+                <input v-model="card.holder" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="As it appears on the card" maxlength="60" @beforeinput="blockNonLetterInput" @input="card.holder = sanitizeLetters(card.holder).slice(0, 60)" />
               </div>
               <div class="form-field">
                 <label>Expiry</label>
@@ -314,10 +314,22 @@ function sanitizeLetters(value) {
   return String(value || '').replace(/[^\p{L}\s'-]/gu, '')
 }
 
+function sanitizeAddress(value) {
+  return String(value || '').replace(/[^\p{L}0-9\s.,#/\-]/gu, '')
+}
+
 function blockNonLetterInput(event) {
   const text = String(event?.data || '')
   if (!text) return
   if (/[^\p{L}\s'-]/u.test(text)) {
+    event.preventDefault()
+  }
+}
+
+function blockInvalidAddressInput(event) {
+  const text = String(event?.data || '')
+  if (!text) return
+  if (/[^\p{L}0-9\s.,#/\-]/u.test(text)) {
     event.preventDefault()
   }
 }
