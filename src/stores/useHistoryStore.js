@@ -512,6 +512,8 @@ export function useHistoryStore() {
       const { orderService } = await import('../services/orderService.js')
       const entry = await orderService.saveOrder(order)
       orders.value.unshift(entry)
+      const k = _key('orders')
+      if (k) localStorage.setItem(k, JSON.stringify(orders.value))
       _pushBackendHistory().catch(() => {})
       return entry
     } catch (e) {

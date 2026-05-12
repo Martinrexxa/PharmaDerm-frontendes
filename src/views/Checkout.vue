@@ -552,11 +552,11 @@ async function placeOrder() {
   await history.saveOrder(orderData)
 
   const userId = user.value?.id
-  if (userId) {
-    try {
-      await withTimeout(apiFetch('/orders', { method: 'POST', body: orderData }), 6000, 'Save order to backend')
-    } catch (error) {
-      console.warn('[Checkout] Backend order save failed:', error)
+  try {
+    await withTimeout(apiFetch('/orders', { method: 'POST', body: orderData }), 6000, 'Save order to backend')
+  } catch (error) {
+    console.warn('[Checkout] Backend order save failed:', error)
+    if (userId) {
       withTimeout(orderService.saveOrderToSupabase(orderData, userId), 4000, 'Save order to Supabase')
         .catch((supabaseError) => console.warn('[Checkout] Supabase save failed:', supabaseError))
     }
