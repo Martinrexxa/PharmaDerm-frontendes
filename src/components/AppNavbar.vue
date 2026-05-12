@@ -3,7 +3,7 @@
     <!-- Promo bar -->
     <div class="top-promos">
       <span>{{ promoLead }}</span>
-      <span aria-hidden="true">•</span>
+      <span aria-hidden="true">Ã¢â‚¬Â¢</span>
       <button type="button" class="promo-shop-link" @click.stop="go('/tienda')">SHOP NOW</button>
     </div>
 
@@ -102,7 +102,7 @@
                     <p class="cart-item-meta">{{ item.size }}</p>
                     <div class="cart-item-row">
                       <div class="qty-control">
-                        <button @click="changeQty(i, -1)">−</button>
+                        <button @click="changeQty(i, -1)">Ã¢Ë†â€™</button>
                         <span>{{ item.quantity || 1 }}</span>
                         <button @click="changeQty(i, 1)">+</button>
                       </div>
@@ -181,7 +181,7 @@
           <span class="search-title">{{ t('nav.lookingFor') }}</span>
           <input
             ref="searchInputRef"
-            v-model.trim="searchQ"
+            v-model.trim="searchQ" maxlength="100" @input="searchQ = String(searchQ || '').slice(0, 100)"
             type="text"
             class="search-overlay__input"
             placeholder="toleriane"
@@ -249,7 +249,7 @@ const promoText = computed(() => {
   return t('nav.freeShipping').replace('RD$3,000', threshold)
 })
 
-const promoLead = computed(() => promoText.value.split('•')[0]?.trim() || promoText.value)
+const promoLead = computed(() => promoText.value.split('Ã¢â‚¬Â¢')[0]?.trim() || promoText.value)
 
 function fmtPrice(dopAmount) {
   return priceIn(Number(dopAmount) || 0, 'DOP', userCurrency.value)
@@ -296,8 +296,9 @@ function goShop(query = {}) {
 }
 
 function applySearch() {
-  if (searchQ.value.trim()) {
-    goShop({ search: searchQ.value.trim() })
+  const term = String(searchQ.value || '').slice(0, 100).trim()
+  if (term) {
+    goShop({ search: term })
   }
 }
 
@@ -930,4 +931,5 @@ watch(cartCount, (next, prev) => {
   .cart-panel { width: calc(100vw - 20px); }
 }
 </style>
+
 

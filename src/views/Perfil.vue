@@ -140,7 +140,7 @@
           <article class="pd-card pd-border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'Diagnósticos' : 'Diagnostics' }}</p>
+                <p class="text-[11px] uppercase tracking-widest pd-muted font-bold">{{ isEs ? 'DiagnÃ³sticos' : 'Diagnostics' }}</p>
                 <h3 class="text-2xl font-extrabold mt-2">{{ history.diagnostics.value.length }}</h3>
               </div>
               <div class="pd-stat-icon">
@@ -180,9 +180,9 @@
               <label class="pd-field">
                 <span>{{ isEs ? 'Nombre completo' : 'Full name' }}</span>
                 <input
-                  v-model="editableUser.name"
+                  v-model="editableUser.name" maxlength="60"
                   type="text"
-                  pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*"
+                  pattern="[A-Za-zÃ€-Ã–Ã˜-Ã¶Ã¸-Ã¿\s'-]*"
                   @beforeinput="blockNonLetterInput"
                   @input="editableUser.name = sanitizeLetters(editableUser.name)"
                   :disabled="!editMode"
@@ -193,7 +193,7 @@
               <label class="pd-field">
                 <span>Email</span>
                 <input
-                  v-model="editableUser.email"
+                  v-model="editableUser.email" maxlength="100"
                   type="email"
                   :disabled="!editMode"
                   placeholder="email@example.com"
@@ -201,7 +201,7 @@
               </label>
 
               <label class="pd-field">
-                <span>{{ isEs ? 'Teléfono' : 'Phone' }}</span>
+                <span>{{ isEs ? 'TelÃ©fono' : 'Phone' }}</span>
                 <input
                   v-model="editableUser.phone"
                   type="tel"
@@ -227,9 +227,9 @@
 
             <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               <label class="pd-field">
-                <span>{{ isEs ? 'Dirección' : 'Address' }}</span>
+                <span>{{ isEs ? 'DirecciÃ³n' : 'Address' }}</span>
                 <input
-                  v-model="editableUser.address"
+                  v-model="editableUser.address" maxlength="100"
                   type="text"
                   :disabled="!editMode"
                   placeholder="Street, number, neighborhood"
@@ -239,9 +239,9 @@
               <label class="pd-field">
                 <span>{{ isEs ? 'Ciudad' : 'City' }}</span>
                 <input
-                  v-model="editableUser.city"
+                  v-model="editableUser.city" maxlength="100"
                   type="text"
-                  pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*"
+                  pattern="[A-Za-zÃ€-Ã–Ã˜-Ã¶Ã¸-Ã¿\s'-]*"
                   @beforeinput="blockNonLetterInput"
                   @input="editableUser.city = sanitizeLetters(editableUser.city)"
                   :disabled="!editMode"
@@ -330,7 +330,7 @@
               >
                 <div>
                   <h4 class="font-semibold">{{ appointmentTypeLabel(apt.appointment_type || apt.service) }}</h4>
-                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `· ${apt.scheduled_time}` : '' }}</p>
+                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `Â· ${apt.scheduled_time}` : '' }}</p>
                 </div>
 
                 <div class="text-right">
@@ -448,7 +448,7 @@
             <div v-for="q in history.quizHistory.value" :key="q.id" class="pd-list-row">
               <div>
                 <h4 class="font-semibold">Skin analysis</h4>
-                <p class="text-sm pd-muted">{{ fmtDate(q.date) }} · {{ q.skinType || 'Unknown type' }}</p>
+                <p class="text-sm pd-muted">{{ fmtDate(q.date) }} Â· {{ q.skinType || 'Unknown type' }}</p>
               </div>
               <div class="flex gap-2 flex-wrap">
                 <button class="pd-outline-btn text-sm" @click="openDetailModal(q, 'quiz')">View Details</button>
@@ -468,7 +468,7 @@
             <div v-for="d in history.diagnostics.value" :key="d.id" class="pd-list-row">
               <div>
                 <h4 class="font-semibold">{{ d.title || 'Diagnostic' }}</h4>
-                <p class="text-sm pd-muted">{{ fmtDate(d.date) }} · <span class="capitalize">{{ d.status || 'saved' }}</span></p>
+                <p class="text-sm pd-muted">{{ fmtDate(d.date) }} Â· <span class="capitalize">{{ d.status || 'saved' }}</span></p>
               </div>
               <button class="pd-outline-btn text-sm" @click="openDetailModal(d, 'diagnostic')">View Details</button>
             </div>
@@ -485,7 +485,7 @@
             <div v-for="apt in history.appointments.value" :key="apt.id" class="pd-list-row">
               <div>
                   <h4 class="font-semibold">{{ appointmentTypeLabel(apt.appointment_type || apt.service) }}</h4>
-                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `· ${apt.scheduled_time}` : '' }}</p>
+                  <p class="text-sm pd-muted">{{ fmtDate(apt.scheduled_date || apt.date) }} {{ apt.scheduled_time ? `Â· ${apt.scheduled_time}` : '' }}</p>
               </div>
               <div class="text-right">
                 <p class="text-sm font-semibold">{{ modalityLabel(apt.mode) }}</p>
@@ -666,7 +666,7 @@
             <div class="pd-field">
               <span>{{ ui.preferredCurrency }}</span>
               <select :value="currency" @change="setProfileCurrency($event.target.value)">
-                <option v-for="m in settings.currencyList" :key="m.code" :value="m.code">{{ m.symbol }} — {{ m.name }}</option>
+                <option v-for="m in settings.currencyList" :key="m.code" :value="m.code">{{ m.symbol }} â€” {{ m.name }}</option>
               </select>
             </div>
 
@@ -710,24 +710,24 @@ const isEs = computed(() => lang.value === 'es')
 const ui = computed(() => ({
   welcomeBack: isEs.value ? 'Bienvenido de vuelta' : 'Welcome back',
   manageAccount: isEs.value
-    ? 'Administra tu cuenta, revisa tus pedidos, consulta tus citas dermatológicas y accede rápido a tu rutina personalizada.'
+    ? 'Administra tu cuenta, revisa tus pedidos, consulta tus citas dermatolÃ³gicas y accede rÃ¡pido a tu rutina personalizada.'
     : 'Manage your account, review your orders, check your dermatology appointments, and quickly access your personalized routine.',
   myAppointments: isEs.value ? 'Mis citas' : 'My appointments',
   myRoutine: isEs.value ? 'Mi rutina' : 'My routine',
   orders: isEs.value ? 'Pedidos' : 'Orders',
-  closeEditing: isEs.value ? 'Cerrar edición' : 'Close editing',
+  closeEditing: isEs.value ? 'Cerrar ediciÃ³n' : 'Close editing',
   edit: isEs.value ? 'Editar' : 'Edit',
   myAccountTab: isEs.value ? 'Mi cuenta' : 'My account',
   historyTab: isEs.value ? 'Historial' : 'History',
-  settingsTab: isEs.value ? 'Configuración' : 'Settings',
+  settingsTab: isEs.value ? 'ConfiguraciÃ³n' : 'Settings',
   recentOrders: isEs.value ? 'Pedidos recientes' : 'Recent orders',
   goToCart: isEs.value ? 'Ir al carrito' : 'Go to cart',
   consultSpecialist: isEs.value ? 'Consultar especialista' : 'Consult a specialist',
-  signOut: isEs.value ? 'Cerrar sesión' : 'Sign out',
+  signOut: isEs.value ? 'Cerrar sesiÃ³n' : 'Sign out',
   appLanguage: isEs.value ? 'Idioma de la app' : 'App language',
-  spanish: 'Español',
+  spanish: 'EspaÃ±ol',
   english: 'English',
-  country: isEs.value ? 'País' : 'Country',
+  country: isEs.value ? 'PaÃ­s' : 'Country',
   preferredCurrency: isEs.value ? 'Moneda preferida' : 'Preferred currency',
 }))
 
@@ -958,8 +958,8 @@ async function saveProfile() {
   isSaving.value = true;
 
   try {
-    editableUser.value.name = sanitizeLetters(editableUser.value.name)
-    editableUser.value.city = sanitizeLetters(editableUser.value.city)
+    editableUser.value.name = sanitizeLetters(editableUser.value.name).slice(0, 60)
+    editableUser.value.city = sanitizeLetters(editableUser.value.city).slice(0, 100)
     editableUser.value.phone = String(editableUser.value.phone || '').replace(/\D/g, '').slice(0, 10)
     const nameParts = (editableUser.value.name || '').trim().split(/\s+/)
     const firstName = nameParts[0] || ''
@@ -972,7 +972,7 @@ async function saveProfile() {
       birth_date: editableUser.value.birth_date || null,
     })
 
-    const addressText = (editableUser.value.address || '').trim()
+    const addressText = String(editableUser.value.address || '').slice(0, 100).trim()
     const cityText = (editableUser.value.city || '').trim()
     if (addressText) {
       try {
@@ -1403,4 +1403,5 @@ function formatPrice(n) {
   line-height: 1.7;
 }
 </style>
+
 

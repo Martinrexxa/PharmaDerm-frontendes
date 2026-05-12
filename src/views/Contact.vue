@@ -33,7 +33,7 @@
               <span class="material-symbols-outlined info-icon">schedule</span>
               <div>
                 <h3>Business Hours</h3>
-                <p>Monday to Saturday<br />9:00 AM – 6:00 PM</p>
+                <p>Monday to Saturday<br />9:00 AM Ã¢â‚¬â€œ 6:00 PM</p>
               </div>
             </div>
 
@@ -75,19 +75,19 @@
               <div class="form-grid">
                 <div class="form-field full">
                   <label>Full Name <span class="req">*</span></label>
-                  <input v-model="form.name" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="Your full name" @beforeinput="blockNonLetterInput" @input="form.name = sanitizeLetters(form.name)" />
+                  <input v-model="form.name" type="text" maxlength="60" pattern="[A-Za-zÃƒâ‚¬-Ãƒâ€“ÃƒËœ-ÃƒÂ¶ÃƒÂ¸-ÃƒÂ¿\s'-]*" placeholder="Your full name" @beforeinput="blockNonLetterInput" @input="form.name = sanitizeLetters(form.name).slice(0, 60)" />
                 </div>
                 <div class="form-field">
                   <label>Email Address <span class="req">*</span></label>
-                  <input v-model="form.email" type="email" placeholder="your@email.com" />
+                  <input v-model="form.email" type="email" maxlength="100" placeholder="your@email.com" @input="form.email = String(form.email || '').slice(0, 100)" />
                 </div>
                 <div class="form-field">
                   <label>Subject</label>
-                  <input v-model="form.subject" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="Order, appointment, product…" @beforeinput="blockNonLetterInput" @input="form.subject = sanitizeLetters(form.subject)" />
+                  <input v-model="form.subject" type="text" maxlength="100" pattern="[A-Za-zÃƒâ‚¬-Ãƒâ€“ÃƒËœ-ÃƒÂ¶ÃƒÂ¸-ÃƒÂ¿\s'-]*" placeholder="Order, appointment, productÃ¢â‚¬Â¦" @beforeinput="blockNonLetterInput" @input="form.subject = sanitizeLetters(form.subject).slice(0, 100)" />
                 </div>
                 <div class="form-field full">
                   <label>Message <span class="req">*</span></label>
-                  <textarea v-model="form.message" rows="5" placeholder="How can we help you?"></textarea>
+                  <textarea v-model="form.message" rows="5" maxlength="100" placeholder="How can we help you?" @beforeinput="blockNonLetterInput" @input="form.message = sanitizeLetters(form.message).slice(0, 100)"></textarea>
                 </div>
               </div>
 
@@ -128,8 +128,10 @@ function blockNonLetterInput(event) {
 
 async function submit() {
   formError.value = ''
-  form.value.name = sanitizeLetters(form.value.name)
-  form.value.subject = sanitizeLetters(form.value.subject)
+  form.value.name = sanitizeLetters(form.value.name).slice(0, 60)
+  form.value.subject = sanitizeLetters(form.value.subject).slice(0, 100)
+  form.value.message = sanitizeLetters(form.value.message).slice(0, 100)
+  form.value.email = String(form.value.email || '').slice(0, 100)
   if (!form.value.name.trim() || !form.value.email.trim() || !form.value.message.trim()) {
     formError.value = 'Please fill in all required fields.'
     return
@@ -278,3 +280,4 @@ async function reset() {
   .contact-form-box { padding: 1.5rem; }
 }
 </style>
+

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="relative flex min-h-screen w-full flex-col bg-background-light group/design-root overflow-x-hidden"
   >
@@ -29,7 +29,7 @@
               New password
             </p>
             <input
-              v-model="password"
+              v-model="password" maxlength="100"
               class="form-input flex w-full rounded-lg text-brand-dark-blue focus:ring-2 focus:ring-brand-light-blue/50
                      border border-gray-300 bg-brand-soft-grey/50
                      h-14 p-4 text-base"
@@ -44,7 +44,7 @@
               Confirm password
             </p>
             <input
-              v-model="confirmPassword"
+              v-model="confirmPassword" maxlength="100"
               class="form-input flex w-full rounded-lg text-brand-dark-blue focus:ring-2 focus:ring-brand-light-blue/50
                      border border-gray-300 bg-brand-soft-grey/50
                      h-14 p-4 text-base"
@@ -248,3 +248,4 @@ async function reset() {
   }
 }
 </script>
+

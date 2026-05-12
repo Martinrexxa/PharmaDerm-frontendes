@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="checkout-page">
     <transition name="payfade">
       <div v-if="paymentModalOpen" class="payment-modal-backdrop" @click.stop style="pointer-events: all;">
@@ -68,7 +68,7 @@
             </div>
             <div class="form-field">
               <label>Email address</label>
-              <input v-model="form.email" type="email" placeholder="email@example.com" maxlength="120" />
+              <input v-model="form.email" type="email" placeholder="email@example.com" maxlength="100" @input="form.email = String(form.email || '').slice(0, 100)" />
             </div>
             <div class="form-field">
               <label>Phone</label>
@@ -87,11 +87,11 @@
           <div class="form-grid">
             <div class="form-field full">
               <label>Street address</label>
-              <input v-model="form.address" type="text" placeholder="Street, number, neighborhood" maxlength="140" @beforeinput="blockInvalidAddressInput" @input="form.address = sanitizeAddress(form.address).slice(0, 140)" />
+              <input v-model="form.address" type="text" placeholder="Street, number, neighborhood" maxlength="100" @beforeinput="blockInvalidAddressInput" @input="form.address = sanitizeAddress(form.address).slice(0, 100)" />
             </div>
             <div class="form-field">
               <label>City</label>
-              <input v-model="form.city" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="City" maxlength="60" @beforeinput="blockNonLetterInput" @input="form.city = sanitizeLetters(form.city).slice(0, 60)" />
+              <input v-model="form.city" type="text" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*" placeholder="City" maxlength="100" @beforeinput="blockNonLetterInput" @input="form.city = sanitizeLetters(form.city).slice(0, 100)" />
             </div>
             <div class="form-field">
               <label>Country</label>
@@ -874,5 +874,6 @@ onMounted(() => {
   .form-field.full { grid-column: auto; }
 }
 </style>
+
 
 

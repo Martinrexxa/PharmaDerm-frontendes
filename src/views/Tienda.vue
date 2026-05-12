@@ -4,9 +4,9 @@
       <section class="breadcrumb-row">
         <div class="crumbs">
           <span class="crumb" @click="$router.push('/inicio')">{{ t('bottomNav.home') }}</span>
-          <span>›</span>
+          <span>â€º</span>
           <span class="crumb active">{{ t('nav.ourProducts') }}</span>
-          <span>›</span>
+          <span>â€º</span>
           <span class="crumb active">{{ activeBrandLabel }}</span>
         </div>
       </section>
@@ -61,17 +61,17 @@
           <div class="filter-box">
             <button class="filter-heading" @click="filterOpen.search = !filterOpen.search">
               <span>{{ t('nav.search') }}</span>
-              <span class="filter-chevron" :class="{ open: filterOpen.search }">›</span>
+              <span class="filter-chevron" :class="{ open: filterOpen.search }">â€º</span>
             </button>
             <div v-show="filterOpen.search" class="filter-body">
-              <input v-model.trim="search" type="text" :placeholder="t('shop.searchPlaceholder')" />
+              <input v-model.trim="search" type="text" maxlength="100" @input="search = String(search || '').slice(0, 100)" :placeholder="t('shop.searchPlaceholder')" />
             </div>
           </div>
 
           <div v-if="activeBrand === 'larocheposay'" class="filter-box">
             <button class="filter-heading" @click="filterOpen.line = !filterOpen.line">
               <span>{{ t('menu.productLine') }}</span>
-              <span class="filter-chevron" :class="{ open: filterOpen.line }">›</span>
+              <span class="filter-chevron" :class="{ open: filterOpen.line }">â€º</span>
             </button>
             <div v-show="filterOpen.line" class="filter-body">
               <div class="scroll-checks">
@@ -86,7 +86,7 @@
           <div class="filter-box">
             <button class="filter-heading" @click="filterOpen.concern = !filterOpen.concern">
               <span>{{ t('menu.skinConcern') }}</span>
-              <span class="filter-chevron" :class="{ open: filterOpen.concern }">›</span>
+              <span class="filter-chevron" :class="{ open: filterOpen.concern }">â€º</span>
             </button>
             <div v-show="filterOpen.concern" class="filter-body">
               <div class="scroll-checks">
@@ -101,7 +101,7 @@
           <div class="filter-box">
             <button class="filter-heading" @click="filterOpen.type = !filterOpen.type">
               <span>{{ t('shop.type') }}</span>
-              <span class="filter-chevron" :class="{ open: filterOpen.type }">›</span>
+              <span class="filter-chevron" :class="{ open: filterOpen.type }">â€º</span>
             </button>
             <div v-show="filterOpen.type" class="filter-body">
               <div class="scroll-checks">
@@ -116,7 +116,7 @@
           <div v-if="activeBrand === 'cerave'" class="filter-box">
             <button class="filter-heading" @click="filterOpen.ingredients = !filterOpen.ingredients">
               <span>{{ t('shop.keyIngredients') }}</span>
-              <span class="filter-chevron" :class="{ open: filterOpen.ingredients }">›</span>
+              <span class="filter-chevron" :class="{ open: filterOpen.ingredients }">â€º</span>
             </button>
             <div v-show="filterOpen.ingredients" class="filter-body">
               <div class="scroll-checks">
@@ -150,7 +150,7 @@
                 <p class="product-subtitle">{{ productSubtitle(product) }}</p>
 
                 <div class="rating-row">
-                  <span class="stars">★★★★★</span>
+                  <span class="stars">â˜…â˜…â˜…â˜…â˜…</span>
                   <span class="reviews">
                     {{ Number(product.rating || 4.5).toFixed(1) }}
                     ({{ product.reviews || 0 }})
@@ -236,7 +236,7 @@ function productSubtitle(product) {
   return localizeField(product, 'subtitle')
 }
 
-// Todos los precios ahora están en USD (lrpCatalog y ceraveCatalog) → convertir a DOP
+// Todos los precios ahora estÃ¡n en USD (lrpCatalog y ceraveCatalog) â†’ convertir a DOP
 function priceDOP(product, sizeLabel) {
   const sizes = product.sizes || [];
   const size = sizes.find(s => s.label === (sizeLabel || selectedSize[product.id]));
@@ -363,11 +363,11 @@ const availableKeyIngredients = computed(() => {
 });
 
 const filteredProducts = computed(() => {
-  const q = search.value.toLowerCase();
+  const q = String(search.value || '').slice(0, 100).toLowerCase();
 
   return brandProducts.value.filter((p) => {
     if (q) {
-      // FASE 8 — smart search: brand, line, concern, ingredient, description
+      // FASE 8 â€” smart search: brand, line, concern, ingredient, description
       const haystack = [
         p.name,
         p.subtitle,
@@ -482,12 +482,12 @@ function setConcernFilter(concern) {
 
 function applySearch(term) {
   resetFilters();
-  search.value = term;
+  search.value = String(term || '').slice(0, 100);
 }
 
 function applyQueryParams() {
   const q = route.query;
-  if (q.search) { resetFilters(); search.value = String(q.search); }
+  if (q.search) { resetFilters(); search.value = String(q.search).slice(0, 100); }
   if (q.line) { resetFilters(); selectedLines.value = [String(q.line)]; }
   if (q.concern) { resetFilters(); selectedConcerns.value = [String(q.concern)]; }
   if (q.ingredient) {
@@ -1383,3 +1383,4 @@ watch(() => route.query, applyQueryParams);
   }
 }
 </style>
+

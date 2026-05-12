@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="relative flex min-h-screen w-full flex-col bg-background-light group/design-root overflow-x-hidden"
   >
@@ -47,7 +47,7 @@
             Email address
           </p>
           <input
-            v-model="email"
+            v-model="email" maxlength="100"
             type="email"
             placeholder="you@example.com"
             class="form-input flex w-full rounded-lg text-brand-dark-blue focus:ring-2 focus:ring-brand-light-blue/50
@@ -96,7 +96,7 @@ const shouldUseBackendFirst = Boolean(
 const go = (path) => router.push(path);
 
 const enviar = async () => {
-  const e = email.value.trim();
+  const e = email.value.trim().slice(0, 100);
   if (!e) {
     await Swal.fire({
       icon: "warning",
@@ -146,3 +146,4 @@ const enviar = async () => {
   }
 };
 </script>
+

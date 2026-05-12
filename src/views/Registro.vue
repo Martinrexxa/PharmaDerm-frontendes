@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="relative flex min-h-screen w-full flex-col bg-background-light group/design-root overflow-x-hidden"
   >
@@ -65,13 +65,13 @@
               First name
             </p>
             <input
-              v-model="nombre"
+              v-model="nombre" maxlength="60"
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 p-4 text-base font-normal leading-normal"
               placeholder="Your first name"
               type="text"
               pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*"
               @beforeinput="blockNonLetterInput"
-              @input="nombre = sanitizeLetters(nombre)"
+              @input="nombre = sanitizeLetters(nombre).slice(0, 60)"
             />
           </label>
 
@@ -81,13 +81,13 @@
               Last name
             </p>
             <input
-              v-model="apellido"
+              v-model="apellido" maxlength="60"
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 p-4 text-base font-normal leading-normal"
               placeholder="Your last name"
               type="text"
               pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'-]*"
               @beforeinput="blockNonLetterInput"
-              @input="apellido = sanitizeLetters(apellido)"
+              @input="apellido = sanitizeLetters(apellido).slice(0, 60)"
             />
           </label>
 
@@ -97,7 +97,7 @@
               Email address
             </p>
             <input
-              v-model="email"
+              v-model="email" maxlength="100"
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 p-4 text-base font-normal leading-normal"
               placeholder="you@example.com"
               type="email"
@@ -141,7 +141,7 @@
             </p>
             <div class="flex w-full flex-1 items-stretch">
               <input
-                v-model="password"
+                v-model="password" maxlength="100"
                 class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-l-lg text-brand-dark-blue focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 p-4 border-r-0 pr-2 text-base font-normal leading-normal"
                 placeholder="Create a password"
                 :type="showPassword ? 'text' : 'password'"
@@ -177,7 +177,7 @@
               Confirm password
             </p>
             <input
-              v-model="confirmPassword"
+              v-model="confirmPassword" maxlength="100"
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-brand-dark-blue focus:outline-0 focus:ring-2 focus:ring-brand-light-blue/50 border border-gray-300 bg-brand-soft-grey/50 focus:border-brand-light-blue h-14 placeholder:text-gray-400 p-4 text-base font-normal leading-normal"
               placeholder="Repeat your password"
               :type="showPassword ? 'text' : 'password'"
@@ -279,7 +279,7 @@ async function registrar() {
     const result = await auth.register({
       firstName: nombre.value.trim(),
       lastName:  apellido.value.trim(),
-      email:     email.value.trim(),
+      email:     email.value.trim().slice(0, 100),
       phone:     telefono.value.trim(),
       birthDate: birthDate.value || null,
       password:  password.value,
@@ -322,4 +322,5 @@ async function registrar() {
   }
 }
 </script>
+
 

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="booking-page">
     <div class="container">
       <div class="page-header">
@@ -114,7 +114,7 @@
             v-model="form.reason"
             class="reason-input"
             rows="4"
-            maxlength="150"
+            maxlength="100"
             :placeholder="ui.reasonPlaceholder"
             @beforeinput="blockSpecialCharsInput"
             @input="form.reason = sanitizeLimitedText(form.reason, 150)"
@@ -246,7 +246,7 @@ const form = ref({
   reason: ''
 })
 
-function sanitizeLimitedText(value, limit = 150) {
+function sanitizeLimitedText(value, limit = 100) {
   return String(value || '')
     .replace(/[^\p{L}\p{N}\s]/gu, '')
     .slice(0, limit)
@@ -334,7 +334,7 @@ function showAllDoctors() {
 
 function starText(rating) {
   const r = Math.round(rating || 0)
-  return '★'.repeat(Math.max(0, Math.min(5, r))) + '☆'.repeat(Math.max(0, 5 - r))
+  return '?'.repeat(Math.max(0, Math.min(5, r))) + '?'.repeat(Math.max(0, 5 - r))
 }
 
 function modalityLabel(mode) {
@@ -467,7 +467,7 @@ async function loadDoctors() {
 async function bookAppointment() {
   if (!selectedDoctor.value) return (errorMsg.value = isEs.value ? 'Selecciona un especialista.' : 'Select a specialist.')
   if (!form.value.date) return (errorMsg.value = isEs.value ? 'Selecciona una fecha.' : 'Select a date.')
-  form.value.reason = sanitizeLimitedText(form.value.reason, 150)
+  form.value.reason = sanitizeLimitedText(form.value.reason, 100)
 
   isSubmitting.value = true
   errorMsg.value = ''
@@ -631,7 +631,7 @@ onMounted(async () => {
   if (!form.value.reason) {
     form.value.reason = displayDiagnosisSummary.value
   }
-  form.value.reason = sanitizeLimitedText(form.value.reason, 150)
+  form.value.reason = sanitizeLimitedText(form.value.reason, 100)
   try {
     await loadDoctors()
   } catch (e) {
@@ -681,3 +681,4 @@ onMounted(async () => {
 .confirm-icon { font-size: 72px; color: #22c55e; display: block; margin-bottom: 16px; }
 @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
+

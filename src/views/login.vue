@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="relative flex min-h-screen w-full flex-col bg-background-light group/design-root overflow-x-hidden"
   >
@@ -35,7 +35,7 @@
               Email address
             </p>
             <input
-              v-model="email"
+              v-model="email" maxlength="100"
               type="email"
               placeholder="you@example.com"
               autocomplete="email"
@@ -53,7 +53,7 @@
             </p>
             <div class="flex w-full items-stretch">
               <input
-                v-model="password"
+                v-model="password" maxlength="100"
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="Enter your password"
                 autocomplete="current-password"
@@ -148,7 +148,7 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    await auth.login(email.value.trim(), password.value)
+    await auth.login(email.value.trim().slice(0, 100), password.value.slice(0, 100))
     await Swal.fire({
       toast: true,
       position: 'top',
@@ -187,3 +187,4 @@ async function handleLogin() {
   }
 }
 </script>
+
