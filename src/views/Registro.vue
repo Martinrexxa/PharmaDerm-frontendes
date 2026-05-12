@@ -16,28 +16,7 @@
       <div class="w-full max-w-sm mx-auto flex flex-col items-center">
         <!-- Logo -->
         <div class="mb-4 flex justify-center">
-          <svg
-            class="h-12 text-brand-dark-blue"
-            fill="currentColor"
-            viewBox="0 0 200 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <g transform="translate(40, 0)">
-              <path
-                d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm0 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"
-              />
-              <path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7z" />
-              <text
-                x="30"
-                y="18"
-                font-family="Manrope, sans-serif"
-                font-size="14"
-                font-weight="800"
-              >
-                PharmaDerm
-              </text>
-            </g>
-          </svg>
+          <img :src="logoWordmarkSrc" alt="PharmaDerm" class="h-14 object-contain" />
         </div>
 
         <!-- Headline -->
@@ -218,6 +197,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/useAuthStore.js'
 import Swal from 'sweetalert2'
+import logoWordmarkSrc from '../assets/logo marca-Photoroom.png'
 
 const router = useRouter()
 const auth   = useAuthStore()
