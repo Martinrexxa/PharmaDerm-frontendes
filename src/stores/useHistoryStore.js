@@ -14,6 +14,20 @@ let _currentUserId = null
 let _lastSyncTime = 0
 const SYNC_THRESHOLD = 300000 // 5 minutes
 
+function _orderKey(order) {
+  return String(order?.order_number || order?.id || '')
+}
+
+function _mergeOrders(primary = [], secondary = []) {
+  const seen = new Set()
+  return [...primary, ...secondary].filter((order) => {
+    const key = _orderKey(order)
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 function _hasBackendSession() {
   try {
     const s = JSON.parse(localStorage.getItem('pharmaderm_session') || 'null')
@@ -25,12 +39,14 @@ function _hasBackendSession() {
 
 async function _syncWithBackend() {
   if (!_hasBackendSession()) return
+  const localOrdersSnapshot = Array.isArray(orders.value) ? [...orders.value] : []
   const data = await apiFetch('/history')
   quizHistory.value = Array.isArray(data?.quiz_history) ? data.quiz_history : []
   diagnostics.value = Array.isArray(data?.diagnostics_history) ? data.diagnostics_history : []
   routines.value = Array.isArray(data?.routines) ? data.routines : []
   appointments.value = Array.isArray(data?.appointments_list) ? data.appointments_list : []
-  orders.value = Array.isArray(data?.orders) ? data.orders : []
+  const backendOrders = Array.isArray(data?.orders) ? data.orders : []
+  orders.value = _mergeOrders(backendOrders, localOrdersSnapshot)
 
   const kh = _key('quiz_history')
   const kr = _key('quiz_result')
@@ -118,7 +134,11 @@ function _load() {
     diagnostics.value  = []
     routines.value     = []
     appointments.value = []
-    orders.value       = []
+    try {
+      orders.value = JSON.parse(localStorage.getItem('pharmaderm_orders') || '[]') || []
+    } catch {
+      orders.value = []
+    }
     return
   }
   quizHistory.value  = _parse(_key('quiz_history'))

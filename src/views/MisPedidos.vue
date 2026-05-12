@@ -175,6 +175,7 @@ async function loadOrders({ scrollTop = false } = {}) {
   isLoading.value = true
   try {
     const localOrders = history.getOrders?.() || []
+    const directLocalOrders = orderService.getOrders?.() || []
     let remoteOrders = []
 
     if (userId.value) {
@@ -182,7 +183,8 @@ async function loadOrders({ scrollTop = false } = {}) {
     }
 
     if (token !== loadToken) return
-    orders.value = hydrateOrderImages(mergeOrders(remoteOrders, localOrders))
+    const mergedLocal = mergeOrders(localOrders, directLocalOrders)
+    orders.value = hydrateOrderImages(mergeOrders(remoteOrders, mergedLocal))
   } catch (e) {
     console.warn('[MisPedidos] Error cargando pedidos:', e)
     if (token !== loadToken) return
